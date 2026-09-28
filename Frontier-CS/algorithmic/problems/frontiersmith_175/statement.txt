@@ -1,0 +1,157 @@
+```markdown
+# Rotational Banner Compression
+
+## Problem
+A company wants to print a long one-line banner containing all of its product codes.
+
+Each product code is a positive integer written as a digit string with no leading zeros.  
+Before placing a code on the banner, you may transform it into any **display mode** reachable by repeated digit rotations:
+
+- **Left rotation**: move the first digit to the end.
+- **Right rotation**: move the last digit to the front.
+- After every rotation, remove all leading zeros from the result.
+- You may perform this operation any number of times, including zero.
+
+For example, starting from `10203`:
+
+- left rotation -> `02031` -> trim -> `2031`
+- left rotation again -> `0312` -> trim -> `312`
+
+So `10203`, `2031`, and `312` are all valid display modes of the same original code.
+
+After choosing one display mode for each code, you must arrange all codes in some order to form a banner.
+
+If a code with display mode `B` is placed immediately after a code with display mode `A`, the printer may overlap them:
+let `overlap(A, B)` be the largest `k` such that the last `k` digits of `A` are exactly the first `k` digits of `B`.
+
+The banner length of an ordered sequence of chosen display modes `X1, X2, ..., Xn` is
+
+\[
+|X_1| + \sum_{i=2}^{n} \left(|X_i| - overlap(X_{i-1}, X_i)\right)
+\]
+
+Your task is to output any feasible arrangement and choice of display modes that **minimizes the banner length**.
+
+This is an optimization challenge: better solutions receive better scores.
+
+## Input
+The first line contains an integer `T`, the number of test cases.
+
+Each test case begins with an integer `n`, the number of product codes.
+
+The next `n` lines each contain one digit string `s_i`, the original code of item `i`.
+
+### Constraints on the input data
+- `1 <= T <= 20`
+- `50 <= n <= 400`
+- `1 <= |s_i| <= 18`
+- `s_i` contains only digits
+- `s_i` has no leading zeros
+- The sum of `n` over all test cases does not exceed `4000`
+
+## Output
+For each test case, output exactly `n` lines.
+
+Each line must contain:
+`index chosen_mode`
+
+where:
+- `index` is an integer in `[1, n]`
+- `chosen_mode` is the display mode you selected for that item
+
+The `n` lines are interpreted in the order they appear: this is the order of the codes on the banner.
+
+### Feasibility requirements
+For each test case:
+
+- Every index from `1` to `n` must appear exactly once.
+- `chosen_mode` must be reachable from the corresponding original string by zero or more valid rotations with trimming.
+- Any violation makes the entire test case invalid.
+
+## Objective
+For each test case, let your ordered chosen display modes be `X1, X2, ..., Xn`.
+
+Your objective value is the banner length
+
+\[
+C = |X_1| + \sum_{i=2}^{n} \left(|X_i| - overlap(X_{i-1}, X_i)\right)
+\]
+
+where `overlap(A, B)` is the maximum `k` such that:
+- `0 <= k <= min(|A|, |B|)`
+- the suffix of `A` of length `k` equals the prefix of `B` of length `k`
+
+Lower `C` is better.
+
+## Scoring
+For each test case, define the **baseline solution** as:
+
+- keep the original order `1, 2, ..., n`
+- use the original strings `s_1, s_2, ..., s_n` as the chosen modes
+
+Let `B` be the banner length of this baseline, computed using the same overlap rule.
+
+If your output for a test case is invalid, that test case receives score `0`.
+
+Otherwise, if your banner length is `C`, your test-case score is
+
+\[
+\text{score} = 1{,}000{,}000 \times \min\left(10,\ \frac{B}{C}\right)
+\]
+
+- The baseline always scores exactly `1,000,000`.
+- A solution with half the baseline banner length scores `2,000,000`.
+- Scores are capped at `10,000,000` per test case.
+
+Your final score is the arithmetic mean of the test-case scores.
+
+## Constraints
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample input
+```text
+1
+4
+10203
+3129
+2907
+7030
+```
+
+### Sample output
+```text
+1 312
+2 3129
+3 2907
+4 703
+```
+
+### Explanation
+- `312` is reachable from `10203`
+- `703` is reachable from `7030` by a right rotation: `0703 -> 703`
+
+The chosen sequence is:
+`312`, `3129`, `2907`, `703`
+
+Its banner length is:
+- start with `312` -> length `3`
+- overlap(`312`, `3129`) = `3`, so add `4 - 3 = 1`
+- overlap(`3129`, `2907`) = `2`, so add `4 - 2 = 2`
+- overlap(`2907`, `703`) = `1`, so add `3 - 1 = 2`
+
+Total:
+`C = 3 + 1 + 2 + 2 = 8`
+
+Baseline sequence:
+`10203`, `3129`, `2907`, `7030`
+
+Its banner length is `B = 16`, so this output scores
+
+\[
+1{,}000{,}000 \times \min(10, 16/8) = 2{,}000{,}000
+\]
+
+This problem is intentionally intractable at full scale; heuristics are expected.
+```

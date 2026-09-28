@@ -1,0 +1,211 @@
+```markdown
+# Reusable Letter Stamps
+
+## Problem
+A print shop must prepare many posters.  
+For each poster, **only the multiset of lowercase letters `a` to `z` matters**: punctuation, spaces, uppercase letters, and ordering are ignored.
+
+To reduce setup cost, the shop wants to manufacture a small library of reusable **stamp strips**.
+
+- A stamp strip is a non-empty lowercase string, such as `abca` or `zzz`.
+- Using a strip once adds all of its letters to the poster.
+- A poster may use the same strip many times.
+- However, due to alignment constraints, each poster may use **at most `R` distinct strip types**.
+
+Your task is to design up to `K` strip types, each of length at most `L`, and decide how to use them for every poster so that the produced lowercase-letter counts are as close as possible to the target counts.
+
+For a poster with target frequency vector `f[26]`, if your chosen strips produce frequency vector `g[26]`, the error for that poster is
+
+\[
+\sum_{c='a'}^{'z'} |f[c] - g[c]|
+\]
+
+Each poster also has a positive integer weight `w`, and its contribution to the objective is `w * error`.
+
+The goal is to minimize total weighted error over all posters.
+
+---
+
+## Input
+A single test case is given.
+
+- First line: four integers `N K L R`
+  - `N` = number of posters
+  - `K` = maximum number of strip types you may define
+  - `L` = maximum length of each strip
+  - `R` = maximum number of **distinct** strip types usable on one poster
+
+Then for each poster `i = 1..N`:
+
+- one line with an integer `w_i`
+- one line with a string `s_i`
+
+Only lowercase letters in `s_i` contribute to the target counts.
+
+### Target counts
+For each poster string `s_i`, define `f_i[c]` as the number of occurrences of lowercase letter `c` in `s_i`.
+
+All other characters are ignored.
+
+---
+
+## Output
+Your output must describe:
+
+1. the strip library,
+2. how each poster uses that library.
+
+### Format
+- First line: integer `M` — the number of strip types you define (`0 <= M <= K`)
+- Next `M` lines: strip strings `t_1, t_2, ..., t_M`
+  - each must contain only lowercase letters
+  - each must have length between `1` and `L`, inclusive
+
+Then output `N` assignment lines, one per poster.
+
+### Assignment line format
+For poster `i`, output:
+
+`d id_1 mult_1 id_2 mult_2 ... id_d mult_d`
+
+where:
+
+- `d` is the number of distinct strip types used for this poster
+- `0 <= d <= R`
+- all `id_j` must be distinct integers in `[1, M]`
+- each `mult_j` is a positive integer
+
+If strip `id_j` is used with multiplicity `mult_j`, its letter counts are added `mult_j` times.
+
+### Produced counts
+For poster `i`, if strip `x` has frequency vector `h_x[26]`, then the produced counts are
+
+\[
+g_i[c] = \sum_{j=1}^{d} mult_j \cdot h_{id_j}[c]
+\]
+
+A submission is **feasible** if all format and bound rules above are satisfied.
+
+Any infeasible output receives score `0` for that test case.
+
+---
+
+## Objective
+Minimize
+
+\[
+\text{OBJ} = \sum_{i=1}^{N} w_i \cdot \left( \sum_{c='a'}^{'z'} |f_i[c] - g_i[c]| \right)
+\]
+
+where:
+
+- `f_i` is computed from the input string,
+- `g_i` is computed from your chosen strips and multiplicities.
+
+All computations use 64-bit signed integers.
+
+---
+
+## Scoring
+This is an optimization problem. Lower objective is better.
+
+For each test case, the judge also computes a deterministic **baseline** solution:
+
+### Baseline library
+Use exactly 26 strips:
+
+- `t_1 = "a"`
+- `t_2 = "b"`
+- ...
+- `t_26 = "z"`
+
+(Any remaining capacity up to `K` is unused.)
+
+### Baseline assignment for poster `i`
+- Compute all lowercase frequencies in `s_i`.
+- Select up to `R` letters with the largest positive frequencies.
+- Break ties by smaller letter (`'a' < 'b' < ... < 'z'`).
+- For each selected letter `c`, use the corresponding 1-letter strip with multiplicity equal to its frequency.
+
+Let the baseline objective be `B`, and your objective be `O`.
+
+The per-test raw score is
+
+\[
+\text{score} = 10^6 \cdot \min\left(5,\ \frac{B + 1}{O + 1}\right)
+\]
+
+- Baseline gets exactly `1,000,000`.
+- Better-than-baseline solutions get more than `1,000,000`.
+- Worse solutions get less.
+- Infeasible outputs get `0`.
+
+If there are multiple test cases, the final score is the arithmetic mean of the per-test raw scores.
+
+---
+
+## Constraints
+- `1 <= N <= 3000`
+- `26 <= K <= 60`
+- `1 <= L <= 20`
+- `1 <= R <= 4`
+- `1 <= w_i <= 100`
+- each `s_i` is a single line of printable ASCII characters
+- `0 <= |s_i| <= 1000`
+- total length of all poster strings in one file `<= 500000`
+
+These limits are intentionally large enough that exact optimization is impractical; contestants are expected to use heuristics.
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+### Sample input
+```text
+2 26 3 2
+1
+aabbcc
+1
+aaaccc
+```
+
+### Sample output
+```text
+3
+abc
+a
+c
+1 1 2
+2 2 3 3 3
+```
+
+### Explanation
+Defined strips:
+
+1. `abc`
+2. `a`
+3. `c`
+
+Assignments:
+
+- Poster 1: use strip `abc` twice  
+  Produced counts = `aabbcc`, exact.
+- Poster 2: use strip `a` three times and strip `c` three times  
+  Produced counts = `aaaccc`, exact.
+
+So `OBJ = 0`.
+
+Baseline:
+- For `aabbcc`, only 2 distinct strip types may be used, so it matches two of the three letters and misses the third: error `2`.
+- For `aaaccc`, it is exact with letters `a` and `c`.
+
+Thus baseline objective `B = 2`, while this output has `O = 0`, giving
+
+\[
+10^6 \cdot \frac{2+1}{0+1} = 3{,}000{,}000
+\]
+
+for this test case.
+```

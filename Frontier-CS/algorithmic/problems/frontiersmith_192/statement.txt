@@ -1,0 +1,175 @@
+```markdown
+# Polarity Mesh Tuning
+
+## Problem
+
+You are given a line of `n` energy modules, numbered from `1` to `n`.  
+Module `i` has a base power value `a_i` and is initially considered to have **positive polarity**.
+
+You may reconfigure the modules in two ways:
+
+- **shut down** a module, removing it from the system;
+- **invert** a module, changing its polarity from positive to negative.
+
+There are also `m` synchronization links between pairs of modules.  
+Each link connects two distinct modules `u` and `v`, has a type `c`, and a reward `w`:
+
+- `c = 0` means the link is rewarded if the two active modules have the **same** polarity;
+- `c = 1` means the link is rewarded if the two active modules have **opposite** polarities.
+
+A shut-down module contributes no base power, and any link incident to it contributes nothing.
+
+Your task is to choose which modules to shut down and which active modules to invert in order to maximize the total system reward.
+
+---
+
+## Input
+
+The first line contains a single integer `t` — the number of test cases.
+
+For each test case:
+
+- The first line contains four integers  
+  `n k x m`
+  - `n` — number of modules
+  - `k` — maximum number of modules you may shut down
+  - `x` — maximum number of active modules you may invert
+  - `m` — number of synchronization links
+
+- The second line contains `n` integers  
+  `a_1, a_2, ..., a_n` — base power values.
+
+- Each of the next `m` lines contains four integers  
+  `u v c w`
+  describing one link:
+  - `1 <= u < v <= n`
+  - `c` is `0` or `1`
+  - `w` is the reward of this link
+
+Multiple links between the same pair of modules are allowed and are evaluated independently.
+
+---
+
+## Output
+
+For each test case, output one line containing a string `s` of length `n`.
+
+For each position `i`:
+
+- `s_i = '+'` : module `i` stays active with positive polarity
+- `s_i = '-'` : module `i` stays active with negative polarity
+- `s_i = '0'` : module `i` is shut down
+
+A solution is **feasible** if:
+
+- the number of `'0'` characters is at most `k`
+- the number of `'-'` characters is at most `x`
+
+If the output for a test case is malformed or infeasible, that test case receives objective value `0`.
+
+---
+
+## Objective
+
+For a feasible configuration:
+
+1. Every active module contributes its base power:
+   - `a_i` if `s_i` is `'+'` or `'-'`
+   - `0` if `s_i` is `'0'`
+
+2. Each link `(u, v, c, w)` contributes:
+   - `0` if `s_u = '0'` or `s_v = '0'`
+   - `w` if `c = 0` and the active polarities of `u` and `v` are the same
+   - `w` if `c = 1` and the active polarities of `u` and `v` are different
+   - `0` otherwise
+
+The objective value `V` is the sum of all base-power contributions and all satisfied-link rewards.
+
+You must **maximize `V`**.
+
+---
+
+## Scoring
+
+For each test case, define:
+
+- `V` = your objective value
+- `B` = objective value of the baseline solution that outputs `'+'` for every module
+- `U` = trivial upper bound  
+  `U = (sum of all a_i) + (sum of all w over all links)`
+
+The per-test score is:
+
+- If `U = B`:
+  - `score = floor(1,000,000 * V / U)`
+
+- Otherwise:
+  - if `V <= B`:
+    - `score = floor(500,000 * V / B)`
+  - if `V > B`:
+    - `score = floor(500,000 + 500,000 * (V - B) / (U - B))`
+
+So:
+- score `500,000` means you matched the baseline,
+- score below `500,000` means you did worse than baseline,
+- score approaches `1,000,000` as you approach the upper bound `U`.
+
+The final score is the average of per-test scores over all official test cases, rounded down.
+
+---
+
+## Constraints
+
+- `1 <= t <= 50`
+- `1 <= n <= 2 * 10^5` over all test cases combined
+- `0 <= k <= n`
+- `0 <= x <= n`
+- `0 <= m <= 4 * 10^5` over all test cases combined
+- `1 <= a_i <= 10^6`
+- `1 <= w <= 10^6`
+
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+1
+5 1 2 5
+4 4 4 4 4
+1 2 1 10
+2 3 1 10
+3 4 1 10
+4 5 1 10
+1 5 0 8
+```
+
+### Output
+```text
++-+-+
+```
+
+### Explanation
+
+All 5 modules remain active, and modules `2` and `4` are inverted.
+
+- Base power: `4 + 4 + 4 + 4 + 4 = 20`
+- Links `(1,2), (2,3), (3,4), (4,5)` all require opposite polarity and are satisfied: `4 * 10 = 40`
+- Link `(1,5)` requires same polarity and is also satisfied: `8`
+
+Total objective:
+`V = 20 + 40 + 8 = 68`
+
+Baseline solution `+++++` has:
+- base power `20`
+- only link `(1,5)` satisfied, so
+`B = 28`
+
+Upper bound:
+`U = 20 + (10+10+10+10+8) = 68`
+
+Since `V = U`, this output gets the maximum per-test score of `1,000,000`.
+```

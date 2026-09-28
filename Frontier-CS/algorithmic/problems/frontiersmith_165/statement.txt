@@ -1,0 +1,216 @@
+```markdown
+# Gallery Rotation Planning
+
+## Problem
+
+A museum is preparing a temporary exhibition in a straight corridor of `n` rooms, numbered `1` to `n`.
+
+There are `n` unique exhibits, also numbered `1` to `n`.  
+Initially, room `i` contains exhibit `A_i`, so `A` is a permutation of `1..n`.
+
+You may reorganize the exhibits using **rotation operations**:
+
+- Choose `k` distinct room indices `r_1, r_2, ..., r_k`.
+- Simultaneously move the exhibit in `r_1` to `r_2`, the exhibit in `r_2` to `r_3`, ..., the exhibit in `r_{k-1}` to `r_k`, and the exhibit in `r_k` to `r_1`.
+
+The **cost** of this operation is `k`.  
+The sum of costs of all operations must not exceed `s`.
+
+After all operations, the final arrangement receives a value from two sources:
+
+1. **Room preference value**  
+   For each exhibit `x`, three integers are given:
+   - `P_x`: its preferred room,
+   - `B_x`: its maximum room value,
+   - `D_x`: value lost per unit distance from the preferred room.
+
+   If exhibit `x` ends up in room `j`, it contributes
+
+   `max(0, B_x - D_x * |j - P_x|)`.
+
+2. **Adjacency synergy value**  
+   There are `m` undirected synergy relations.  
+   Each relation is a triple `(u, v, w)` meaning:
+   - if exhibits `u` and `v` are in adjacent rooms in the final arrangement,
+   - then they contribute `w` additional points,
+   - regardless of which one is on the left.
+
+   Each synergy relation is counted at most once.
+
+Your task is to output any feasible sequence of operations. Higher total final value gets a higher score.
+
+---
+
+## Input
+
+The input consists of:
+
+- The first line: three integers `n`, `m`, `s`
+- The second line: `n` integers `A_1 ... A_n`
+- The next `n` lines: three integers `P_x`, `B_x`, `D_x` for exhibit `x` (`x = 1..n`)
+- The next `m` lines: three integers `u`, `v`, `w`
+
+### Guarantees
+
+- `A` is a permutation of `1..n`
+- `1 <= u, v <= n`, `u != v`
+- No synergy pair appears more than once
+
+---
+
+## Output
+
+On the first line, output a single integer `q`: the number of operations.
+
+Then for each operation, output:
+
+- one line containing the integer `k`
+- one line containing `k` distinct room indices `r_1 ... r_k`
+
+### Feasibility requirements
+
+Your output is **feasible** if and only if all of the following hold:
+
+- `q >= 0`
+- For every operation:
+  - `2 <= k <= n`
+  - all listed room indices are distinct
+  - every listed room index is between `1` and `n`
+- The sum of all `k` over all operations is at most `s`
+
+The judge applies the operations in the order you output them.
+
+If the output is malformed or infeasible, the submission receives score `0` on that test.
+
+---
+
+## Objective
+
+Let the final arrangement after applying your operations be `F_1 ... F_n`, where room `j` contains exhibit `F_j`.
+
+The **final value** `V` is
+
+\[
+V =
+\sum_{j=1}^{n} \max(0, B_{F_j} - D_{F_j}\cdot |j - P_{F_j}| )
+\;+\;
+\sum_{j=1}^{n-1} \text{synergy}(F_j, F_{j+1})
+\]
+
+where `synergy(x, y)` is:
+
+- `w` if there is a synergy relation `(x, y, w)` or `(y, x, w)`
+- `0` otherwise
+
+Your goal is to **maximize** `V`.
+
+All calculations use 64-bit signed integers.
+
+---
+
+## Scoring
+
+For each test case:
+
+- Let `V` be your final value.
+- Let `B` be the value of the **baseline solution** that performs **no operations**.
+- Let
+
+\[
+U = \sum_{x=1}^{n} B_x + \sum_{\text{all synergy relations }(u,v,w)} w
+\]
+
+This is a simple judge-computable upper bound on any feasible value.
+
+The score for that test case is:
+
+- `0`, if your output is infeasible
+- `1,000,000`, if `U = B`
+- otherwise
+
+\[
+\text{score} =
+1{,}000{,}000 \times
+\operatorname{clamp}\left(
+\frac{V - B}{U - B},
+0,
+1
+\right)
+\]
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+The final contest score is the arithmetic mean of test-case scores.
+
+### Baseline
+
+The baseline is explicitly defined as:
+
+- output `q = 0`
+- perform no operations
+
+Any contestant can implement it.
+
+---
+
+## Constraints
+
+- `1 <= n <= 200000`
+- `0 <= m <= 300000`
+- `0 <= s <= 200000`
+- `1 <= P_x <= n`
+- `0 <= B_x <= 10^9`
+- `0 <= D_x <= 10^9`
+- `1 <= w <= 10^9`
+
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+4 2 4
+2 1 4 3
+1 5 5
+2 5 5
+3 5 5
+4 5 5
+1 2 4
+3 4 4
+```
+
+### Sample output
+```text
+2
+2
+1 2
+2
+3 4
+```
+
+### Explanation
+
+Initial arrangement: `[2, 1, 4, 3]`
+
+- Room preference value is `0`
+- Adjacent synergy value is `4 + 4 = 8`
+- So baseline `B = 8`
+
+The sample output swaps rooms `(1,2)` and `(3,4)`, producing `[1, 2, 3, 4]`.
+
+Final value:
+- Room preference value: `5 + 5 + 5 + 5 = 20`
+- Adjacent synergy value: `4 + 4 = 8`
+- So `V = 28`
+
+The upper bound is
+
+\[
+U = (5+5+5+5) + (4+4) = 28
+\]
+
+So this output achieves the maximum possible judge score on this test.
+```

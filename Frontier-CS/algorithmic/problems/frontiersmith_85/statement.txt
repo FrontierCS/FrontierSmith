@@ -1,0 +1,198 @@
+```markdown
+# Winter Burrow Reassignment
+
+## Problem
+A colony of moles lives in a network of burrows connected by tunnels.
+
+Each burrow may host awake moles for the winter in two ways:
+
+- it has **regular food capacity** `c_i`, available for free;
+- it may optionally open **one emergency pantry**, which costs `f_i` to stock and adds `b_i` more places.
+
+There are `m` awake moles. Mole `j` starts in burrow `p_j`.  
+Every mole must end in exactly one burrow. A mole may travel through tunnels, and its travel cost is the length of a shortest path from its starting burrow to its assigned destination burrow.
+
+Your task is to choose:
+
+1. which emergency pantries to open;
+2. the destination burrow of every mole,
+
+so that no burrow exceeds its available capacity, and the **total cost** is minimized.
+
+This is an **optimization problem**: any feasible solution is accepted and scored.
+
+---
+
+### Definitions
+
+Let:
+
+- `z_i = 1` if the emergency pantry of burrow `i` is opened, otherwise `0`;
+- `x_i` be the number of moles assigned to burrow `i`;
+- `dist(u, v)` be the shortest-path distance in the tunnel graph.
+
+A solution is **feasible** iff for every burrow `i`:
+
+`x_i <= c_i + b_i * z_i`.
+
+The graph is connected, and the input always satisfies:
+
+`sum_i (c_i + b_i) >= m`,
+
+so at least one feasible solution always exists.
+
+## Input
+The first line contains three integers:
+
+`n e m` — the number of burrows, tunnels, and awake moles.
+
+The second line contains `n` integers:
+
+`c_1 c_2 ... c_n` — regular food capacities.
+
+The third line contains `n` integers:
+
+`b_1 b_2 ... b_n` — extra capacities provided by emergency pantries.
+
+The fourth line contains `n` integers:
+
+`f_1 f_2 ... f_n` — pantry opening costs.
+
+The fifth line contains `m` integers:
+
+`p_1 p_2 ... p_m` — starting burrows of the moles.
+
+Each of the next `e` lines contains three integers:
+
+`u v w` — an undirected tunnel between burrows `u` and `v` of length `w`.
+
+## Output
+Output exactly two lines.
+
+- Line 1: `n` integers `z_1 z_2 ... z_n`, where each `z_i` is either `0` or `1`.
+- Line 2: `m` integers `a_1 a_2 ... a_m`, where `a_j` is the destination burrow assigned to mole `j`.
+
+### Feasibility requirements
+Your output is feasible iff:
+
+- every `z_i` is `0` or `1`;
+- every `a_j` is an integer in `[1, n]`;
+- for every burrow `i`, the number of indices `j` with `a_j = i` is at most `c_i + b_i * z_i`.
+
+The actual routes are **not** output. Travel cost is always computed using shortest-path distances.
+
+## Objective
+Minimize
+
+`C = sum_{j=1..m} dist(p_j, a_j) + sum_{i=1..n} f_i * z_i`.
+
+That is:
+
+- each mole pays the shortest-path distance from its start to its assigned burrow;
+- each opened pantry pays its fixed opening cost once.
+
+## Scoring
+For each test file, let your feasible objective value be `X`.  
+If your output is malformed or infeasible, that test file receives score `0`.
+
+### Baseline solution
+The baseline value `B` is computed by the following deterministic greedy algorithm:
+
+- Initially, burrow `i` has `c_i` free regular places and no opened pantry.
+- Process moles in order `1, 2, ..., m`.
+- For the current mole `j`:
+  1. If there exists at least one burrow with a currently free place (regular or from an already opened pantry), assign the mole to a burrow minimizing `dist(p_j, i)`.  
+     Break ties by smaller burrow index.
+  2. Otherwise, open one unopened pantry at a burrow with `b_i > 0` minimizing `dist(p_j, i) + f_i`.  
+     Break ties by smaller burrow index.  
+     Then assign the mole there.
+- When a mole is assigned to a burrow, it consumes one free place there.
+- The baseline objective `B` is the total travel distance plus the total opening cost paid by this procedure.
+
+### Lower bound
+The judge also computes
+
+`L = sum_{j=1..m} min_{i=1..n} dist(p_j, i)`.
+
+This ignores all capacities and all pantry costs, so it is a valid lower bound on the true optimum.
+
+### Test-file score
+Official test files satisfy `B > L`.
+
+Your score for one test file is
+
+`Score = 1000 * clamp((B - X) / (B - L), 0, 1)`
+
+where
+
+`clamp(t, 0, 1) = min(1, max(0, t))`.
+
+So:
+
+- matching the baseline gives score `0`;
+- improving on the baseline gives a positive score;
+- reaching the lower bound or better gives score `1000`.
+
+The final score is the average of test-file scores.
+
+## Constraints
+- `1 <= n <= 2000`
+- `n - 1 <= e <= 10000`
+- `1 <= m <= 100000`
+- `0 <= c_i <= m`
+- `0 <= b_i <= m`
+- `0 <= f_i <= 10^12`
+- `1 <= p_j <= n`
+- `1 <= u, v <= n`, `u != v`
+- `1 <= w <= 10^6`
+- The graph is connected
+- `sum_i (c_i + b_i) >= m`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample Input
+```text
+4 4 5
+1 0 1 0
+0 2 2 3
+0 4 3 7
+1 2 2 3 4
+1 2 2
+2 3 2
+3 4 2
+1 4 5
+```
+
+### Sample Output
+```text
+0 1 1 0
+1 2 2 3 3
+```
+
+### Explanation
+The solution opens the pantries of burrows `2` and `3`.
+
+Assignments are:
+
+- mole 1: `1 -> 1`, distance `0`
+- mole 2: `2 -> 2`, distance `0`
+- mole 3: `2 -> 2`, distance `0`
+- mole 4: `3 -> 3`, distance `0`
+- mole 5: `4 -> 3`, distance `2`
+
+Travel cost = `2`  
+Opening cost = `4 + 3 = 7`  
+Total objective = `9`
+
+This is a feasible solution because the assigned counts are:
+
+- burrow 1: `1 <= 1`
+- burrow 2: `2 <= 0 + 2`
+- burrow 3: `2 <= 1 + 2`
+- burrow 4: `0 <= 0`
+
+A different feasible output may score higher or lower.
+```

@@ -3,7 +3,7 @@
 #
 # Prerequisites:
 #   1. source setup-env.sh   (creates .venv and installs deps if needed)
-#   2. python scripts/prepare_frontiercs_parquet.py
+#   2. python scripts/prepare_synthetic_parquet.py --subset train
 #   3. Frontier-CS judge on :8082 (cd Frontier-CS/algorithmic && ./run_judge.sh)
 #   4. (optional) python scripts/prepare_alebench_parquet.py
 #   5. 4+ GPUs (default 4; set NGPU=8 for 8-GPU machines)
@@ -48,7 +48,7 @@ NGPU=${NGPU:-8}
 # Ensure data exists
 if [ ! -f "$TRAIN_DATA" ]; then
     echo "ERROR: $TRAIN_DATA not found."
-    echo "Run: python scripts/prepare_frontiercs_parquet.py"
+    echo "Run: python scripts/prepare_synthetic_parquet.py --subset train"
     exit 1
 fi
 

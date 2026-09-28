@@ -1,0 +1,174 @@
+```markdown
+# Chamber Re-Seating
+
+## Problem
+
+After a week of chaotic debates, the parliament will physically re-seat all members before the next session.
+
+There are `n` members of parliament, numbered `1..n`. On each of the five weekdays, a journalist photographed some unordered pairs of members who were visibly arguing. If a pair appears on multiple days, it is considered a stronger conflict.
+
+The chamber has exactly two wings:
+
+- **Wing A** with `ceil(n / 2)` seats,
+- **Wing B** with `floor(n / 2)` seats.
+
+Within each wing, seats are arranged in a single line from **front** to **back**, numbered starting from `1`.
+
+You must output a **permutation** of the members. The first `ceil(n / 2)` members in that permutation will be seated in Wing A from front to back, and the remaining members will be seated in Wing B from front to back.
+
+Your goal is to minimize the total expected disturbance in future debates.
+
+Only the pairs that appear in the five photos matter.
+
+---
+
+### Disturbance model
+
+For each unordered pair `{u, v}`:
+
+- let `w(u, v)` be the number of weekdays on which `{u, v}` appears in the photos (`1..5`);
+- let `row(u)` and `row(v)` be their row numbers within their wings;
+- let `sameWing(u, v)` indicate whether they are seated in the same wing.
+
+Their disturbance contribution is:
+
+- if they are in the **same wing**:
+  
+  `w(u, v) * (20 + max(0, 15 - |row(u) - row(v)|))`
+
+- if they are in **different wings**:
+  
+  `w(u, v) * max(0, 14 - |row(u) - row(v)|)`
+
+So:
+- placing a frequently arguing pair in the same wing is always expensive;
+- even across wings, putting such a pair on nearby rows is still bad;
+- putting a pair far apart reduces the penalty.
+
+The total objective is the sum of these contributions over all photographed pairs.
+
+Finding the true optimum is expected to be computationally hard; this is an optimization challenge.
+
+## Input
+
+The input consists of 6 lines.
+
+- Line 1: integer `n` — the number of members.
+- Lines 2..6: one line for each weekday.
+
+Each weekday line has the format:
+
+`p u1 v1 u2 v2 ... up vp`
+
+where:
+
+- `p` is the number of photographed arguing pairs that day,
+- each `(ui, vi)` is an unordered pair of distinct members.
+
+Pairs on the same day are guaranteed to be distinct.  
+The same pair may appear on multiple different days.
+
+All whitespace should be treated as standard whitespace.
+
+## Output
+
+Output one line containing a permutation of `1..n`:
+
+`a1 a2 ... an`
+
+Interpretation:
+
+- `a1, a2, ..., aceil(n/2)` are seated in Wing A, rows `1..ceil(n/2)`,
+- `a(ceil(n/2)+1), ..., an` are seated in Wing B, rows `1..floor(n/2)`.
+
+### Feasibility requirements
+
+Your output is **feasible** iff:
+
+- it contains exactly `n` integers,
+- each integer is between `1` and `n`,
+- every member appears exactly once.
+
+If the output is infeasible, the score for that test case is `0`.
+
+## Objective
+
+Let `P` be the total disturbance penalty of your seating plan, computed as described above.
+
+Your goal is to **minimize `P`**.
+
+## Scoring
+
+For each test case, let:
+
+- `P` = your penalty,
+- `P_base` = the penalty of the baseline seating
+
+`1 2 3 ... n`
+
+(i.e. members `1..ceil(n/2)` in Wing A, the rest in Wing B).
+
+The score for the test case is:
+
+`floor(500000 * (2 * P_base + 1) / (P + P_base + 1))`
+
+Properties:
+
+- baseline always gets exactly `500000`,
+- better solutions get more than `500000`,
+- worse solutions get less than `500000`,
+- the score approaches `1000000` as `P` approaches `0`.
+
+The final score is the arithmetic mean of the per-test-case scores, rounded down to the nearest integer.
+
+## Constraints
+
+- `1 <= n <= 200000`
+- `0 <= p <= 200000` on each day
+- total number of listed pairs over all 5 days is at most `500000`
+- `1 <= ui, vi <= n`
+- `ui != vi`
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample input
+```text
+4
+1 1 2
+1 1 3
+1 2 4
+1 3 4
+0
+```
+
+### Sample output
+```text
+1 4 2 3
+```
+
+### Explanation
+
+Wing A has seats `[1, 4]`, Wing B has seats `[2, 3]`.
+
+The photographed pairs are:
+
+- `{1,2}` once
+- `{1,3}` once
+- `{2,4}` once
+- `{3,4}` once
+
+For this seating:
+
+- `1` and `2` are in different wings, same row: penalty `14`
+- `1` and `3` are in different wings, row difference `1`: penalty `13`
+- `2` and `4` are in different wings, row difference `1`: penalty `13`
+- `3` and `4` are in different wings, same row: penalty `14`
+
+So `P = 54`.
+
+The baseline seating is `1 2 3 4`, whose penalty is `96`, so this output scores above the baseline.
+```

@@ -1,0 +1,238 @@
+```markdown
+# Latency-Bounded Circuit Packing
+
+## Problem
+
+A backbone network contains `n` routers and `m` undirected communication links.  
+Router `v` can process at most `c_v` units of transit traffic at any moment.
+
+You are given `q` customer circuit requests.  
+Request `i` asks to send `d_i` units of traffic from source router `s_i` to destination router `t_i`, and earns profit `p_i` if accepted.
+
+You may either reject a request or assign it **one simple path** in the network.
+
+### Routing rules
+
+For an accepted request `i`, its chosen path must satisfy all of the following:
+
+1. It starts at `s_i` and ends at `t_i`.
+2. Consecutive routers on the path must be connected by a link.
+3. The path must be **simple** (no repeated router).
+4. Let `D_i` be the shortest-path distance from `s_i` to `t_i` in the input graph.  
+   If the chosen path has total length `L_i`, then it must hold that  
+   `L_i <= D_i + Δ_i`, where `Δ_i` is the slack given in the input.
+
+### Capacity rules
+
+For each router `v`, sum the demands of all accepted requests whose path uses `v` as an **internal** router. This total must not exceed `c_v`.
+
+- The source and destination of a request do **not** consume capacity for that request.
+- Links have unlimited bandwidth.
+- Different accepted requests may share links and endpoints freely.
+
+Your goal is to maximize the total profit of accepted requests.
+
+---
+
+## Input
+
+The first line contains three integers:
+
+`n m q`
+
+- `n`: number of routers
+- `m`: number of undirected links
+- `q`: number of circuit requests
+
+The next `m` lines each contain:
+
+`u v w`
+
+meaning there is an undirected link between routers `u` and `v` with length `w`.
+
+The next `n` lines each contain one integer:
+
+`c_1`
+`c_2`
+...
+`c_n`
+
+where `c_v` is the transit capacity of router `v`.
+
+The next `q` lines each contain:
+
+`s_i t_i d_i p_i Δ_i`
+
+for request `i`.
+
+### Guarantees
+
+- Routers are numbered `1..n`.
+- No self-loops and no multiple links.
+- All link lengths are positive.
+- For every request, `s_i != t_i` and there exists at least one path from `s_i` to `t_i`.
+
+---
+
+## Output
+
+Output exactly `q` lines, one for each request in input order.
+
+For request `i`, output either:
+
+- `0`  
+  meaning the request is rejected,
+
+or
+
+- `k v_1 v_2 ... v_k`  
+  meaning the request is accepted on the path  
+  `v_1 -> v_2 -> ... -> v_k`
+
+with the following required conditions:
+
+- `v_1 = s_i`
+- `v_k = t_i`
+- `2 <= k <= n`
+
+### Feasibility
+
+Your output is **feasible** if all accepted requests satisfy the routing rules and all router capacities are respected.
+
+If your output is not feasible, the objective value for that test case is `0`.
+
+---
+
+## Objective
+
+Let `A` be the set of accepted requests in a feasible solution.
+
+Your objective value is
+
+`R = sum(p_i for i in A)`
+
+That is, maximize the total profit of accepted requests.
+
+---
+
+## Scoring
+
+Each test case is scored independently.
+
+Let:
+
+- `R` = your objective value
+- `U = sum_{i=1..q} p_i` = total profit of all requests
+- `B` = baseline objective value defined below
+
+### Baseline solution
+
+The judge computes `B` deterministically as follows:
+
+1. For each request `i`, compute a **canonical path**:
+   - among all shortest paths from `s_i` to `t_i`,
+   - choose the lexicographically smallest vertex sequence.
+2. Sort requests by:
+   1. decreasing `p_i / d_i`
+   2. increasing shortest-path distance `D_i`
+   3. increasing request index `i`
+3. Process requests in that order.
+   - Accept request `i` if every internal router on its canonical path has at least `d_i` residual capacity.
+   - If accepted, subtract `d_i` from the residual capacity of every internal router on that path.
+   - Otherwise reject it.
+
+The resulting total profit is `B`.
+
+### Test case score
+
+Define `clamp(x) = min(1, max(0, x))`.
+
+- If `U = 0`, the test case score is `100`.
+- Else if `B = 0` or `B = U`, the test case score is:
+
+`100 * R / U`
+
+- Otherwise, the test case score is:
+
+`50 * clamp(R / B) + 50 * clamp((R - B) / (U - B))`
+
+So:
+- a solution with `R = 0` gets `0`,
+- the baseline gets `50`,
+- a solution achieving `R = U` gets `100`.
+
+### Final score
+
+Your final score is the arithmetic mean of the test case scores.
+
+---
+
+## Constraints
+
+- `2 <= n <= 500`
+- `1 <= m <= 100000`
+- `1 <= q <= 5000`
+- `1 <= w <= 10^9`
+- `1 <= c_v <= 10^9`
+- `1 <= d_i <= 10^9`
+- `1 <= p_i <= 10^9`
+- `0 <= Δ_i <= 10^9`
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+6 7 3
+1 2 1
+2 3 1
+3 6 1
+1 4 1
+4 5 1
+5 6 1
+2 5 2
+100
+2
+2
+2
+2
+100
+1 6 2 10 0
+2 5 2 8 0
+1 3 2 7 0
+```
+
+### Sample output
+```text
+4 1 4 5 6
+2 2 5
+3 1 2 3
+```
+
+### Explanation
+
+- Request 1 uses path `1-4-5-6`, length `3`, which equals its shortest possible length.
+- Request 2 uses `2-5`, length `2`.
+- Request 3 uses `1-2-3`, length `2`.
+
+Internal router loads:
+- Router 4: `2`
+- Router 5: `2`
+- Router 2: `2`
+
+All are within capacity.
+
+So the objective value is:
+
+`R = 10 + 8 + 7 = 25`
+
+For this instance:
+- `U = 25`
+- the baseline accepts requests 1 and 2 only, so `B = 18`
+
+Thus this sample output achieves the maximum possible score on this test case.
+```

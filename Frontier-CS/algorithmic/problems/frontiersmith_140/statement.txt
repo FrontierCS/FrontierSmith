@@ -1,0 +1,181 @@
+```markdown
+# Cul-de-Sac Campaign Planning
+
+## Problem
+
+Aming is running a one-day promotion on Screw Street, a dead-end road whose entrance and exit are the same point.  
+All households lie on the same side of the road. The distance from the entrance to household `i` is `S_i` meters, and the distances are given in nondecreasing order.
+
+Aming may perform **any number of round trips**. Every trip starts at the entrance, visits a chosen set of households, and returns to the entrance. Because the road is a dead end, if a trip serves at least one household, its walking distance is completely determined by the farthest household visited on that trip.
+
+To promote successfully at household `i`, Aming must bring a sample kit of weight `W_i`, gains revenue `R_i`, and suffers an additional on-site fatigue `A_i`.
+
+He carries kits in a backpack with capacity `C`.  
+Across the whole day, his total fatigue must not exceed `B`.
+
+Your task is to design a schedule of trips that maximizes total revenue.
+
+### Trip rules
+
+If a trip serves a nonempty set of households `T`, then:
+
+- the carried weight must satisfy  
+  `sum(W_i for i in T) <= C`
+- the trip fatigue is  
+  `2 * max(S_i for i in T) + sum(A_i for i in T)`
+
+A household may be served **at most once** in the whole day.
+
+The total fatigue of all trips must be at most `B`.
+
+---
+
+## Input
+
+The input describes one test instance.
+
+- Line 1: three integers `N, C, B`
+- Line 2: `N` integers `S_1, S_2, ..., S_N`
+- Line 3: `N` integers `W_1, W_2, ..., W_N`
+- Line 4: `N` integers `A_1, A_2, ..., A_N`
+- Line 5: `N` integers `R_1, R_2, ..., R_N`
+
+`S_1 <= S_2 <= ... <= S_N`.
+
+---
+
+## Output
+
+On the first line, output one integer `K` — the number of trips in your schedule.
+
+Then output `K` lines.  
+For trip `j`, output:
+
+- an integer `t_j` — the number of households served on this trip
+- followed by `t_j` distinct household indices
+
+So each trip line has the form:
+
+`t_j i_1 i_2 ... i_{t_j}`
+
+### Feasibility requirements
+
+Your output is **feasible** if and only if all of the following hold:
+
+1. `0 <= K <= N`
+2. Every `t_j >= 1`
+3. All listed indices are between `1` and `N`
+4. No household index appears more than once in the entire output
+5. For every trip `j`, the total weight of its households is at most `C`
+6. The sum of trip fatigues is at most `B`
+
+If the output is infeasible, the score for that test is `0`.
+
+The order of households inside one trip does **not** matter.
+
+---
+
+## Objective
+
+Let `Served` be the set of all households that appear in your output.
+
+Your objective value is
+
+`Value = sum(R_i for i in Served)`
+
+Higher is better.
+
+---
+
+## Scoring
+
+This is an **optimization problem**. There may be many feasible outputs.
+
+For each test, the judge also computes a deterministic **baseline schedule**:
+
+1. For each household `i`, compute its singleton efficiency  
+   `E_i = R_i / (2*S_i + A_i)`
+2. Sort households by:
+   - decreasing `E_i`
+   - then smaller `S_i`
+   - then smaller index
+3. Scan in that order.  
+   Maintain `used = 0` fatigue and an initially empty baseline schedule.
+   For each household `i`:
+   - if `used + (2*S_i + A_i) <= B`, add a new trip containing only household `i`, and increase `used` by `2*S_i + A_i`
+   - otherwise skip `i`
+
+Let `Base` be the total revenue of the baseline schedule.
+
+For a feasible submission with objective value `Value`, the score on that test is
+
+`Score_test = clamp(0, 2000000, round(1000000 * Value / Base))`
+
+where `clamp(L, U, x) = min(U, max(L, x))`.
+
+- The baseline gets exactly `1,000,000` points on that test.
+- Better solutions get more.
+- Worse solutions get less.
+- Infeasible solutions get `0`.
+
+If there are multiple hidden tests, the final score is the arithmetic mean of `Score_test` over all tests.
+
+---
+
+## Constraints
+
+- `1 <= N <= 5000`
+- `1 <= C <= 1000`
+- `1 <= B <= 10^12`
+- `1 <= S_i <= 10^9`
+- `1 <= W_i <= C`
+- `1 <= A_i <= 1000`
+- `1 <= R_i <= 10^6`
+- `S_1 <= S_2 <= ... <= S_N`
+- `2*S_i + A_i <= B` for every `i`  
+  (so every household is individually feasible)
+
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+5 7 24
+1 2 4 5 6
+3 2 4 3 5
+1 2 2 3 4
+6 5 10 11 12
+```
+
+### Sample output
+```text
+2
+2 1 3
+1 4
+```
+
+### Explanation
+
+The output serves households `{1, 3, 4}`.
+
+- Trip 1 serves households `1` and `3`
+  - weight = `3 + 4 = 7`
+  - fatigue = `2*4 + (1 + 2) = 11`
+- Trip 2 serves household `4`
+  - weight = `3`
+  - fatigue = `2*5 + 3 = 13`
+
+Total fatigue = `11 + 13 = 24`, so the schedule is feasible.
+
+Total revenue = `6 + 10 + 11 = 27`.
+
+For this instance, the baseline described above gets revenue `21`, so this output receives
+
+`round(1000000 * 27 / 21) = 1285714`
+
+points on this test.
+```

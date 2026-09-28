@@ -1,0 +1,175 @@
+```markdown
+# Diagonal Resonance Seeding
+
+## Problem
+
+A laboratory floor is an `n × m` chessboard. The upper-left cell `(1,1)` is black, so a cell `(r,c)` is black iff `(r + c)` is even. Only black cells contain resonance nodes; white cells are empty.
+
+Each black cell `u` has:
+
+- a **threshold** `thr(u)` in `{1,2,3,4}`,
+- an **energy value** `val(u)`,
+- an **energy decay** `dec(u)`.
+
+You may manually activate up to `K` black cells at minute `0`. These are called **seeds**.
+
+After that, resonance spreads in discrete minutes:
+
+- Once a node becomes active, it stays active forever.
+- A black cell is **diagonally adjacent** to up to 4 black cells: `(r±1,c±1)` that stay inside the board.
+- At minute `t ≥ 1`, an inactive black cell becomes active if at least `thr(u)` of its diagonally adjacent black cells were already active before minute `t`.
+
+All activations within the same minute are simultaneous.
+
+If a node `u` becomes active at minute `t(u)`, it contributes
+
+`max(0, val(u) - dec(u) · t(u))`
+
+to your objective.  
+A node that never activates contributes `0`.
+
+Your task is to choose the seed cells to maximize total collected energy.
+
+---
+
+## Input
+
+The input describes one test case.
+
+- The first line contains three integers `n`, `m`, and `K`.
+- The next `n` lines each contain `m` integers: the threshold matrix.
+- The next `n` lines each contain `m` integers: the value matrix.
+- The next `n` lines each contain `m` integers: the decay matrix.
+
+For white cells, all three matrices contain `0`, and those entries must be ignored.
+
+### Guaranteed input properties
+
+For every black cell `(r,c)`:
+
+- `1 ≤ thr(r,c) ≤ 4`
+- `1 ≤ val(r,c) ≤ 10^6`
+- `0 ≤ dec(r,c) ≤ 10^6`
+
+For every white cell `(r,c)`:
+
+- `thr(r,c) = val(r,c) = dec(r,c) = 0`
+
+---
+
+## Output
+
+Print a feasible seed set:
+
+- First line: one integer `s` — the number of chosen seeds.
+- Next `s` lines: two integers `r` and `c` — the coordinates of a seed cell.
+
+### Feasibility requirements
+
+Your output is feasible iff all of the following hold:
+
+- `0 ≤ s ≤ K`
+- all listed coordinates are distinct
+- every listed coordinate is a black cell inside the board
+
+If the output is infeasible, the submission receives objective value `0` for the test case.
+
+Coordinates are 1-indexed.
+
+---
+
+## Objective
+
+Let `S` be your chosen seed set.
+
+Define activation times as follows:
+
+- `t(u) = 0` for `u ∈ S`
+- for any other black cell `u`, `t(u)` is the smallest integer `t ≥ 1` such that at least `thr(u)` diagonally adjacent black cells `v` satisfy `t(v) < t`
+- if no such time exists, `t(u) = +∞`
+
+Your objective value is
+
+\[
+V = \sum_{\text{black } u,\ t(u)<\infty} \max(0,\ val(u)-dec(u)\cdot t(u)).
+\]
+
+Even if a node contributes `0` energy, it still counts as active and may help activate other nodes.
+
+Your goal is to **maximize `V`**.
+
+---
+
+## Scoring
+
+For each test case, the judge also computes a deterministic **baseline** solution:
+
+1. Consider all black cells.
+2. Sort them by:
+   - larger `val` first,
+   - then smaller row index,
+   - then smaller column index.
+3. Take the first `K` cells in that order as seeds.
+4. Simulate the same activation process and compute its objective value `V_base`.
+
+Let your objective value be `V_sub`.
+
+The score for the test case is
+
+\[
+\text{score} = 10^6 \cdot \min\left(5,\ \frac{V_{sub}}{\max(1,V_{base})}\right).
+\]
+
+If your output is infeasible, then `V_sub = 0`.
+
+For a test file containing multiple test cases, the final score is the arithmetic mean of per-case scores, rounded down to the nearest integer.
+
+---
+
+## Constraints
+
+- `1 ≤ n, m ≤ 600`
+- `1 ≤ K ≤ ⌈nm/2⌉`
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+These limits are chosen so that exact optimization is not expected to be feasible in general.
+
+---
+
+## Example
+
+### Input
+```text
+3 3 1
+1 0 1
+0 2 0
+1 0 1
+5 0 4
+0 10 0
+3 0 2
+0 0 0
+0 1 0
+0 0 0
+```
+
+### Output
+```text
+1
+2 2
+```
+
+### Explanation
+The seed is the center black cell `(2,2)`.
+
+- At minute `0`, `(2,2)` activates and contributes `10`.
+- At minute `1`, all four corners each have one active diagonal neighbor, so they activate:
+  - `(1,1)` contributes `5`
+  - `(1,3)` contributes `4`
+  - `(3,1)` contributes `3`
+  - `(3,3)` contributes `2`
+
+Total objective value: `10 + 5 + 4 + 3 + 2 = 24`.
+
+The baseline also chooses `(2,2)`, so here `V_sub = V_base = 24`, giving a score of `1,000,000`.
+```

@@ -1,0 +1,220 @@
+```markdown
+# Balanced Backbone Tree
+
+## Problem
+
+A company wants to build a communication backbone between `N` facilities.
+
+You are given a connected undirected graph with `N` vertices and `M` edges.  
+Edge `i` connects vertices `U_i` and `V_i` and has length `L_i`.
+
+Each facility `v` has a traffic weight `A_v`.  
+If facilities `x` and `y` communicate through the backbone, the amount of traffic between them is `A_x * A_y`.
+
+You must choose a **spanning tree** of the graph as the backbone.  
+After choosing the tree, you must assign each tree edge to exactly one of two maintenance crews:
+
+- `W` (white)
+- `B` (black)
+
+The company evaluates a solution by two criteria:
+
+1. **Communication efficiency**  
+   Communication between every pair of facilities uses the unique path in the chosen tree.  
+   If the path length between `x` and `y` in the tree is `dist(x, y)`, then this pair contributes  
+   `A_x * A_y * dist(x, y)` to the communication cost.
+
+2. **Crew workload balance**  
+   Let `Wload` be the sum of lengths of tree edges colored `W`, and `Bload` be the sum of lengths of tree edges colored `B`.  
+   The maintenance penalty is  
+   `Lambda * max(Wload, Bload)`.
+
+Your goal is to minimize the total cost.
+
+All arithmetic is done on integers exactly.
+
+---
+
+## Input
+
+Input is given in the following format:
+
+```text
+N M
+Lambda
+A_1 A_2 ... A_N
+U_1 V_1 L_1
+U_2 V_2 L_2
+...
+U_M V_M L_M
+```
+
+- Vertices are numbered `1` to `N`.
+- Edges are numbered `1` to `M` in input order.
+
+---
+
+## Output
+
+Output a solution in the following format:
+
+```text
+e_1 e_2 ... e_{N-1}
+S
+```
+
+- `e_1, e_2, ..., e_{N-1}` must be distinct edge indices between `1` and `M`.
+- These edges must form a spanning tree on all `N` vertices.
+- `S` must be a string of length `N-1`.
+- `S_k` must be either `W` or `B`, and gives the color of edge `e_k`.
+
+Any order of the chosen edges is allowed.
+
+If the selected edges are not distinct, do not form a spanning tree, or the output format is invalid, the submission is considered **infeasible** for that test case.
+
+---
+
+## Objective
+
+Let the chosen tree be `T`.
+
+For each unordered pair of vertices `{x, y}`, let `dist_T(x, y)` be the sum of edge lengths on the unique path between `x` and `y` in `T`.
+
+Define
+
+```text
+CommCost = sum over all 1 <= x < y <= N of A_x * A_y * dist_T(x, y)
+```
+
+Let
+
+- `Wload` = sum of lengths of edges in `T` colored `W`
+- `Bload` = sum of lengths of edges in `T` colored `B`
+
+Then
+
+```text
+Penalty = Lambda * max(Wload, Bload)
+TotalCost = CommCost + Penalty
+```
+
+Your objective is to **minimize `TotalCost`**.
+
+---
+
+## Scoring
+
+For each test case, the judge also computes a deterministic baseline solution:
+
+### Baseline construction
+1. Build a minimum spanning tree using Kruskal's algorithm on edge length `L_i`.
+   - Sort edges by `(L_i, i)` and process in that order.
+2. Color the chosen tree edges greedily to balance crew workloads:
+   - Sort the tree edges by `(-L_i, i)`.
+   - Process in that order.
+   - Assign the current edge to the crew with smaller current total load.
+   - If the loads are equal, assign it to `W`.
+
+Let:
+
+- `C_base` = `TotalCost` of the baseline solution
+- `C_sub` = `TotalCost` of your submitted solution
+
+If your submission is infeasible, the score for that test case is `0`.
+
+Otherwise, the score for that test case is:
+
+```text
+score = floor(1,000,000 * min(5, C_base / C_sub))
+```
+
+So:
+
+- matching the baseline gives `1,000,000`
+- doing better than the baseline gives more than `1,000,000`
+- the per-test score is capped at `5,000,000`
+
+The final score is the **sum of scores over all test cases**.
+
+---
+
+## Constraints
+
+- `2 <= N <= 1000`
+- `N - 1 <= M <= 5000`
+- `1 <= Lambda <= 10^12`
+- `1 <= A_v <= 10^6`
+- `sum(A_v) <= 10^6`
+- `1 <= U_i, V_i <= N`
+- `U_i != V_i`
+- `1 <= L_i <= 10^9`
+- The graph is connected.
+- No multiple edges:
+  - if `i != j`, then `{U_i, V_i} != {U_j, V_j}`
+
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+---
+
+## Example
+
+### Sample Input
+```text
+4 5
+10
+2 1 3 2
+1 2 4
+2 3 1
+3 4 3
+1 4 6
+1 3 2
+```
+
+### Sample Output
+```text
+1 2 3
+WBW
+```
+
+### Explanation
+
+The chosen edges are:
+
+- edge 1: `1-2` with length `4`, color `W`
+- edge 2: `2-3` with length `1`, color `B`
+- edge 3: `3-4` with length `3`, color `W`
+
+This is a spanning tree.
+
+Pairwise path lengths in the tree are:
+
+- `dist(1,2)=4`
+- `dist(1,3)=5`
+- `dist(1,4)=8`
+- `dist(2,3)=1`
+- `dist(2,4)=4`
+- `dist(3,4)=3`
+
+So the communication cost is
+
+```text
+2*1*4 + 2*3*5 + 2*2*8 + 1*3*1 + 1*2*4 + 3*2*3
+= 8 + 30 + 32 + 3 + 8 + 18
+= 99
+```
+
+The crew workloads are:
+
+- `Wload = 4 + 3 = 7`
+- `Bload = 1`
+
+Thus
+
+```text
+Penalty = 10 * max(7, 1) = 70
+TotalCost = 99 + 70 = 169
+```
+
+This may or may not be optimal; in this challenge, lower total cost yields a higher score.
+```

@@ -1,0 +1,195 @@
+```markdown
+# Mount Tai Resonance Necklace
+
+## Problem
+
+A jeweler is preparing a showcase necklace from carved Mount Tai stone beads.
+
+Each bead is a **regular triangular prism**. The three rectangular side faces carry three positive integers.  
+Because the bead can be rotated or flipped before being threaded, each bead may be used in any of its 6 prism symmetries:
+
+- `0`: `(x, y, z)`
+- `1`: `(y, z, x)`
+- `2`: `(z, x, y)`
+- `3`: `(x, z, y)`
+- `4`: `(z, y, x)`
+- `5`: `(y, x, z)`
+
+For each test case, you are given an inventory of `m` candidate beads. Bead `i` has numbers `(x_i, y_i, z_i)` and an intrinsic beauty value `p_i`.
+
+You must choose **exactly `n` distinct beads** from the inventory, choose one orientation for each chosen bead, and arrange them into a **cyclic necklace**.
+
+If two consecutive oriented beads in the cycle are
+
+- `A = (a1, a2, a3)`
+- `B = (b1, b2, b3)`
+
+then their **seam resonance** is
+
+`gcd(a1, b1) + gcd(a2, b2) + gcd(a3, b3)`.
+
+The necklace is cyclic, so bead `n` is adjacent to bead `1`.
+
+Your goal is to maximize the total resonance beauty of the necklace.
+
+---
+
+### Total resonance beauty
+
+If the chosen beads, in cyclic order, are `v_1, v_2, ..., v_n` with chosen orientations `o_1, o_2, ..., o_n`, and the corresponding oriented triples are `t_1, t_2, ..., t_n`, then
+
+`Objective = (sum of p_{v_i} for i = 1..n) + (sum of seam resonance between t_i and t_{i+1})`
+
+where `t_{n+1} = t_1`.
+
+The starting point of the cycle does not matter; any rotation of the same cyclic arrangement has the same objective.
+
+## Input
+
+The first line contains an integer `T`, the number of test cases.
+
+For each test case:
+
+- The first line contains two integers `m` and `n`.
+- Then follow `m` lines. The `i`-th of these lines contains four integers:
+
+`x_i y_i z_i p_i`
+
+meaning bead `i` has side numbers `(x_i, y_i, z_i)` and intrinsic beauty `p_i`.
+
+All given beads satisfy `gcd(x_i, y_i, z_i) = 1`.
+
+## Output
+
+For each test case, output exactly `n` lines.
+
+The `j`-th line must contain two integers:
+
+`id_j ori_j`
+
+where:
+
+- `id_j` is the index of the bead placed at position `j` in the cycle,
+- `ori_j` is an integer from `0` to `5` indicating which orientation is used.
+
+### Feasibility requirements
+
+For each test case:
+
+- all `id_j` must be distinct,
+- each `id_j` must be between `1` and `m`,
+- each `ori_j` must be between `0` and `5`,
+- exactly `n` beads must be output.
+
+If a test case output is invalid, its objective value is treated as `0`.
+
+## Objective
+
+For each test case, maximize:
+
+`U = sum(p of chosen beads) + sum over all n cyclic adjacencies of [gcd(face1, face1) + gcd(face2, face2) + gcd(face3, face3)]`
+
+after applying the selected orientations.
+
+More formally, let `perm(ori, x, y, z)` be the oriented triple defined by the orientation table above.  
+If position `j` uses bead `id_j` in orientation `ori_j`, and its oriented triple is `(a_j, b_j, c_j)`, then
+
+`U = sum_{j=1..n} p_{id_j} + sum_{j=1..n} ( gcd(a_j, a_{j+1}) + gcd(b_j, b_{j+1}) + gcd(c_j, c_{j+1}) )`
+
+with position `n+1` interpreted as position `1`.
+
+## Scoring
+
+Let:
+
+- `U` = your objective value for a test case,
+- `B` = the baseline objective value for the same test case.
+
+### Baseline solution
+
+The baseline is defined deterministically as follows:
+
+1. For every bead, compute its **canonical orientation**: the lexicographically smallest triple among its 6 orientations.
+2. Select the `n` beads with largest `p_i`.
+   - Break ties by smaller canonical triple,
+   - then by smaller index.
+3. Arrange the selected beads in nondecreasing order of their canonical triples.
+   - Break ties by smaller index.
+4. Use the canonical orientation for every selected bead.
+
+This always produces a feasible necklace.
+
+### Per-test score
+
+For each test case:
+
+`Score_case = 1,000,000 * clamp(U / B, 0, 2) / 2`
+
+where
+
+`clamp(x, 0, 2) = min(2, max(0, x))`.
+
+So:
+
+- invalid output gets `0`,
+- matching the baseline gets `500000`,
+- reaching at least twice the baseline gets `1000000`.
+
+### Total score
+
+If there are `T` test cases in the input file, the final score is
+
+`floor( (Score_1 + Score_2 + ... + Score_T) / T )`.
+
+## Constraints
+
+- `1 <= T <= 5`
+- `3 <= n <= m <= 5000`
+- `1 <= x_i, y_i, z_i <= 10^6`
+- `gcd(x_i, y_i, z_i) = 1`
+- `1 <= p_i <= 10^6`
+- Sum of `m` over all test cases in one file `<= 20000`
+
+- Time limit: 8 seconds
+- Memory limit: 1024 MB
+
+## Example
+
+### Sample input
+```text
+1
+4 3
+1 2 3 4
+1 3 2 5
+2 3 1 6
+1 1 1 1
+```
+
+### Sample output
+```text
+1 0
+2 1
+3 2
+```
+
+### Explanation
+
+The chosen oriented beads are:
+
+- bead 1, orientation 0: `(1, 2, 3)`
+- bead 2, orientation 1: `(3, 2, 1)`
+- bead 3, orientation 2: `(1, 2, 3)`
+
+Intrinsic beauty:
+- `4 + 5 + 6 = 15`
+
+Cyclic seam resonances:
+- between `(1,2,3)` and `(3,2,1)`: `gcd(1,3)+gcd(2,2)+gcd(3,1) = 1+2+1 = 4`
+- between `(3,2,1)` and `(1,2,3)`: `1+2+1 = 4`
+- between `(1,2,3)` and `(1,2,3)`: `1+2+3 = 6`
+
+Total objective:
+- `15 + 4 + 4 + 6 = 29`
+
+This may or may not be optimal; it is only a valid submission example.
+```

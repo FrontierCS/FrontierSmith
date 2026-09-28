@@ -1,0 +1,129 @@
+```markdown
+# XOR Route Reconfiguration
+
+## Problem
+A communication network is a tree with `n` routers, numbered from `1` to `n`.  
+Router `v` currently stores a 30-bit non-negative integer key `a_v`.
+
+For any two routers `u` and `v`, define the **route fingerprint** of the unique simple path from `u` to `v` as the bitwise XOR of the keys of all vertices on that path, including both endpoints.
+
+There are `q` service requests. Request `i` is described by four integers:
+
+- `u_i`, `v_i` — the endpoints of the route,
+- `t_i` — the required route fingerprint,
+- `w_i` — the penalty if this request is not met.
+
+You may **reprogram** routers before the network goes live.  
+If the final key of router `v` is changed from `a_v` to some other value, you pay a reprogramming cost `c_v` once, regardless of the new value.
+
+Your task is to choose final keys `b_1, b_2, ..., b_n` to minimize the total loss.
+
+A request is **satisfied** if the XOR of the keys on the path from `u_i` to `v_i` using the final keys `b` is exactly `t_i`.
+
+## Input
+The input contains a single test file.
+
+- The first line contains two integers `n` and `q`.
+- The second line contains `n` integers `a_1, a_2, ..., a_n`.
+- The third line contains `n` integers `c_1, c_2, ..., c_n`.
+- Each of the next `n-1` lines contains two integers `x` and `y`, meaning there is an edge between routers `x` and `y`.
+- Each of the next `q` lines contains four integers `u_i`, `v_i`, `t_i`, `w_i`.
+
+## Output
+Output exactly one line with `n` integers:
+
+`b_1 b_2 ... b_n`
+
+where `b_v` is the final key assigned to router `v`.
+
+### Feasibility requirements
+Your output is valid if and only if:
+
+- `0 <= b_v < 2^30` for every `v`.
+
+If the output is invalid, the submission receives score `0` on that test file.
+
+## Objective
+Let:
+
+- `EditCost = sum of c_v over all vertices v such that b_v != a_v`
+- `Penalty = sum of w_i over all requests i that are not satisfied`
+
+Your objective is to **minimize**
+
+`Loss = EditCost + Penalty`
+
+All calculations fit in signed 64-bit integers.
+
+## Scoring
+For each test file, let:
+
+- `L_base` be the loss of the **baseline solution** that performs no reprogramming at all, i.e. outputs `b_v = a_v` for every vertex.
+- `L_you` be the loss of your submitted output.
+
+The score for that test file is
+
+`score = max(0, floor(1,000,000 * (L_base - L_you) / (L_base + 1)))`
+
+This gives:
+
+- score `0` if you do not beat the baseline,
+- higher scores for better improvements,
+- a smooth gradient of scores as `Loss` decreases.
+
+The final score of a submission is the sum of `score` over all test files.
+
+## Constraints
+- `2 <= n <= 100000`
+- `1 <= q <= 200000`
+- `0 <= a_v < 2^30`
+- `1 <= c_v <= 10^9`
+- `1 <= u_i, v_i <= n`
+- `0 <= t_i < 2^30`
+- `1 <= w_i <= 10^9`
+- The given edges form a tree.
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample input
+```text
+5 4
+1 2 3 4 5
+5 1 4 2 3
+1 2
+1 3
+3 4
+3 5
+2 4 0 7
+2 5 5 6
+4 5 0 4
+1 4 2 3
+```
+
+### Sample output
+```text
+1 2 3 0 5
+```
+
+### Explanation
+Only router `4` is reprogrammed, from `4` to `0`, so the edit cost is `c_4 = 2`.
+
+Using the final keys:
+
+- path `2 -> 4` has XOR `2 xor 1 xor 3 xor 0 = 0`, satisfied,
+- path `2 -> 5` has XOR `2 xor 1 xor 3 xor 5 = 5`, satisfied,
+- path `4 -> 5` has XOR `0 xor 3 xor 5 = 6`, not satisfied,
+- path `1 -> 4` has XOR `1 xor 3 xor 0 = 2`, satisfied.
+
+So the total loss is:
+
+- unsatisfied penalty: `4`
+- edit cost: `2`
+
+Hence `Loss = 6`.
+
+The baseline keeps all keys unchanged. Its loss is `14`, so this output improves over baseline.
+```

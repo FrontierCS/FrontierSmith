@@ -49,11 +49,22 @@ logs/
 # Generated parquets / intermediate problem dirs
 data/problems/
 data/frontiercs/*.parquet
+!data/frontiercs/train_synthetic_200.parquet
 data/alebench/*.parquet
 
 # Public-but-large datasets (rebuild via scripts/download_hardtest.py + sample)
 Frontier-CS/algorithmic/problems/hardtest_smp_*
 Frontier-CS/algorithmic/problems/hardtest_*
+
+# FrontierSmith release files: statements, evaluators, and test data only
+Frontier-CS/algorithmic/problems/frontiersmith_[0-9]*/*
+!Frontier-CS/algorithmic/problems/frontiersmith_[0-9]*/statement.txt
+!Frontier-CS/algorithmic/problems/frontiersmith_[0-9]*/config.yaml
+!Frontier-CS/algorithmic/problems/frontiersmith_[0-9]*/chk.cc
+!Frontier-CS/algorithmic/problems/frontiersmith_[0-9]*/testdata/
+Frontier-CS/algorithmic/problems/frontiersmith_[0-9]*/testdata/*
+!Frontier-CS/algorithmic/problems/frontiersmith_[0-9]*/testdata/*.in
+!Frontier-CS/algorithmic/problems/frontiersmith_[0-9]*/testdata/*.ans
 
 # Runtime / experiment artifacts
 submissions/

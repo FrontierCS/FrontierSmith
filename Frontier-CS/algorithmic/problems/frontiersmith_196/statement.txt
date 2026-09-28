@@ -1,0 +1,240 @@
+```markdown
+# Lantern Recovery Plan
+
+## Problem
+
+A railway agency operates several long night routes.  
+On each route, service lanterns are installed at regular intervals, but parked maintenance trains may hide some lanterns from passing passengers.
+
+Before the conference season begins, the agency may **relocate** some maintenance trains to alternative sidings. Relocating a train costs money, and the total relocation budget is limited. Your task is to choose where each maintenance train should stand so that the total number of **visible lanterns**, aggregated over many routes and observation schedules, is as large as possible.
+
+### Routes and observation schedules
+
+There are `N` routes.  
+Route `i` is a segment from position `1` to position `L_i`.
+
+Each route has several observation schedules.  
+For one schedule with parameters `(v, w)`:
+
+- lanterns are at positions `v, 2v, 3v, ...` up to `L_i`,
+- each visible lantern contributes `w` points to the objective.
+
+So if `x` lanterns are visible for this schedule, it contributes `w * x`.
+
+### Maintenance trains
+
+There are `M` maintenance trains.  
+Each train belongs to exactly one route.
+
+For train `j`, you are given several **placement options** on its route.  
+Choosing an option means that the train occupies every integer position in the interval `[l, r]` of that option and costs `c`.
+
+Exactly **one** option must be chosen for every train.
+
+- Option `1` is always the train's current position and has cost `0`.
+- The sum of costs of all chosen options must not exceed the total budget `B`.
+
+Different trains may occupy overlapping intervals. This is allowed.
+
+### Visibility rule
+
+A lantern at position `p` on route `i` is **hidden** if at least one chosen train interval on route `i` contains `p`.  
+Otherwise it is **visible**.
+
+If several trains cover the same lantern, it is still counted as hidden only once.
+
+Your goal is to maximize the total weighted number of visible lanterns over all schedules on all routes.
+
+---
+
+## Input
+
+The input describes a single optimization instance.
+
+- The first line contains three integers `N M B`  
+  — the number of routes, the number of maintenance trains, and the total relocation budget.
+
+Then follow the route descriptions.
+
+For each route `i = 1..N`:
+
+- one line with two integers `L_i H_i`  
+  — the length of the route and the number of observation schedules on this route;
+- then `H_i` lines follow, each containing two integers `v_{i,k} w_{i,k}`  
+  — lantern period and weight of the `k`-th schedule on route `i`.
+
+Then follow the train descriptions.
+
+For each train `j = 1..M`:
+
+- one line with two integers `route_j D_j`  
+  — the route to which the train belongs and the number of placement options for this train;
+- then `D_j` lines follow, each containing three integers `c_{j,t} l_{j,t} r_{j,t}`  
+  — cost and occupied interval of option `t`.
+
+For every train:
+
+- option `1` has `c_{j,1} = 0`,
+- all its options lie on the same route `route_j`,
+- `1 <= l_{j,t} <= r_{j,t} <= L_{route_j}`.
+
+---
+
+## Output
+
+Output exactly `M` integers:
+
+`x_1 x_2 ... x_M`
+
+where `x_j` is the chosen option index for train `j` (`1 <= x_j <= D_j`).
+
+### Feasibility requirements
+
+Your output is **feasible** if all of the following hold:
+
+- exactly one option is chosen for each train;
+- every chosen index is in range;
+- the total chosen cost does not exceed `B`.
+
+If the output is malformed or infeasible, the score for that test instance is `0`.
+
+---
+
+## Objective
+
+For a feasible solution:
+
+- Let `U_i` be the union of intervals chosen for trains belonging to route `i`.
+- For each schedule `(v, w)` on route `i`, the lantern positions are:
+  `v, 2v, ..., floor(L_i / v) * v`.
+- A lantern is visible iff its position is **not** in `U_i`.
+
+The objective value is:
+
+\[
+\text{Value} = \sum_{i=1}^{N} \sum_{k=1}^{H_i} w_{i,k} \cdot \Big(\#\{\text{multiples of } v_{i,k} \text{ in } [1,L_i] \text{ not covered by } U_i\}\Big)
+\]
+
+Your task is to **maximize** `Value`.
+
+It is guaranteed that the objective value of any feasible solution fits in a signed 64-bit integer.
+
+---
+
+## Scoring
+
+For each test instance:
+
+- Let `BASE` be the objective value of the **baseline solution** that chooses option `1` for every train.
+- Let `MAXFREE` be the total weighted number of lanterns if **no train hid any lantern at all**, i.e.
+
+\[
+\text{MAXFREE} = \sum_{i=1}^{N} \sum_{k=1}^{H_i} w_{i,k} \cdot \left\lfloor \frac{L_i}{v_{i,k}} \right\rfloor
+\]
+
+- Let `VAL` be your solution's objective value.
+
+The instance score is:
+
+- `100`, if `MAXFREE = BASE`;
+- otherwise
+
+\[
+\text{Score} = 100 \cdot \operatorname{clamp}\!\left(\frac{VAL - BASE}{MAXFREE - BASE},\, 0,\, 1\right)
+\]
+
+where `clamp(x,0,1) = max(0, min(1, x))`.
+
+So:
+
+- matching the baseline gives score `0`,
+- reaching the theoretical no-blockage upper bound gives score `100`,
+- intermediate improvements receive proportionally intermediate scores.
+
+The final score is the arithmetic mean of instance scores over the whole test set.
+
+---
+
+## Constraints
+
+- `1 <= N <= 200`
+- `1 <= M <= 5000`
+- `0 <= B <= 10^12`
+- `1 <= L_i <= 10^9`
+- `1 <= H_i`
+- `1 <= v_{i,k} <= L_i`
+- `1 <= w_{i,k} <= 10^4`
+- `1 <= D_j <= 8`
+- `0 <= c_{j,t} <= 10^12`
+- Sum of all `H_i` over all routes: at most `20000`
+- Sum of all `D_j` over all trains: at most `30000`
+
+These limits are intended for heuristic optimization; exact optimization is not expected to be tractable in general.
+
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+---
+
+## Example
+
+### Input
+```text
+1 2 4
+20 2
+2 1
+5 3
+1 2
+0 4 8
+4 12 15
+1 2
+0 10 14
+3 16 18
+```
+
+### Output
+```text
+2 1
+```
+
+### Explanation
+
+There is one route of length `20` with two schedules:
+
+- period `2`, weight `1`
+- period `5`, weight `3`
+
+Two trains belong to this route.
+
+The output chooses:
+
+- train 1: option 2, interval `[12,15]`, cost `4`
+- train 2: option 1, interval `[10,14]`, cost `0`
+
+Total cost is `4`, so the solution is feasible.
+
+The blocked union is `[10,15]`.
+
+- For period `2`, lanterns are at `2,4,6,8,10,12,14,16,18,20`.  
+  Hidden: `10,12,14` → `7` visible.
+- For period `5`, lanterns are at `5,10,15,20`.  
+  Hidden: `10,15` → `2` visible, weighted contribution `2 * 3 = 6`.
+
+So `VAL = 7 + 6 = 13`.
+
+Baseline (`option 1` for both trains) blocks `[4,8]` and `[10,14]`, giving `BASE = 10`.
+
+With no blocking at all:
+- period `2`: `10` lanterns
+- period `5`: `4` lanterns weighted by `3` gives `12`
+
+Hence `MAXFREE = 22`.
+
+The instance score is:
+
+\[
+100 \cdot \frac{13 - 10}{22 - 10} = 25
+\]
+
+(up to the judge's floating-point formatting).
+```

@@ -1,0 +1,159 @@
+```markdown
+# Noruz Rich Envelopes
+
+## Problem
+For Noruz, Goshtasp has prepared a stock of commemorative coins.  
+Each coin has a denomination that is either **1** or a **prime number**.
+
+There are `C` children. Child `i` wants an Eidi envelope whose total value is exactly `t_i`, and has importance `w_i`.
+
+You must decide how to distribute the available coins among the children.
+
+An envelope given to one child is called **rich** if **no denomination appears more than once inside that envelope**.  
+For example, `{2, 3, 5}` and `{1, 7}` are rich, but `{3, 3}` and `{1, 1, 5}` are not.
+
+A child is **satisfied** if:
+- all coins assigned to that child form a rich envelope, and
+- the sum of their denominations is exactly `t_i`.
+
+Each coin may be assigned to **at most one** child, or left unused.
+
+Your goal is to maximize the total importance of satisfied children.
+
+---
+
+## Input
+A single test case.
+
+- First line: two integers `M` and `C` — the number of coins and the number of children.
+- Second line: `M` integers `v_1, v_2, ..., v_M` — the coin denominations. Each `v_j` is guaranteed to be either `1` or a prime number.
+- Next `C` lines: two integers `t_i` and `w_i` — the target sum and importance of child `i`.
+
+### Constraints
+- `1 <= M <= 4000`
+- `1 <= C <= 1200`
+- `1 <= v_j <= 10^7`
+- `1 <= t_i <= 10^9`
+- `1 <= w_i <= 10^6`
+
+---
+
+## Output
+Print exactly `M` integers `a_1, a_2, ..., a_M`.
+
+For coin `j`:
+- `a_j = 0` means the coin is unused,
+- `a_j = i` means coin `j` is assigned to child `i`.
+
+### Validity
+Your output is considered syntactically valid if:
+- exactly `M` integers are printed,
+- each `a_j` satisfies `0 <= a_j <= C`.
+
+No other feasibility restrictions are imposed on the format.  
+If a child receives coins with repeated denominations, or the sum is wrong, that child is simply **not satisfied**.
+
+---
+
+## Objective
+For each child `i`, let `S_i` be the multiset of coin denominations assigned to that child.
+
+Child `i` contributes `w_i` to the objective if and only if:
+1. all values in `S_i` are pairwise distinct, and
+2. `sum(S_i) = t_i`.
+
+Otherwise child `i` contributes `0`.
+
+Your objective value is
+
+\[
+O = \sum_{i=1}^{C} \text{contribution}_i
+\]
+
+and must be **maximized**.
+
+---
+
+## Scoring
+Let:
+- `O` = your objective value on a test case,
+- `W = sum(w_i)` = total importance of all children,
+- `B` = the baseline objective value computed by the deterministic baseline algorithm below.
+
+### Baseline algorithm
+1. Sort children by:
+   - larger `w_i` first,
+   - then smaller `t_i`,
+   - then smaller index.
+2. Maintain all coins as initially unused.
+3. For each child in that order:
+   - set `rem = t_i`,
+   - scan the currently unused coins in:
+     - larger denomination first,
+     - then smaller coin index,
+   - greedily take a coin if:
+     - its denomination is at most `rem`, and
+     - that denomination has not already been taken for this child.
+   - stop early if `rem = 0`.
+   - if `rem = 0`, permanently assign the selected coins to this child;
+     otherwise discard the tentative selection and leave all scanned coins unused.
+
+The baseline score for the instance is the total importance of children satisfied by this construction.
+
+### Per-test score
+- If `B = W`:
+  - score is `1_000_000` if `O = W`,
+  - score is `0` otherwise.
+- Else:
+
+\[
+\text{score} = \left\lfloor 1{,}000{,}000 \cdot \frac{\max(0, O - B)}{W - B} \right\rfloor
+\]
+
+So:
+- matching the baseline gives score `0`,
+- beating the baseline gives a positive score,
+- satisfying all children gives score `1_000_000`.
+
+### Final score
+If multiple test files are used, the final score is the arithmetic mean of per-test scores, rounded down.
+
+---
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+### Sample input
+```text
+8 4
+2 3 5 7 11 1 3 13
+8 10
+9 14
+12 11
+18 25
+```
+
+### Sample output
+```text
+4 1 1 0 3 3 4 4
+```
+
+### Explanation
+The assignment means:
+- child 1 gets coins `{3, 5}` with sum `8` → satisfied, gains `10`
+- child 2 gets no coins → gains `0`
+- child 3 gets coins `{11, 1}` with sum `12` → satisfied, gains `11`
+- child 4 gets coins `{2, 3, 13}` with sum `18` → satisfied, gains `25`
+
+Total objective:
+
+\[
+O = 10 + 11 + 25 = 46
+\]
+
+This problem is intentionally large: exact optimization is generally infeasible, so heuristic and metaheuristic approaches are expected.
+```

@@ -1,0 +1,239 @@
+```markdown
+# Arcane Delivery Network
+
+## Problem
+The Ministry of Magic must prepare showcase potions for `k` exhibition labs spread across a castle.
+
+There are `n` ingredient batches. Ingredient `i` starts at some castle room, has:
+
+- a **color** `c_i` in `0..99`
+- a **volume** `w_i` (a positive integer)
+
+The castle is an undirected weighted graph. A batch may be moved between rooms, and batches meeting in the same room may be mixed.
+
+Your task is to output any valid sequence of moves and mixes that ends with exactly one final batch at each lab, minimizing the total cost.
+
+### Batch state
+Every batch has:
+- a current room
+- a current color in `0..99`
+- a current volume
+
+Initially, batch `i` is at its starting room, with color `c_i` and volume `w_i`.
+
+### Allowed operations
+
+#### 1) Move
+You may move a living batch `x` from its current room `u` to any room `v`.
+
+Let `dist(u,v)` be the shortest-path distance in the castle graph.
+
+The move costs:
+
+`dist(u,v) * volume(x)^2`
+
+After the move, batch `x` is located at room `v`.
+
+#### 2) Mix
+You may mix two distinct living batches `x` and `y` **only if they are in the same room**.
+
+If batch `x` has color `a`, volume `p`, and batch `y` has color `b`, volume `q`, then:
+
+- smoke produced: `p * q * a * b`
+- resulting color: `(a + b) mod 100`
+- resulting volume: `p + q`
+
+Batches `x` and `y` disappear, and a new batch is created in the same room.
+
+### New batch IDs
+Initial batch IDs are `1..n`.
+
+Each `MIX` operation creates one new batch.  
+If it is the `t`-th mix in your output, the new batch receives ID `n + t`.
+
+This numbering is deterministic and must be used by later operations.
+
+### Final requirement
+At the end of your sequence:
+
+- exactly `k` batches must remain alive
+- for each lab room, exactly one alive batch must be located there
+- there must be no alive batch in any non-lab room
+
+Each remaining batch is the delivered potion for that lab.
+
+Each lab `j` has:
+- a room `lab_j`
+- a target color `target_j`
+- a penalty coefficient `pen_j`
+
+If the final batch at lab `j` has color `f_j` and volume `v_j`, define the circular color distance:
+
+`delta(f_j, target_j) = min((f_j - target_j) mod 100, (target_j - f_j) mod 100)`
+
+The lab penalty is:
+
+`pen_j * delta(f_j, target_j) * v_j`
+
+You must minimize:
+
+`total move cost + total smoke + total lab penalties`
+
+---
+
+## Input
+The first line contains an integer `T`, the number of test cases.
+
+Each test case has the following format:
+
+- one line: `V E N K`
+- `E` lines: `u v d`  
+  undirected corridor between rooms `u` and `v` with length `d`
+- `N` lines: `s_i c_i w_i`  
+  starting room, color, and volume of ingredient batch `i`
+- `K` lines: `lab_j target_j pen_j`  
+  room of lab `j`, desired color, and penalty coefficient
+
+### Guarantees
+- the graph is connected
+- lab rooms are pairwise distinct
+- `N >= K`
+
+---
+
+## Output
+For each test case, output:
+
+- one line with an integer `Q` — the number of operations
+- then `Q` lines, each being one of:
+
+`MOVE x v`  
+Move living batch `x` to room `v`.
+
+`MIX x y`  
+Mix two distinct living batches `x` and `y`. They must currently be in the same room.
+
+### Feasibility requirements
+A solution is **invalid** for a test case if any of the following happens:
+
+- an operation references a non-existent or dead batch
+- a `MIX` uses batches in different rooms
+- the final state does not have exactly one alive batch at each lab room
+- there is any alive batch in a non-lab room
+- `Q` exceeds `300000`
+
+Invalid solutions receive score `0` for that test case.
+
+---
+
+## Objective
+For each test case, minimize the total cost:
+
+1. **Move cost**: sum over all `MOVE` operations  
+   `dist(current_room, destination) * volume^2`
+
+2. **Smoke cost**: sum over all `MIX` operations  
+   `volume_left * volume_right * color_left * color_right`
+
+3. **Lab penalties**: sum over labs in the final state  
+   `pen_j * delta(final_color_j, target_j) * final_volume_j`
+
+All quantities are integers. The judge uses exact integer arithmetic.
+
+---
+
+## Scoring
+This is an optimization problem with continuous scoring.
+
+For each test case, the judge computes a deterministic **baseline cost** `B` as follows:
+
+1. Compute all-pairs shortest-path distances.
+2. Reserve one ingredient for each lab:
+   - for `j = 1..K`, assign to lab `j` the still-unassigned ingredient minimizing  
+     `(dist(start_i, lab_j), i)`
+3. Assign every remaining ingredient to its nearest lab  
+   (tie by smaller lab index).
+4. Move every ingredient directly to its assigned lab.
+5. At each lab, sort assigned ingredient IDs increasingly and mix them in that order:
+   - if the IDs are `a1 < a2 < ... < am`
+   - first mix `a1` and `a2`
+   - then mix the resulting batch with `a3`
+   - and so on
+
+Let your valid solution cost be `C`.
+
+The score for that test case is:
+
+`score = min(2000, 1000 * B / C)`
+
+If the solution is invalid, the score is `0`.
+
+So:
+- matching the baseline gives `1000`
+- doing better than baseline gives more than `1000`
+- doing worse gives less than `1000`
+
+The final score is the average of test-case scores.
+
+---
+
+## Constraints
+- `1 <= T <= 20`
+- `2 <= V <= 200`
+- `V-1 <= E <= 2000`
+- `1 <= N <= 300`
+- `1 <= K <= 20`
+- `1 <= d <= 1000`
+- `0 <= c_i <= 99`
+- `1 <= w_i <= 20`
+- `0 <= target_j <= 99`
+- `1 <= pen_j <= 1000`
+
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+### Sample input
+```text
+1
+4 4 3 2
+1 2 3
+2 3 2
+3 4 3
+1 4 10
+1 40 2
+2 60 1
+3 20 2
+1 0 100
+4 80 50
+```
+
+### Sample output
+```text
+3
+MOVE 2 1
+MIX 1 2
+MOVE 3 4
+```
+
+### Explanation
+- Batch `2` moves from room `2` to room `1`  
+  cost = `dist(2,1) * 1^2 = 3`
+- Mix batch `1` (color `40`, volume `2`) with batch `2` (color `60`, volume `1`)  
+  smoke = `2 * 1 * 40 * 60 = 4800`  
+  new batch `4` has color `(40+60) mod 100 = 0`, volume `3`
+- Batch `3` moves from room `3` to lab room `4`  
+  cost = `dist(3,4) * 2^2 = 3 * 4 = 12`
+
+Final state:
+- lab at room `1`: batch `4`, color `0`, volume `3`  
+  penalty = `100 * 0 * 3 = 0`
+- lab at room `4`: batch `3`, color `20`, volume `2`  
+  color distance to target `80` is `40`, so penalty = `50 * 40 * 2 = 4000`
+
+Total cost = `3 + 4800 + 12 + 0 + 4000 = 8815`
+
+This is only a sample valid solution; it is not necessarily optimal.
+```

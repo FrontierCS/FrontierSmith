@@ -1,0 +1,205 @@
+```markdown
+# Valera's Parity Revision Plan
+
+## Problem
+
+Valera has a long list of `n` homework answers arranged in a line.  
+Answer `i` currently contributes `a_i` points to his total grade; this value may be negative.
+
+Valera may perform at most `K` **revision waves**.  
+A revision wave chooses a contiguous segment `[l, r]` and applies two effects to every position `i` in that segment:
+
+1. its contribution is multiplied by `-1`;
+2. its **revision parity bit** `x_i` is toggled (`0 -> 1`, `1 -> 0`).
+
+Initially, all parity bits are `0`.
+
+In addition to the point contributions, the teacher offers `M` **bonus cards**.  
+Bonus card `j` is described by:
+
+- a reward `w_j`,
+- a target bit `p_j` (`0` or `1`),
+- a set of positions `S_j`.
+
+After all revision waves are applied, Valera receives reward `w_j` **iff**
+the xor of the parity bits on the listed positions equals `p_j`:
+
+`x_{s1} xor x_{s2} xor ... xor x_{st_j} = p_j`.
+
+Your task is to output any feasible set of revision waves.  
+The judge will evaluate the total objective value of your plan.
+
+This is an optimization problem: better solutions receive higher scores.
+
+## Input
+
+The first line contains an integer `T` — the number of test cases.
+
+For each test case:
+
+- The first line contains three integers `n`, `K`, `M`.
+- The second line contains `n` integers `a_1, a_2, ..., a_n`.
+- Then follow `M` lines, one per bonus card.
+
+Each bonus-card line has the format:
+
+`w_j p_j t_j s_{j,1} s_{j,2} ... s_{j,t_j}`
+
+where:
+
+- `w_j` is the reward,
+- `p_j` is the target xor bit,
+- `t_j` is the number of listed positions,
+- `s_{j,1}, ..., s_{j,t_j}` are distinct 1-based indices.
+
+## Output
+
+For each test case, output:
+
+- one line with an integer `q` — the number of revision waves you use,
+- then `q` lines, each containing two integers `l r` describing a chosen segment `[l, r]`.
+
+### Feasibility requirements
+
+For every test case:
+
+- `0 <= q <= K`
+- `1 <= l <= r <= n`
+
+Segments may overlap arbitrarily.  
+Repeated or nested segments are allowed.
+
+If your output is malformed or infeasible for any test case, that test case receives objective value `-10^18`.
+
+## Objective
+
+Let `x_i` be the parity bit of position `i` after all chosen revision waves:
+`x_i = 1` iff position `i` is covered by an odd number of chosen segments.
+
+The final contribution of position `i` is:
+
+- `a_i` if `x_i = 0`
+- `-a_i` if `x_i = 1`
+
+So the total objective value for a test case is
+
+`V = sum_{i=1..n} a_i * (1 - 2*x_i) + sum_{j=1..M} bonus_j`
+
+where
+
+- `bonus_j = w_j` if `xor_{i in S_j} x_i = p_j`,
+- `bonus_j = 0` otherwise.
+
+Your goal is to **maximize** `V`.
+
+## Scoring
+
+For each test case, define:
+
+- `B` = the objective value of the **baseline solution** that uses `q = 0` revision waves,
+- `U` = the deterministic upper bound
+
+`U = sum_{i=1..n} |a_i| + sum_{j=1..M} w_j`.
+
+Let your solution's objective value be `V`.
+
+The per-test score is:
+
+- if `U = B`:
+  - `1,000,000` if `V = U`,
+  - `0` otherwise;
+- else:
+
+`score = 1,000,000 * clamp((V - B) / (U - B), 0, 1)`
+
+where `clamp(z, 0, 1) = max(0, min(1, z))`.
+
+The score for an input file is the arithmetic mean of its per-test scores.
+
+This scoring rule guarantees:
+
+- matching the baseline gets score `0`,
+- improving over the baseline increases score continuously,
+- reaching the upper bound gets score `1,000,000`.
+
+## Constraints
+
+For each test case:
+
+- `1 <= n <= 100000`
+- `0 <= K <= 250`
+- `0 <= M <= 200000`
+- `-10^4 <= a_i <= 10^4`
+- `1 <= w_j <= 10^6`
+- `0 <= p_j <= 1`
+- `1 <= t_j <= 8`
+- positions inside one bonus card are distinct
+
+Across the whole input file:
+
+- `sum n <= 200000`
+- `sum M <= 300000`
+- `sum t_j <= 1200000`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample Input
+```text
+1
+5 2 3
+-3 4 -2 1 5
+7 1 2 1 3
+5 0 3 2 4 5
+4 1 1 2
+```
+
+### Sample Output
+```text
+2
+1 1
+3 3
+```
+
+### Explanation
+
+The chosen segments toggle positions `1` and `3`, so:
+
+- `x = [1, 0, 1, 0, 0]`
+
+Final numeric contribution:
+
+- position 1: `-(-3) = 3`
+- position 2: `4`
+- position 3: `-(-2) = 2`
+- position 4: `1`
+- position 5: `5`
+
+Numeric total = `15`.
+
+Bonus cards:
+
+1. positions `{1, 3}`: `x_1 xor x_3 = 1 xor 1 = 0`, target is `1` → not earned
+2. positions `{2, 4, 5}`: `0 xor 0 xor 0 = 0`, target is `0` → earn `5`
+3. position `{2}`: `x_2 = 0`, target is `1` → not earned
+
+So the objective value is `V = 15 + 5 = 20`.
+
+Baseline (`q = 0`) gives:
+
+- numeric total `= -3 + 4 - 2 + 1 + 5 = 5`
+- only the second bonus card is satisfied, so `B = 10`
+
+Upper bound:
+
+`U = |−3| + |4| + |−2| + |1| + |5| + (7 + 5 + 4) = 15 + 16 = 31`
+
+Therefore the score is
+
+`1,000,000 * (20 - 10) / (31 - 10) = 476190.476...`
+
+before any rounding policy used by the contest system.
+```

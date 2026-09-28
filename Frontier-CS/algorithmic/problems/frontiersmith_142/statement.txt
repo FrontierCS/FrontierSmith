@@ -1,0 +1,140 @@
+```markdown
+# Anti-Harmonic Rack Balancing
+
+## Problem
+You are given `N` signal generators. Generator `i` has a fundamental frequency `A_i`.
+
+The generators must be placed into exactly `K` racks, and each rack must contain exactly `N / K` generators.
+
+Two generators placed in the same rack cause **harmonic interference** if one of their frequencies divides the other.  
+Formally, a pair of distinct indices `(i, j)` with `i < j` is a conflicting pair if both generators are assigned to the same rack and:
+
+- `A_i` divides `A_j`, or
+- `A_j` divides `A_i`.
+
+Note that equal frequencies also conflict, because `x` divides `x`.
+
+Your task is to output a rack assignment minimizing the total number of conflicting pairs.
+
+This is an optimization problem: any feasible assignment is accepted, and better assignments receive higher scores.
+
+## Input
+Input is given from Standard Input in the following format:
+
+```text
+N K
+A_1 A_2 ... A_N
+```
+
+## Output
+Output `N` integers:
+
+```text
+R_1 R_2 ... R_N
+```
+
+where `R_i` is the rack number assigned to generator `i`.
+
+A solution is **feasible** if all of the following hold:
+
+- `1 <= R_i <= K` for every `i`
+- every generator is assigned to exactly one rack
+- each rack contains exactly `N / K` generators
+
+If the output is infeasible, the score for that test file is `0`.
+
+## Objective
+Let `S_r` be the set of indices assigned to rack `r`.
+
+The interference of rack `r` is the number of unordered pairs `{i, j}` such that:
+
+- `i, j ∈ S_r`
+- `i < j`
+- `A_i` divides `A_j` or `A_j` divides `A_i`
+
+The total interference is:
+
+```text
+X = Σ(interference of rack r) for r = 1..K
+```
+
+Your objective is to **minimize `X`**.
+
+## Scoring
+For each test file, let:
+
+- `X` = your total interference
+- `B` = the total interference of the following baseline assignment:
+
+Baseline assignment:
+- for each `i` from `1` to `N`, assign generator `i` to rack `((i - 1) mod K) + 1`
+
+This baseline is always feasible because `K` divides `N`.
+
+The score for a test file is:
+
+```text
+score = 10^6 × min(5, (B + 1) / (X + 1))
+```
+
+- Lower interference gives a higher score.
+- Matching the baseline gives exactly `10^6`.
+- Better than the baseline gives more than `10^6`.
+- Worse than the baseline gives less than `10^6`.
+- The factor is capped at `5`.
+
+The final score is the sum of scores over all test files.
+
+## Constraints
+- `1 <= N <= 2 × 10^5`
+- `1 <= K <= 40`
+- `K` divides `N`
+- `1 <= A_i <= 10^6`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample Input
+```text
+6 2
+24 11 8 3 16 6
+```
+
+### Sample Output
+```text
+2 1 1 1 2 2
+```
+
+### Explanation
+The output places the generators into:
+
+- Rack 1: indices `2, 3, 4` → values `{11, 8, 3}`
+- Rack 2: indices `1, 5, 6` → values `{24, 16, 6}`
+
+Conflicting pairs:
+
+- Rack 1: none
+- Rack 2: `(24, 6)` conflicts because `6` divides `24`
+
+So the total interference is `X = 1`.
+
+The baseline assignment is:
+
+- Rack 1: indices `1, 3, 5` → values `{24, 8, 16}`
+- Rack 2: indices `2, 4, 6` → values `{11, 3, 6}`
+
+Baseline conflicts:
+
+- Rack 1: `(24, 8)`, `(8, 16)` → `2`
+- Rack 2: `(3, 6)` → `1`
+
+Hence `B = 3`.
+
+The score for this file is:
+
+```text
+10^6 × min(5, (3 + 1) / (1 + 1)) = 2,000,000
+```
+```

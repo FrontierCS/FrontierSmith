@@ -1,0 +1,254 @@
+```markdown
+# Crosswind Harvest on a Hex Map
+
+## Problem
+
+Stevie has decided not to flee to a single destination. Instead, she operates a fleet of harvesting drones in a hexagonal world with strong directional winds.
+
+The world is a finite hexagonal board of **radius** `R`, using **axial coordinates** `(q, r)`.  
+A cell belongs to the board if and only if:
+
+- `|q| ≤ R`
+- `|r| ≤ R`
+- `|q + r| ≤ R`
+
+The base is always at `(0, 0)`.
+
+Each drone starts at the base, may visit some resource cells, and must return to the base.  
+Moving to a neighboring cell has a cost that depends on:
+
+1. the **direction** of the move, and
+2. the **terrain multiplier** of the destination cell.
+
+The 6 movement directions are:
+
+1. `(q+1, r)`
+2. `(q, r+1)`
+3. `(q-1, r+1)`
+4. `(q-1, r)`
+5. `(q, r-1)`
+6. `(q+1, r-1)`
+
+If a drone moves in direction `d` into cell `v`, the move costs:
+
+`c_d × terrain(v)`
+
+Some cells are blocked and cannot be entered.
+
+Some cells contain harvestable resources with a positive value.  
+A resource is collected if and only if that cell is explicitly listed in at least one drone route.  
+Passing through a resource cell along an implicit shortest path does **not** collect it unless you listed it.
+
+You may use at most `K` drones.  
+Each drone has the same energy budget `B`.
+
+Your task is to output drone routes that maximize the total collected resource value.
+
+---
+
+## Input
+
+The first line contains an integer `T` — the number of test cases.
+
+For each test case:
+
+- The first line contains four integers  
+  `R K B S`
+  - `R` — board radius
+  - `K` — maximum number of drones
+  - `B` — per-drone energy budget
+  - `S` — number of special cells
+
+- The second line contains six integers  
+  `c1 c2 c3 c4 c5 c6`  
+  where `cd` is the base movement cost for direction `d`.
+
+- Then follow `S` lines, each describing one special cell:
+
+  `q r type w p`
+
+  where:
+
+  - `(q, r)` is a cell on the board, different from `(0, 0)`
+  - `type = 0` means the cell is **blocked**  
+    In this case `w = 0`, `p = 0`.
+  - `type = 1` means the cell is traversable and has terrain multiplier `w`, but no resource  
+    In this case `1 ≤ w ≤ 20`, `p = 0`.
+  - `type = 2` means the cell is traversable, has terrain multiplier `w`, and contains a resource of value `p`  
+    In this case `1 ≤ w ≤ 20`, `1 ≤ p ≤ 10^6`.
+
+All cells not listed among the `S` special cells are traversable, have terrain multiplier `1`, and contain no resource.
+
+The base cell `(0, 0)` is always traversable, has terrain multiplier `1`, and contains no resource.
+
+No cell appears more than once in the input.
+
+---
+
+## Output
+
+For each test case, output:
+
+- One line with an integer `m` — the number of drones you use (`0 ≤ m ≤ K`).
+- Then `m` lines follow, one per drone.
+
+Each drone line must have the form:
+
+`L q1 r1 q2 r2 ... qL rL`
+
+where:
+
+- `L` is the number of resource cells this drone will visit
+- each `(qj, rj)` must be a resource cell from the input (`type = 2`)
+
+The judge interprets this as the route:
+
+`(0,0) -> (q1,r1) -> (q2,r2) -> ... -> (qL,rL) -> (0,0)`
+
+For each leg between consecutive listed points, the drone is assumed to travel along a **minimum-cost path** in the underlying hex grid.
+
+### Feasibility rules
+
+For each test case:
+
+- `m` must satisfy `0 ≤ m ≤ K`
+- every listed stop must be a resource cell
+- every leg of every route must be reachable
+- the total minimum travel cost of each drone route must be at most `B`
+
+If any of these conditions fails for a test case, your objective value for that test case is `0`.
+
+### Important note
+
+If a minimum-cost path passes through another resource cell that you did not explicitly list, that resource is **not** collected.
+
+If the same resource cell is listed multiple times, or by multiple drones, its value is counted only once.
+
+---
+
+## Objective
+
+For each test case, let `O` be the sum of values of all distinct resource cells explicitly visited by at least one drone in a feasible solution.
+
+Your goal is to **maximize `O`**.
+
+---
+
+## Scoring
+
+Let, for a given test case:
+
+- `O` = your objective value
+- `U` = sum of values of **all** resource cells in the test case
+- `G` = baseline objective value, defined below
+
+### Baseline solution
+
+The baseline uses at most one resource per drone:
+
+1. For every resource cell `v`, compute its minimum round-trip cost  
+   `rt(v) = dist((0,0), v) + dist(v, (0,0))`
+2. Keep only cells with `rt(v) ≤ B`
+3. Sort the remaining cells by:
+   - decreasing ratio `value(v) / rt(v)`
+   - then decreasing `value(v)`
+   - then increasing `q`
+   - then increasing `r`
+4. Take the first `min(K, count)` cells in that order
+5. `G` is the sum of their values
+
+Ratio comparison is exact:  
+`a/b > c/d` iff `a*d > c*b`.
+
+### Per-test score
+
+For each test case, the score `S_test` is:
+
+- if `U = 0`, then `S_test = 10000`
+- else if `G >= U`, then  
+  `S_test = 10000 × O / U`
+- else if `O ≤ G`, then  
+  `S_test = 4000 × O / G`
+- else  
+  `S_test = 4000 + 6000 × (O - G) / (U - G)`
+
+The result is then clamped to `[0, 10000]`.
+
+### Final score
+
+Your final score is the arithmetic mean of `S_test` over all test cases.
+
+---
+
+## Constraints
+
+- `1 ≤ T ≤ 30`
+- `1 ≤ R ≤ 70`
+- `1 ≤ K ≤ 30`
+- `1 ≤ B ≤ 10^15`
+- `0 ≤ S ≤ 6000`
+- `1 ≤ c1, c2, c3, c4, c5, c6 ≤ 10^6`
+- Total number of special cells over all test cases: at most `80000`
+
+All computations fit in signed 64-bit integers.
+
+This is an optimization challenge: exact optimization is not expected.
+
+- Time limit: 10 seconds
+- Memory limit: 1024 MB
+
+---
+
+## Example
+
+### Input
+```text
+1
+2 2 7 5
+1 1 1 1 1 1
+1 0 2 1 5
+0 1 2 1 4
+1 -1 2 1 7
+-1 1 0 0 0
+0 -1 1 2 0
+```
+
+### Output
+```text
+2
+2 1 0 0 1
+1 1 -1
+```
+
+### Explanation
+
+There are 3 resource cells:
+
+- `(1,0)` with value `5`
+- `(0,1)` with value `4`
+- `(1,-1)` with value `7`
+
+All move costs are `1`, except entering `(0,-1)` would cost `2` because its terrain multiplier is `2`.
+
+The first drone visits `(1,0)` then `(0,1)` and returns to base.  
+Its total cost is `1 + 1 + 1 = 3`.
+
+The second drone visits `(1,-1)` and returns.  
+Its total cost is `1 + 1 = 2`.
+
+Both are within budget `B = 7`.
+
+So the total collected value is:
+
+`O = 5 + 4 + 7 = 16`
+
+The baseline would pick at most one resource per drone, namely `(1,-1)` and `(1,0)`, for:
+
+`G = 7 + 5 = 12`
+
+The total value of all resources is:
+
+`U = 16`
+
+So this output achieves the maximum possible objective for the instance.
+```

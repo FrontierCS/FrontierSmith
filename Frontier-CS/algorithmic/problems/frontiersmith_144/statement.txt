@@ -1,0 +1,202 @@
+```markdown
+# Monochrome Mural Compression
+
+## Problem
+
+You are restoring a rectangular mural made of unit cells.
+
+The mural has `H` rows and `W` columns. Each cell must end up in a target colour from `0` to `K`. Initially, **every** cell is colour `0`.
+
+You may perform repaint operations. In one operation, you choose:
+
+- integers `0 <= x1 < x2 <= W`
+- integers `0 <= y1 < y2 <= H`
+- a colour `c` with `0 <= c <= K`
+
+This defines the axis-aligned rectangle of cells
+
+- columns `x1, x1+1, ..., x2-1`
+- rows `y1, y1+1, ..., y2-1`
+
+The operation is **valid only if all cells in that rectangle currently have the same colour**. If valid, all cells in the rectangle are repainted to colour `c`.
+
+Overpainting is allowed: a cell may be repainted many times.
+
+Your task is to output any valid sequence of operations that transforms the initial all-`0` mural into the given target mural, while minimizing total cost.
+
+The cost of one repaint operation is:
+
+`10 + area`
+
+where
+
+`area = (x2 - x1) * (y2 - y1)`.
+
+So larger rectangles are cheaper per cell, but overpainting wastes area cost, and the monochrome-rectangle rule makes planning difficult.
+
+A solution is **feasible** if:
+
+1. every printed operation is valid when executed in order;
+2. after all operations, the mural exactly matches the target;
+3. the number of operations does not exceed `200000`.
+
+If any of these conditions fails, the solution is infeasible.
+
+---
+
+## Input
+
+The input describes one test instance.
+
+- The first line contains three integers `H`, `W`, `K`.
+- The next `H` lines each contain `W` integers: the target colours of the mural.
+
+### Constraints on the input
+
+- `1 <= H, W <= 60`
+- `1 <= K <= 255`
+- `0 <= target[y][x] <= K`
+- at least one target cell is non-zero
+
+Coordinates are zero-based:
+- `x` is the column index (`0 ... W-1`)
+- `y` is the row index (`0 ... H-1`)
+
+---
+
+## Output
+
+Print a repaint plan.
+
+- The first line must contain a single integer `q` — the number of operations.
+- The next `q` lines must each contain five integers:
+
+`x1 y1 x2 y2 c`
+
+representing one repaint operation.
+
+### Feasibility requirements
+
+Your output is considered feasible only if:
+
+- `0 <= q <= 200000`
+- every operation satisfies  
+  `0 <= x1 < x2 <= W`,  
+  `0 <= y1 < y2 <= H`,  
+  `0 <= c <= K`
+- each chosen rectangle is monochrome **at the moment it is painted**
+- the final mural equals the target mural exactly
+
+---
+
+## Objective
+
+Minimize the total repaint cost:
+
+`cost = sum over all operations (10 + painted_area)`
+
+where
+
+`painted_area = (x2 - x1) * (y2 - y1)`.
+
+If your output is infeasible, its objective value is treated as infinite.
+
+---
+
+## Scoring
+
+Let:
+
+- `C` = the cost of your feasible solution
+- `B` = the cost of the baseline solution
+
+### Baseline solution
+
+The baseline paints each non-zero target cell separately:
+
+- scan cells in row-major order;
+- for every cell whose target colour is not `0`, paint that single cell once to its target colour.
+
+This is always feasible because a `1 x 1` rectangle is always monochrome.
+
+If the number of non-zero target cells is `NZ`, then:
+
+`B = 11 * NZ`
+
+because each `1 x 1` repaint costs `10 + 1 = 11`.
+
+### Per-test score
+
+If your solution is infeasible, the score for that test is `0`.
+
+Otherwise:
+
+`score = round(1,000,000 * clamp(B / C, 0, 2))`
+
+where
+
+`clamp(v, 0, 2) = max(0, min(2, v))`.
+
+So:
+
+- matching the baseline gives about `1,000,000` points;
+- doing better than the baseline gives proportionally more;
+- scores are capped at `2,000,000` per test.
+
+### Overall score
+
+For a test set with multiple hidden instances, the final score is the sum of per-test scores.
+
+---
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 256 MB
+
+---
+
+## Example
+
+### Input
+```text
+3 4 3
+1 1 1 1
+1 2 2 1
+3 3 3 3
+```
+
+### Output
+```text
+3
+0 0 4 2 1
+1 1 3 2 2
+0 2 4 3 3
+```
+
+### Explanation
+
+The operations are:
+
+1. Paint the top two rows with colour `1`  
+   area `= 4 * 2 = 8`, cost `= 18`
+2. Paint the middle two cells of row `1` with colour `2`  
+   area `= 2`, cost `= 12`
+3. Paint the bottom row with colour `3`  
+   area `= 4`, cost `= 14`
+
+Total cost:
+
+`18 + 12 + 14 = 44`
+
+The baseline paints all `12` non-zero cells separately, so:
+
+`B = 12 * 11 = 132`
+
+Thus:
+
+`B / C = 132 / 44 = 3`
+
+After clamping to `2`, the score for this test is:
+
+`2,000,000`
+```

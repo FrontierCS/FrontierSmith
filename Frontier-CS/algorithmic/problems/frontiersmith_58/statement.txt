@@ -1,0 +1,199 @@
+```markdown
+# Reunion Cashflow Planner
+
+## Problem
+Your vacation group is finally trying to settle expenses, but this time people are allowed to use **two kinds of settlement actions**:
+
+1. **Online transfers** between any two people, which have a fee.
+2. **Cash meetups** at pre-announced locations/times.  
+   If several people attend the same meetup, they may exchange arbitrary amounts of cash among themselves at no additional cost.  
+   However, opening a meetup has a fixed inconvenience cost, each attendee has a travel cost, and each meetup has a capacity.
+
+Your task is to decide:
+- which meetup (if any) each person attends, and
+- which online transfers are made,
+
+so that every debt is settled and the **total inconvenience/fee cost** is minimized.
+
+A receipt `a b p` means person `a` paid `p` euros **for** person `b`.  
+Therefore, person `b` owes `p` euros to person `a`.
+
+Let the resulting net balance of person `i` be:
+- positive if `i` should receive money overall,
+- negative if `i` should pay money overall.
+
+The sum of all balances is always `0`.
+
+### Settlement rules
+- A person may attend **at most one** meetup.
+- If multiple people attend the same meetup, they may redistribute money arbitrarily among themselves for free.
+- Online transfers may happen between any two people, whether or not they attend meetups.
+- A person who does **not** attend any meetup must be balanced individually by online transfers.
+- People at the same meetup only need to be balanced **as a group** after accounting for online transfers, because they can settle the remainder in cash on-site.
+
+The challenge is to find a low-cost plan.
+
+## Input
+The input describes one instance.
+
+- The first line contains three integers  
+  `M N L`  
+  where:
+  - `M` is the number of people (`1 <= M <= 200`),
+  - `N` is the number of receipts (`0 <= N <= 5000`),
+  - `L` is the number of candidate meetups (`0 <= L <= 100`).
+
+- The next `N` lines each contain three integers  
+  `a b p`  
+  meaning person `a` paid `p` euros for person `b`  
+  (`0 <= a, b < M`, `a != b`, `1 <= p <= 10000`).
+
+- Then for each meetup `l = 0 .. L-1`:
+  - one line with two integers  
+    `cap_l open_l`  
+    where `cap_l` is the maximum number of attendees and `open_l` is the fixed cost to open this meetup,
+  - one line with `M` integers  
+    `travel_l,0 travel_l,1 ... travel_l,M-1`  
+    where `travel_l,i` is the travel cost for person `i` to attend meetup `l`, or `-1` if person `i` cannot attend that meetup.
+
+- Then an `M x M` matrix `S` follows:  
+  `M` lines, each with `M` integers.  
+  `S[u][v]` is the fixed fee for making one online transfer from `u` to `v`.  
+  The diagonal entries are `0`.
+
+- Then an `M x M` matrix `R` follows:  
+  `M` lines, each with `M` integers.  
+  `R[u][v]` is the per-euro fee for an online transfer from `u` to `v`.  
+  The diagonal entries are `0`.
+
+All costs and fees are nonnegative integers. You may think of them as cents.
+
+## Output
+Produce any feasible settlement plan.
+
+- First line: `M` integers `A_0 A_1 ... A_{M-1}`
+  - `A_i = -1` means person `i` attends no meetup.
+  - Otherwise `A_i` is the index of the meetup attended by person `i`.
+
+- Second line: one integer `K`, the number of online transfers.
+
+- Next `K` lines: three integers  
+  `u v x`  
+  meaning person `u` transfers `x` euros online to person `v`, with `1 <= x`.
+
+### Feasibility requirements
+Let `bal[i]` be the net balance derived from the receipts:
+- for each receipt `a b p`, do `bal[a] += p` and `bal[b] -= p`.
+
+Your output is feasible iff all of the following hold:
+
+1. For every person `i`, either `A_i = -1` or `0 <= A_i < L`.
+2. If `A_i = l`, then `travel_l,i != -1`.
+3. For every meetup `l`, the number of people with `A_i = l` is at most `cap_l`.
+4. Every transfer satisfies `0 <= u, v < M`, `u != v`, `x >= 1`.
+5. Balance condition:
+   - For every **nonempty meetup group** `G_l = { i | A_i = l }`, define
+     - `B_l = sum(bal[i] for i in G_l)`
+     - `F_l = (total online euros received by members of G_l) - (total online euros sent by members of G_l)`
+     Then `B_l + F_l` must equal `0`.
+   - For every person `i` with `A_i = -1`, define
+     - `F_i = (total online euros received by i) - (total online euros sent by i)`
+     Then `bal[i] + F_i` must equal `0`.
+
+A meetup with no assigned attendees is considered closed and costs nothing.
+
+Multiple transfers between the same ordered pair are allowed, but each listed transfer pays its own fixed fee.
+
+## Objective
+Minimize the total cost:
+
+- for each opened meetup `l`: `open_l`
+- for each assigned attendee `i` of meetup `l`: `travel_l,i`
+- for each online transfer `(u, v, x)`: `S[u][v] + R[u][v] * x`
+
+The transferred principal itself is **not** part of the cost, only the fees/inconvenience above.
+
+## Scoring
+For each test instance, let:
+
+- `C` = your total cost if your output is feasible,
+- `C = +infinity` if your output is infeasible or malformed.
+
+The judge also computes a deterministic **baseline** cost `B` as follows:
+
+1. No one attends any meetup.
+2. Construct the list of debtors `D` in increasing person index, where each debtor `i` has demand `-bal[i] > 0`.
+3. Construct the list of creditors `P` in increasing person index, where each creditor `j` has supply `bal[j] > 0`.
+4. Use the standard two-pointer settlement:
+   - match the first remaining debtor with the first remaining creditor,
+   - transfer the minimum of their remaining amounts directly online,
+   - if one side is exhausted, advance that pointer,
+   - continue until all balances are settled.
+5. The cost of those transfers is `B`.
+
+Your score on that test is:
+
+`score = 1,000,000 * min(2, (B + 1) / (C + 1))`
+
+If your output is infeasible, the score for that test is `0`.
+
+The final score is the arithmetic mean of the per-test scores over all official test instances.
+
+## Constraints
+- Time limit: 5 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample Input
+```text
+4 2 2
+0 1 6
+2 3 4
+2 5
+1 1 -1 -1
+2 5
+-1 -1 1 1
+0 10 10 10
+10 0 10 10
+10 10 0 10
+10 10 10 0
+0 0 0 0
+0 0 0 0
+0 0 0 0
+0 0 0 0
+```
+
+### Sample Output
+```text
+0 0 1 1
+0
+```
+
+### Explanation
+Balances are:
+- person 0: `+6`
+- person 1: `-6`
+- person 2: `+4`
+- person 3: `-4`
+
+The output sends persons `{0,1}` to meetup `0` and persons `{2,3}` to meetup `1`, with no online transfers.
+
+Each meetup group has total balance `0`, so the plan is feasible.
+
+Total cost:
+- open meetup `0`: `5`
+- travel for persons `0,1`: `1 + 1`
+- open meetup `1`: `5`
+- travel for persons `2,3`: `1 + 1`
+
+So the objective value is `14`.
+
+The baseline uses no meetups and makes two online transfers:
+- `1 -> 0` for `6`
+- `3 -> 2` for `4`
+
+Each costs fixed fee `10`, so baseline cost `B = 20`.
+Thus this solution scores
+
+`1,000,000 * (20 + 1) / (14 + 1) = 1,400,000`.
+```

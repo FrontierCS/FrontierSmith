@@ -1,0 +1,207 @@
+```markdown
+# Common Addition Script
+
+## Problem
+
+A workshop has **6 accumulators** `A1, A2, ..., A6`, all initially `0`.
+
+You must fulfill `M` orders.  
+For each order `q` (`1 <= q <= M`), the required value is `T_q`.
+
+You may execute a sequence of instructions on the accumulators. At any time, if some accumulator has value exactly `T_q`, you may mark order `q` as completed.
+
+Your goal is to complete **all** orders while using as few arithmetic instructions as possible.
+
+### Allowed instructions
+
+The accumulators always store nonnegative integers.
+
+- `INC i`  
+  Replace `A_i` with `A_i + 1`.
+
+- `ADD i j`  
+  Replace `A_i` with `A_i + A_j`.  
+  (`i = j` is allowed, so doubling is possible.)
+
+- `MOV i j`  
+  Replace `A_i` with `A_j`.
+
+- `CLR i`  
+  Replace `A_i` with `0`.
+
+- `OUT q i`  
+  Complete order `q` using accumulator `A_i`.  
+  This instruction is valid only if:
+  - order `q` has not been completed before, and
+  - `A_i = T_q`.
+
+All accumulator values must remain in the range `[0, 2^127 - 1]` throughout execution.
+
+You may complete the orders in any order.
+
+## Input
+
+The input consists of a single test case.
+
+```text
+M
+T_1
+T_2
+...
+T_M
+```
+
+- `M` is the number of orders.
+- `T_q` is the required value for order `q`.
+
+## Output
+
+Print:
+
+```text
+K
+instruction_1
+instruction_2
+...
+instruction_K
+```
+
+- `K` is the number of instructions.
+- Each instruction must be one of:
+
+```text
+INC i
+ADD i j
+MOV i j
+CLR i
+OUT q i
+```
+
+### Feasibility requirements
+
+Your output is **feasible** if and only if all of the following hold:
+
+1. `0 <= K <= 500000`.
+2. Every instruction is syntactically valid.
+3. Every referenced accumulator index is between `1` and `6`.
+4. Every referenced order index is between `1` and `M`.
+5. During execution, all accumulator values stay in `[0, 2^127 - 1]`.
+6. Every order `1..M` is completed **exactly once** by some valid `OUT`.
+7. No invalid `OUT` is used.
+
+If any condition is violated, the submission is infeasible.
+
+## Objective
+
+Let:
+
+- `S` = the number of arithmetic/state-changing instructions in your program, counting only  
+  `INC`, `ADD`, `MOV`, and `CLR`.
+- `OUT` instructions do **not** contribute to `S`.
+
+Your objective is to **minimize `S`**.
+
+## Scoring
+
+For each input instance, the judge computes a baseline cost `B` using the following fixed strategy:
+
+For each order `q = 1..M`, independently:
+
+1. If `q > 1`, execute `CLR 1`.
+2. Build `T_q` in `A1` from `0` using the standard binary method:
+   - If `T_q > 0`, first do `INC 1` to make `A1 = 1`.
+   - Then process the remaining bits of `T_q` from most significant to least significant:
+     - `ADD 1 1` for each next bit,
+     - and if that bit is `1`, also do `INC 1`.
+3. Execute `OUT q 1`.
+
+The baseline cost `B` is the number of `INC/ADD/MOV/CLR` instructions used by this strategy.
+
+Equivalently, for each `q`:
+
+- binary-build cost for `T_q` is  
+  `floor(log2(T_q)) + popcount(T_q)`  
+  (since `T_q >= 1`),
+- plus one `CLR` before each order except the first.
+
+So:
+
+```text
+B = (M - 1) + sum over q of ( floor(log2(T_q)) + popcount(T_q) )
+```
+
+### Score for one instance
+
+- If your output is infeasible, the score is `0`.
+- Otherwise, let `S` be your objective value. Your score is:
+
+```text
+score = round(10^9 * B / (B + S))
+```
+
+This score is larger when `S` is smaller.
+
+### Overall score
+
+For a multi-instance test set, the total score is the **sum** of the scores over all instances.
+
+## Constraints
+
+- `1 <= M <= 1000`
+- `1 <= T_q <= 10^18`
+- Time limit: 2 seconds
+- Memory limit: 1024 MB
+
+## Example
+
+### Sample input
+```text
+3
+3
+5
+6
+```
+
+### Sample output
+```text
+10
+INC 1
+ADD 1 1
+INC 1
+OUT 1 1
+MOV 2 1
+ADD 1 1
+OUT 3 1
+INC 2
+INC 2
+OUT 2 2
+```
+
+### Explanation
+
+The accumulators change as follows:
+
+- `INC 1` → `A1 = 1`
+- `ADD 1 1` → `A1 = 2`
+- `INC 1` → `A1 = 3`, so order 1 (`T_1 = 3`) can be completed
+- `MOV 2 1` → `A2 = 3`
+- `ADD 1 1` → `A1 = 6`, so order 3 (`T_3 = 6`) can be completed
+- `INC 2`, `INC 2` → `A2 = 5`, so order 2 (`T_2 = 5`) can be completed
+
+There are 7 counted instructions (`INC/ADD/MOV/CLR`) and 3 `OUT` instructions, so `S = 7`.
+
+For this instance, the baseline is:
+
+- `3`: `floor(log2 3)+popcount(3)=1+2=3`
+- `5`: `2+2=4`
+- `6`: `2+2=4`
+- plus `M-1 = 2` clears
+
+So `B = 3 + 4 + 4 + 2 = 13`.
+
+Therefore the score is:
+
+```text
+round(10^9 * 13 / (13 + 7)) = 650000000
+```
+```

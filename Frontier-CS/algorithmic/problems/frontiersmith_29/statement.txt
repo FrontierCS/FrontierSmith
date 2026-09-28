@@ -1,0 +1,198 @@
+```markdown
+# Adversarial Memory Table Design
+
+## Problem
+You are designing a table for a robot that plays a deterministic version of the game **Memory**.
+
+There are `2N` face-down card positions on a plane. You must assign `N` picture types to these positions, with each picture appearing on **exactly two** positions.
+
+After you submit an assignment, the judge simulates a robot with perfect memory. The robot starts at a given start location and repeatedly flips cards according to the fixed rules below. Your goal is to make the robot take as **much total time** as possible.
+
+### Robot state
+Each card position is always in exactly one of these states:
+
+- **unseen**: never flipped yet,
+- **seen-unmatched**: flipped before, currently face down, and its mate has not been removed,
+- **removed**: already matched and removed.
+
+The robot always remembers the locations and picture types of all seen-unmatched cards.
+
+### Travel cost
+The robot moves on the plane using Manhattan distance.
+
+For two points `(x1, y1)` and `(x2, y2)`, the movement cost is:
+
+`|x1 - x2| + |y1 - y2|`
+
+Each turn also has a fixed overhead cost `H`.
+
+### Robot strategy
+Let the robot's current location be `cur`.
+
+At the start of each turn:
+
+1. **If at least one known pair exists**  
+   (that is, there is some picture whose two cards are both in `seen-unmatched` state),
+   the robot removes one such pair immediately:
+   - Among all known pairs `{a, b}`, the robot chooses the reveal order `(u, v)` minimizing  
+     `dist(cur, u) + dist(u, v)`.
+   - Ties are broken by smaller `u`, then smaller `v`.
+   - The robot moves to `u`, flips it, then moves to `v`, flips it, and removes both cards.
+   - The turn ends at position `v`.
+
+2. **Otherwise, no known pair exists**
+   - The robot chooses the **nearest unseen** card `u` from `cur`.
+   - Ties are broken by smaller position index.
+   - The robot moves to `u` and flips it.
+
+   Now:
+   - If the mate of `u` is currently `seen-unmatched`, the robot immediately moves to that mate, flips it, removes the pair, and the turn ends.
+   - Otherwise, the robot chooses the **nearest unseen** card `v` from `u` (excluding `u`), again breaking ties by smaller index, moves to `v`, and flips it.
+     - If `u` and `v` have the same picture, they are removed.
+     - Otherwise, any flipped-but-not-removed cards become `seen-unmatched`.
+   - The turn ends at the second flipped card.
+
+The game ends when all cards are removed.
+
+### Your task
+Choose the picture assignment to maximize the robot's total completion time.
+
+Only equality matters: picture labels are arbitrary, but in your output each label must appear exactly twice.
+
+---
+
+## Input
+The input describes one test instance.
+
+```text
+N H
+xs ys
+x1 y1
+x2 y2
+...
+x2N y2N
+```
+
+- `N`: number of picture pairs
+- `H`: fixed overhead cost per turn
+- `(xs, ys)`: robot's start location
+- `(xi, yi)`: coordinates of card position `i` for `1 <= i <= 2N`
+
+All coordinates are integers.
+
+---
+
+## Output
+Output `2N` integers:
+
+```text
+p1 p2 ... p2N
+```
+
+where `pi` is the picture label assigned to position `i`.
+
+### Feasibility requirements
+A submission is **feasible** iff:
+
+- each `pi` is an integer,
+- `1 <= pi <= N`,
+- every label `1, 2, ..., N` appears **exactly twice**.
+
+Any infeasible output receives objective value `0` and score `0`.
+
+---
+
+## Objective
+Let:
+
+- `T` = number of turns used by the robot,
+- `D` = total Manhattan travel distance of the robot during the whole game.
+
+Your objective value is:
+
+```text
+V = D + H * T
+```
+
+Higher is better.
+
+The judge computes `V` exactly by simulating the robot strategy above on your assignment.
+
+---
+
+## Scoring
+For each test file, the judge also computes a **baseline assignment**:
+
+- positions `1` and `2` get picture `1`,
+- positions `3` and `4` get picture `2`,
+- ...
+- positions `2N-1` and `2N` get picture `N`.
+
+Let:
+
+- `V_you` = your objective value,
+- `V_base` = baseline objective value.
+
+Your score for that test file is:
+
+```text
+score = 1,000,000 * clamp(V_you / V_base, 0, 3)
+```
+
+where
+
+```text
+clamp(x, 0, 3) = max(0, min(3, x))
+```
+
+The overall contest score is the average of `score` over all test files.
+
+Higher is better.
+
+---
+
+## Constraints
+- `1 <= N <= 1000`
+- `0 <= H <= 10^6`
+- `-10^9 <= xs, ys, xi, yi <= 10^9`
+
+The search space size is:
+
+```text
+(2N)! / (2^N N!)
+```
+
+so exact optimization is not expected.
+
+- Time limit: 2 seconds
+- Memory limit: 1024 MB
+
+---
+
+## Example
+### Sample input
+```text
+2 5
+0 0
+0 1
+0 2
+10 0
+10 1
+```
+
+### Sample output
+```text
+1 2 1 2
+```
+
+### Explanation
+This output assigns the same picture to positions `(1, 3)` and `(2, 4)`.
+
+With this arrangement, the robot is forced to create remembered singletons early and then travel far to complete matches. The judge simulates the full process and computes:
+
+- your objective value `V_you`,
+- the baseline value `V_base` from pairing `(1,2)` and `(3,4)`,
+- score `= 1,000,000 * clamp(V_you / V_base, 0, 3)`.
+
+The sample output is only one valid solution; it is not guaranteed to be optimal.
+```

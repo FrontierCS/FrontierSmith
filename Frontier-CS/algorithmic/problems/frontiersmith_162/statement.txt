@@ -1,0 +1,189 @@
+```markdown
+# Sponsored Mural Contracts
+
+## Problem
+
+A city avenue has a mural made of **N** panels arranged in a row, numbered from **1** to **N**.
+
+Initially, every panel is **white**.  
+There are **C** paint colors, numbered **1** to **C**. White is treated as color **0**.
+
+You may perform at most **B** brush strokes. In one brush stroke, you choose:
+
+- a consecutive interval of panels `[l, r]` (`1 ≤ l ≤ r ≤ N`), and
+- a color `c` (`0 ≤ c ≤ C`),
+
+and repaint **all** panels in `[l, r]` to color `c`.  
+This overwrites any previous color on those panels.
+
+There are **M** sponsorship contracts. Contract `j` has:
+
+- a profit `p_j`, and
+- `q_j` required panel/color pairs, where `1 ≤ q_j ≤ 3`.
+
+A contract is **satisfied** if, after all your brush strokes, every listed panel has exactly its required color.  
+Panels not mentioned in the contract do not matter.
+
+Your task is to output any valid sequence of brush strokes that maximizes the total profit from satisfied contracts.
+
+---
+
+## Input
+
+The input is given in the following format:
+
+```text
+N C B M
+p_1 q_1 x_{1,1} col_{1,1} x_{1,2} col_{1,2} ... x_{1,q_1} col_{1,q_1}
+p_2 q_2 x_{2,1} col_{2,1} x_{2,2} col_{2,2} ... x_{2,q_2} col_{2,q_2}
+...
+p_M q_M x_{M,1} col_{M,1} x_{M,2} col_{M,2} ... x_{M,q_M} col_{M,q_M}
+```
+
+For each contract:
+
+- `p_j` is the profit,
+- `q_j` is the number of required panel/color pairs,
+- the panels `x_{j,1}, x_{j,2}, ..., x_{j,q_j}` are distinct and given in strictly increasing order,
+- each required color `col_{j,t}` satisfies `1 ≤ col_{j,t} ≤ C`.
+
+No contract ever requires white.
+
+---
+
+## Output
+
+Output a valid painting plan in the following format:
+
+```text
+T
+l_1 r_1 c_1
+l_2 r_2 c_2
+...
+l_T r_T c_T
+```
+
+where:
+
+- `0 ≤ T ≤ B`,
+- `1 ≤ l_i ≤ r_i ≤ N`,
+- `0 ≤ c_i ≤ C`.
+
+The brush strokes are applied **in the order written**.
+
+If your output is invalid, the submission receives objective value `0` on that test file.
+
+---
+
+## Objective
+
+Let the final color of panel `x` after all brush strokes be `final(x)`.
+
+Contract `j` is satisfied if for every required pair `(x_{j,t}, col_{j,t})`,
+
+```text
+final(x_{j,t}) = col_{j,t}
+```
+
+The objective value is:
+
+```text
+V = sum of p_j over all satisfied contracts
+```
+
+Your goal is to **maximize `V`**.
+
+---
+
+## Scoring
+
+For each test file:
+
+- Let `V` be your objective value.
+- Let
+
+```text
+U = p_1 + p_2 + ... + p_M
+```
+
+This is a trivial upper bound, since no solution can earn more than the sum of all contract profits.
+
+### Baseline
+The baseline solution performs **0** brush strokes.  
+Since contracts never require white, the baseline objective is always:
+
+```text
+V_base = 0
+```
+
+### Per-file score
+Your score for that test file is:
+
+```text
+floor(1,000,000,000 × (V - V_base) / (U - V_base))
+= floor(1,000,000,000 × V / U)
+```
+
+This value is clamped to the range `[0, 1,000,000,000]`.
+
+### Total score
+The total score of a submission is the **sum** of its per-file scores over all official test files.
+
+---
+
+## Constraints
+
+- `1 ≤ N ≤ 100000`
+- `1 ≤ C ≤ 8`
+- `0 ≤ B ≤ 5000`
+- `1 ≤ M ≤ 300000`
+- `1 ≤ q_j ≤ 3`
+- `1 ≤ p_j ≤ 10^9`
+- `1 ≤ x_{j,t} ≤ N`
+- `1 ≤ col_{j,t} ≤ C`
+- The `x_{j,t}` within one contract are distinct and strictly increasing
+
+## Constraints
+- Time limit: 2 seconds
+- Memory limit: 1024 MB
+
+## Example
+
+### Sample input
+```text
+8 2 3 5
+10 1 2 1
+7 2 3 1 4 1
+8 1 6 2
+9 2 2 1 6 2
+15 3 1 2 4 1 8 2
+```
+
+### Sample output
+```text
+3
+1 1 2
+2 4 1
+6 8 2
+```
+
+### Explanation
+After these 3 brush strokes, the final colors are:
+
+- panel 1: color 2
+- panels 2, 3, 4: color 1
+- panels 6, 7, 8: color 2
+- panels 5 remains white
+
+All 5 contracts are satisfied, so the objective value is:
+
+```text
+V = 10 + 7 + 8 + 9 + 15 = 49
+```
+
+Since `U = 49`, the score for this file is:
+
+```text
+floor(1,000,000,000 × 49 / 49) = 1,000,000,000
+```
+```

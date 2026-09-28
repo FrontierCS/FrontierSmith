@@ -1,0 +1,2 @@
+Frontier-CS/algorithmic/problems/frontiersmith_*/testdata/*.in -diff
+Frontier-CS/algorithmic/problems/frontiersmith_*/testdata/*.ans -diff

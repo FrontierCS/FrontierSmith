@@ -1,0 +1,182 @@
+```markdown
+# Timofey's Bundled Tree Disposal
+
+## Problem
+
+Timofey still has a painted tree with `n` vertices. This time he does **not** have to carry the whole tree from a single vertex. Instead, he may cut some edges and split the tree into several **connected bundles**. Each bundle will be carried separately.
+
+Timofey dislikes two things:
+
+1. **Mixed colors inside one bundle**  
+   A bundle is easier to wrap if most of its total weight comes from one color.
+
+2. **Awkward bundle sizes**  
+   Every bundle should have total weight close to a preferred target weight `L`.
+
+Creating too many bundles is also inconvenient, because each bundle needs its own wrapping and handling.
+
+Your task is to output **any partition of the tree into connected bundles** so as to minimize the total disposal cost.
+
+A bundle is any non-empty connected induced subgraph formed by the vertices assigned the same label. Together, all bundles must partition all vertices.
+
+---
+
+## Input
+
+The first line contains four integers:
+
+`n S P L`
+
+- `n` — number of vertices
+- `S` — fixed setup cost per bundle
+- `P` — penalty multiplier for bundle weight differing from `L`
+- `L` — preferred bundle weight
+
+The next `n - 1` lines each contain two integers `u v`, denoting an edge of the tree.
+
+The next line contains `n` integers `w1, w2, ..., wn` — the weights of the vertices.
+
+The next line contains `n` integers `c1, c2, ..., cn` — the colors of the vertices.
+
+### Limits
+
+- `2 <= n <= 200000`
+- `1 <= S <= 10^9`
+- `1 <= P <= 10^9`
+- `1 <= L <= 10^12`
+- `1 <= wi <= 10^9`
+- `1 <= ci <= 10^5`
+
+The input graph is guaranteed to be a tree.
+
+---
+
+## Output
+
+Print:
+
+- on the first line, an integer `m` — the number of bundles
+- on the second line, `n` integers `b1, b2, ..., bn` where `bi` is the bundle label of vertex `i`
+
+### Feasibility requirements
+
+Your output is feasible iff:
+
+- `1 <= m <= n`
+- each `bi` is an integer in `[1, m]`
+- every label from `1` to `m` is used by at least one vertex
+- for every label `t`, the set of vertices with `bi = t` induces a connected subgraph
+
+If the output is infeasible, the score for that test is `0`.
+
+---
+
+## Objective
+
+For each bundle `B`:
+
+- Let  
+  `W(B) = sum of wi over vertices in B`
+- For each color `x`, let  
+  `ColorWeight(B, x) = sum of wi over vertices in B with color x`
+- Let  
+  `M(B) = max_x ColorWeight(B, x)`
+
+Then the cost of bundle `B` is:
+
+`BundleCost(B) = S + (W(B) - M(B)) + P * |W(B) - L|`
+
+Interpretation:
+
+- `S` is the fixed cost of making one more bundle
+- `W(B) - M(B)` is the **impurity cost**: total weight not belonging to the dominant color of that bundle
+- `P * |W(B) - L|` is the **load mismatch cost**
+
+The total objective is:
+
+`TotalCost = sum of BundleCost(B) over all bundles B`
+
+Your goal is to **minimize `TotalCost`**.
+
+All costs are evaluated using exact integer arithmetic.
+
+---
+
+## Scoring
+
+This is an optimization problem. Lower `TotalCost` is better.
+
+For each test case, the judge also computes a deterministic **baseline solution**:
+
+### Baseline partition
+
+Root the tree at vertex `1`.
+
+Process vertices in postorder. For each vertex `v`, maintain the weight of the not-yet-cut connected part hanging at `v`.
+
+- Initially, this part contains only `v`
+- After all children of `v` are processed, merge into `v` every child part that was not already cut away
+- If `v != 1` and the current accumulated weight at `v` is **strictly greater than `L`**, then cut the edge between `v` and its parent and finalize the whole current part of `v` as one bundle
+- After processing all vertices, the remaining part containing vertex `1` becomes the last bundle
+
+Let `B` be the baseline total cost and `O` be your total cost.
+
+The score for that test is:
+
+`Score = 100 * B / (B + O)`
+
+Properties:
+
+- `0 < Score < 100` for every feasible nonnegative-cost output
+- matching the baseline gives `50`
+- beating the baseline gives a score above `50`
+- worse solutions get below `50`
+- infeasible output gives `0`
+
+The final score is the arithmetic mean of test-case scores.
+
+---
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+5 5 2 6
+1 2
+1 3
+3 4
+3 5
+2 4 3 2 1
+1 1 2 2 1
+```
+
+### Output
+```text
+2
+1 1 2 2 2
+```
+
+### Explanation
+
+This output creates two connected bundles:
+
+- Bundle 1: `{1, 2}`  
+  Total weight `6`, all weight is color `1`  
+  Cost = `5 + 0 + 2*|6-6| = 5`
+
+- Bundle 2: `{3, 4, 5}`  
+  Total weight `6`  
+  Color-2 weight = `3 + 2 = 5`, color-1 weight = `1`  
+  Impurity = `6 - 5 = 1`  
+  Cost = `5 + 1 + 2*|6-6| = 6`
+
+Total cost = `11`.
+
+For this instance, the baseline rooted at `1` produces one bundle containing all vertices, with a larger total cost, so this output would score above `50`.
+```

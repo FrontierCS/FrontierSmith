@@ -1,0 +1,256 @@
+```markdown
+# Interval Contracts on a Tree
+
+## Problem
+
+A company operates a hierarchy of depots arranged as a rooted tree with vertices numbered from `1` to `n`, rooted at vertex `1`.
+
+You must choose a nonnegative integer **local allocation** `a_v` for every vertex `v`.  
+This induces a **cumulative allocation**
+
+\[
+s_v = \sum_{u \text{ on the path } 1 \to v} a_u
+\]
+
+for each vertex `v`.
+
+Your allocation affects three things:
+
+1. **Contracts**  
+   There are `q` contracts. Contract `j` is attached to a vertex `v_j`, an interval `[L_j, R_j]`, and a reward `w_j`.  
+   You earn `w_j` if and only if the cumulative allocation `s_{v_j}` lies inside the interval:
+   \[
+   L_j \le s_{v_j} \le R_j
+   \]
+
+2. **Local costs**  
+   Allocating one unit at vertex `v` costs `c_v`.  
+   Total local cost is:
+   \[
+   \sum_{v=1}^n c_v \cdot a_v
+   \]
+
+3. **Interference penalties**  
+   There are `m` interference pairs. Pair `i` consists of vertices `(x_i, y_i)` and penalty `p_i`.  
+   If both vertices receive a positive local allocation, i.e. `a_{x_i} > 0` and `a_{y_i} > 0`, you pay `p_i`.
+
+Each vertex `v` also has a capacity `cap_v`, so your choice must satisfy:
+\[
+0 \le a_v \le cap_v
+\]
+and all `a_v` must be integers.
+
+Your goal is to output any feasible allocation maximizing the net profit.
+
+---
+
+## Input
+
+The input describes a single test case.
+
+- The first line contains three integers:
+  \[
+  n,\ q,\ m
+  \]
+- The second line contains `n-1` integers:
+  \[
+  p_2,\ p_3,\ \dots,\ p_n
+  \]
+  where `p_i` is the parent of vertex `i`.
+- The third line contains `n` integers:
+  \[
+  cap_1,\ cap_2,\ \dots,\ cap_n
+  \]
+- The fourth line contains `n` integers:
+  \[
+  c_1,\ c_2,\ \dots,\ c_n
+  \]
+- The next `q` lines each contain four integers:
+  \[
+  v_j,\ L_j,\ R_j,\ w_j
+  \]
+- The next `m` lines each contain three integers:
+  \[
+  x_i,\ y_i,\ p_i
+  \]
+
+All values are integers.
+
+---
+
+## Output
+
+Output exactly `n` integers:
+
+\[
+a_1,\ a_2,\ \dots,\ a_n
+\]
+
+Your output is **feasible** if all of the following hold:
+
+- `a_v` is an integer for every `v`
+- `0 \le a_v \le cap_v` for every `v`
+
+If the output is malformed or infeasible, the score for that test case is `0`.
+
+---
+
+## Objective
+
+For a feasible output, define:
+
+- `s_v` as the cumulative allocation on the root-to-`v` path
+- **Reward**
+  \[
+  \text{reward} = \sum_{j=1}^q 
+  \begin{cases}
+  w_j & \text{if } L_j \le s_{v_j} \le R_j \\
+  0 & \text{otherwise}
+  \end{cases}
+  \]
+- **Local cost**
+  \[
+  \text{cost} = \sum_{v=1}^n c_v \cdot a_v
+  \]
+- **Interference penalty**
+  \[
+  \text{penalty} = \sum_{i=1}^m
+  \begin{cases}
+  p_i & \text{if } a_{x_i} > 0 \text{ and } a_{y_i} > 0 \\
+  0 & \text{otherwise}
+  \end{cases}
+  \]
+
+The objective value is:
+
+\[
+\text{profit} = \text{reward} - \text{cost} - \text{penalty}
+\]
+
+Higher profit is better.
+
+---
+
+## Scoring
+
+Let:
+
+- `your` = profit of your feasible output
+- `base` = profit of the **baseline solution** defined by
+  \[
+  a_v = 0 \quad \text{for all } v
+  \]
+- `upper` = the trivial upper bound
+  \[
+  upper = \sum_{j=1}^q w_j
+  \]
+
+The per-test score is:
+
+- If `upper = base`:
+  - score = `1,000,000` if `your = base`
+  - score = `0` otherwise
+- Else:
+  \[
+  \text{score} = 1{,}000{,}000 \cdot \max\left(0,\ \min\left(1,\ \frac{your - base}{upper - base}\right)\right)
+  \]
+
+The final score is the arithmetic mean of per-test scores over all test cases.
+
+Notes:
+
+- Since costs and penalties are nonnegative, `your` cannot exceed `upper`.
+- Submissions are ranked by final score; there is no single required optimum output.
+
+---
+
+## Constraints
+
+- `2 \le n \le 100000`
+- `1 \le q \le 200000`
+- `0 \le m \le 200000`
+- `1 \le p_i < i \le n`
+- `0 \le cap_v \le 10^9`
+- `0 \le c_v \le 10^9`
+- `1 \le v_j \le n`
+- `0 \le L_j \le R_j \le 10^14`
+- `0 \le w_j \le 10^9`
+- `1 \le x_i < y_i \le n`
+- `0 \le p_i \le 10^9`
+
+All calculations fit in signed 64-bit integers.
+
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+---
+
+## Example
+
+### Input
+```text
+5 6 2
+1 1 2 2
+2 2 2 2 2
+1 2 2 1 1
+4 1 1 5
+5 2 2 6
+3 1 2 4
+2 1 1 3
+4 2 3 4
+1 1 1 2
+3 5 4
+2 3 3
+```
+
+### Output
+```text
+1 0 1 0 1
+```
+
+### Explanation
+
+The chosen local allocations are:
+
+- `a = [1, 0, 1, 0, 1]`
+
+So the cumulative allocations are:
+
+- `s_1 = 1`
+- `s_2 = 1`
+- `s_3 = 2`
+- `s_4 = 1`
+- `s_5 = 2`
+
+Satisfied contracts give rewards:
+
+- `(4, [1,1], 5)` satisfied
+- `(5, [2,2], 6)` satisfied
+- `(3, [1,2], 4)` satisfied
+- `(2, [1,1], 3)` satisfied
+- `(4, [2,3], 4)` not satisfied
+- `(1, [1,1], 2)` satisfied
+
+Total reward = `20`.
+
+Local cost:
+
+- `1*1 + 2*0 + 2*1 + 1*0 + 1*1 = 4`
+
+Interference penalties:
+
+- pair `(3,5)` is active, so pay `4`
+- pair `(2,3)` is not active
+
+Total penalty = `4`.
+
+Therefore profit = `20 - 4 - 4 = 12`.
+
+The baseline `a_v = 0` for all `v` has profit `0`, and `upper = 5+6+4+3+4+2 = 24`, so this output gets
+
+\[
+1{,}000{,}000 \cdot \frac{12-0}{24-0} = 500{,}000
+\]
+
+for this test case.
+```

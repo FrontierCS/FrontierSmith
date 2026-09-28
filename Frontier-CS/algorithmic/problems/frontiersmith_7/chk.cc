@@ -2,193 +2,160 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+struct SimResult {
+    bool feasible;
+    long long V;
+    long long B;
+};
+
+SimResult simulate(int n, int m,
+                   const set<pair<int,int>>& anomalies,
+                   const map<pair<int,int>, long long>& caches,
+                   const map<pair<int,int>, long long>& smps,
+                   long long s,
+                   const string& route) {
+    if ((long long)route.size() > 300000LL) return {false, 0, 0};
+
+    long long battery = s;
+    int r = 1, c = 1;
+    long long V = 0;
+
+    set<pair<int,int>> vis_cache;
+    set<pair<int,int>> vis_smp;
+
+    // Apply initial cell effects at (1,1)
+    {
+        auto pos = make_pair(r, c);
+        if (anomalies.count(pos)) battery = battery / 2;
+        if (caches.count(pos)) {
+            vis_cache.insert(pos);
+            battery += caches.at(pos);
+        }
+        if (smps.count(pos)) {
+            vis_smp.insert(pos);
+            V += smps.at(pos);
+        }
+    }
+
+    for (char ch : route) {
+        int nr = r, nc = c;
+        if      (ch == 'U') nr--;
+        else if (ch == 'D') nr++;
+        else if (ch == 'L') nc--;
+        else if (ch == 'R') nc++;
+        else return {false, 0, 0};
+
+        if (nr < 1 || nr > n || nc < 1 || nc > m) return {false, 0, 0};
+
+        battery--;
+        if (battery < 0) return {false, 0, 0};
+
+        r = nr; c = nc;
+        auto pos = make_pair(r, c);
+
+        if (anomalies.count(pos)) battery = battery / 2;
+
+        if (caches.count(pos) && !vis_cache.count(pos)) {
+            vis_cache.insert(pos);
+            battery += caches.at(pos);
+        }
+
+        if (smps.count(pos) && !vis_smp.count(pos)) {
+            vis_smp.insert(pos);
+            V += smps.at(pos);
+        }
+    }
+
+    if (r != n || c != m) return {false, 0, 0};
+    return {true, V, battery};
+}
+
 int main(int argc, char* argv[]) {
     registerTestlibCmd(argc, argv);
 
-    // ---- read input ----
-    int L = inf.readInt();
-    int N = inf.readInt();
-    int M = inf.readInt();
-    string S = inf.readToken(); // length L; S[k-1] is owner of route k (between islands k-1 and k)
+    int n    = inf.readInt();
+    int m    = inf.readInt();
+    int a    = inf.readInt();
+    int ccnt = inf.readInt();
+    int p    = inf.readInt();
+    long long s = inf.readLong();
 
-    vector<int> X(N), H(N), D(N);
-    vector<char> C(N);
-    for (int i = 0; i < N; i++) {
-        X[i] = inf.readInt();
-        string ci = inf.readToken();
-        C[i] = ci[0];
-        H[i] = inf.readInt();
-        D[i] = inf.readInt();
+    set<pair<int,int>> anomalies;
+    for (int i = 0; i < a; i++) {
+        int ri = inf.readInt();
+        int ci = inf.readInt();
+        anomalies.insert({ri, ci});
     }
 
-    vector<int> A(M), B(M);
-    vector<long long> W(M);
-    for (int j = 0; j < M; j++) {
-        A[j] = inf.readInt();
-        B[j] = inf.readInt();
-        W[j] = inf.readLong();
+    map<pair<int,int>, long long> caches;
+    long long total_g = 0;
+    for (int i = 0; i < ccnt; i++) {
+        int ri = inf.readInt();
+        int ci = inf.readInt();
+        long long g = inf.readLong();
+        caches[{ri, ci}] = g;
+        total_g += g;
     }
 
-    // prefix sums for bad-route counting
-    // prefBadA[k] = number of routes in [1..k] not owned by A (i.e., owned by J)
-    // prefBadJ[k] = number of routes in [1..k] not owned by J (i.e., owned by A)
-    vector<int> prefBadA(L + 1, 0), prefBadJ(L + 1, 0);
-    for (int k = 1; k <= L; k++) {
-        prefBadA[k] = prefBadA[k-1] + (S[k-1] != 'A' ? 1 : 0);
-        prefBadJ[k] = prefBadJ[k-1] + (S[k-1] != 'J' ? 1 : 0);
+    map<pair<int,int>, long long> smps;
+    for (int i = 0; i < p; i++) {
+        int ri = inf.readInt();
+        int ci = inf.readInt();
+        long long v = inf.readLong();
+        smps[{ri, ci}] = v;
     }
 
-    // bad(c, u, v) = number of routes on path u..v whose owner != c
-    auto badRoutes = [&](char c, int u, int v) -> int {
-        if (u > v) swap(u, v);
-        if (c == 'A') return prefBadA[v] - prefBadA[u];
-        else          return prefBadJ[v] - prefBadJ[u];
-    };
+    long long H = 1LL + s + total_g;
 
-    // ---- read participant output ----
-    vector<int> Li(N, -1), Ri(N, -1);
-    vector<bool> hired(N, false);
+    // Compute baseline: right (m-1) times then down (n-1) times
+    string baseline = string(m - 1, 'R') + string(n - 1, 'D');
+    SimResult base_res = simulate(n, m, anomalies, caches, smps, s, baseline);
+    // Problem guarantees baseline is always feasible
+    long long BASE = base_res.V * H + base_res.B;
 
-    for (int i = 0; i < N; i++) {
-        string tok = ouf.readToken();
-        if (tok == "-1") {
-            hired[i] = false;
-        } else {
-            // tok is l_i
-            int li, ri;
-            try {
-                li = stoi(tok);
-            } catch (...) {
-                quitf(_wa, "Resident %d: invalid token '%s'", i+1, tok.c_str());
-            }
-            ri = ouf.readInt();
-
-            // feasibility checks
-            if (li < 0 || li > L)
-                quitf(_wa, "Resident %d: l=%d out of range [0,%d]", i+1, li, L);
-            if (ri < 0 || ri > L)
-                quitf(_wa, "Resident %d: r=%d out of range [0,%d]", i+1, ri, L);
-            if (li >= ri)
-                quitf(_wa, "Resident %d: l=%d >= r=%d, need l < r", i+1, li, ri);
-            if (ri - li > D[i])
-                quitf(_wa, "Resident %d: r-l=%d exceeds D=%d", i+1, ri-li, D[i]);
-
-            hired[i] = true;
-            Li[i] = li;
-            Ri[i] = ri;
-        }
-    }
-
-    // Check no extra tokens remain in participant output
+    // Read participant route (may be empty for n=m=1)
+    string route = "";
     if (!ouf.seekEof()) {
-        quitf(_wa, "Extra output after %d lines", N);
+        route = ouf.readToken();
+    }
+    // Ensure no extra tokens
+    if (!ouf.seekEof()) {
+        quitf(_wa, "Extra output found after the route string. Ratio: 0.0");
     }
 
-    // ---- compute setup cost ----
-    long long setup_total = 0;
-    for (int i = 0; i < N; i++) {
-        if (!hired[i]) continue;
-        int li = Li[i], ri = Ri[i];
-        long long hi = (long long)H[i];
-        int cost_to_l = badRoutes(C[i], X[i], li);
-        int cost_to_r = badRoutes(C[i], X[i], ri);
-        long long setup = hi + (long long)min(cost_to_l, cost_to_r);
-        setup_total += setup;
+    SimResult res = simulate(n, m, anomalies, caches, smps, s, route);
+
+    if (!res.feasible) {
+        quitf(_wa, "Infeasible route (bad move, out of bounds, battery exhausted, or wrong endpoint). Ratio: 0.0");
     }
 
-    // ---- build graph and run Dijkstra per demand ----
-    // Edge: {to, cost}
-    struct Edge { int to, cost; };
-    vector<vector<Edge>> adj(L + 1);
+    long long OBJ = res.V * H + res.B;
 
-    // always-available adjacent-island routes, cost 1
-    for (int k = 1; k <= L; k++) {
-        adj[k-1].push_back({k, 1});
-        adj[k].push_back({k-1, 1});
-    }
-
-    // hired shuttle edges
-    for (int i = 0; i < N; i++) {
-        if (!hired[i]) continue;
-        int li = Li[i], ri = Ri[i];
-        int ec = badRoutes(C[i], li, ri);
-        adj[li].push_back({ri, ec});
-        adj[ri].push_back({li, ec});
-    }
-
-    // Dijkstra from a source
-    auto dijkstra = [&](int src) -> vector<int> {
-        vector<int> dist(L + 1, INT_MAX);
-        priority_queue<pair<int,int>, vector<pair<int,int>>, greater<pair<int,int>>> pq;
-        dist[src] = 0;
-        pq.push({0, src});
-        while (!pq.empty()) {
-            auto top = pq.top(); pq.pop();
-            int d = top.first, u = top.second;
-            if (d > dist[u]) continue;
-            for (int e = 0; e < (int)adj[u].size(); e++) {
-                int nd = d + adj[u][e].cost;
-                int v = adj[u][e].to;
-                if (nd < dist[v]) {
-                    dist[v] = nd;
-                    pq.push({nd, v});
-                }
-            }
-        }
-        return dist;
-    };
-
-    // cache Dijkstra results by source to avoid recomputation
-    unordered_map<int, vector<int>> dist_cache;
-
-    long long demand_total = 0;
-    for (int j = 0; j < M; j++) {
-        int src = A[j], dst = B[j];
-        if (dist_cache.find(src) == dist_cache.end()) {
-            dist_cache[src] = dijkstra(src);
-        }
-        long long sp = dist_cache[src][dst];
-        if (sp == INT_MAX) {
-            // Graph is always connected via adjacent edges, should never happen
-            quitf(_wa, "Demand %d: no path from %d to %d", j+1, src, dst);
-        }
-        demand_total += W[j] * sp;
-    }
-
-    long long U = setup_total + demand_total;
-
-    // ---- compute baseline B = sum W_j * |A_j - B_j| (hire nobody) ----
-    long long baseline = 0;
-    for (int j = 0; j < M; j++) {
-        baseline += W[j] * (long long)abs(A[j] - B[j]);
-    }
-
-    // ---- compute score ratio ----
-    // Statement: Score = floor(10^9 * min(5, B/U))
-    // Baseline (U=B): score = 10^9 = 1.0 * 10^9
-    // Maximum (B/U=5): score = 5*10^9
-    // Map to [0,1] for quitp: ratio = min(5, B/U) / 5
-    // So baseline -> ratio=0.2, maximum -> ratio=1.0
-    // This is consistent: quitp scores are relative; baseline is not "perfect" (ratio=1)
-    // but rather a known reference point. The problem rewards improvement beyond baseline.
-
+    // score = floor(500000 * min(2, OBJ / BASE))
+    // ratio for quitp = score / 1000000 = min(2, OBJ/BASE) / 2  (clamped to [0,1])
     double ratio;
-    if (U <= 0) {
-        ratio = 1.0;
+    if (BASE <= 0) {
+        // Should not happen per problem guarantee, but handle gracefully
+        ratio = (OBJ >= 0) ? 1.0 : 0.0;
     } else {
-        double bu = (double)baseline / (double)U;
-        double score_mult = (bu < 5.0) ? bu : 5.0; // min(5, B/U)
-        ratio = score_mult / 5.0;                   // normalize to [0,1]
+        double raw = (double)OBJ / (double)BASE; // in [0, 2+]
+        if (raw > 2.0) raw = 2.0;
+        ratio = raw / 2.0; // map [0,2] -> [0,1]
     }
-
+    // Clamp to [0,1]
     if (ratio < 0.0) ratio = 0.0;
     if (ratio > 1.0) ratio = 1.0;
 
-    // The Ratio tag is parsed by the judge
-    quitp(ratio,
-          "Ratio: %.10f | B=%lld U=%lld (setup=%lld demand=%lld) score=%.0f",
-          ratio, baseline, U, setup_total, demand_total,
-          floor(1e9 * ((ratio * 5.0) < 5.0 ? ratio * 5.0 : 5.0)));
+    long long score500k;
+    if (BASE <= 0) {
+        score500k = 500000;
+    } else {
+        double raw = (double)OBJ / (double)BASE;
+        if (raw > 2.0) raw = 2.0;
+        score500k = (long long)(500000.0 * raw);
+    }
 
-    return 0;
+    quitp(ratio,
+          "OBJ=%lld BASE=%lld H=%lld V=%lld B=%lld score=%lld Ratio: %.9f",
+          OBJ, BASE, H, res.V, res.B, score500k, ratio);
 }

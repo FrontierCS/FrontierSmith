@@ -1,0 +1,154 @@
+```markdown
+# Budgeted Overlay Design
+
+## Problem
+Masha is building a layered stencil machine.
+
+A base stencil is described by a set of `n` distinct positive integers `A = {a1, a2, ..., an}`.  
+If Masha chooses a positive integer shift `b`, that stencil layer exposes exactly the positions
+
+`A + b = {a1 + b, a2 + b, ..., an + b}`.
+
+Masha must choose exactly `k` **distinct** shifts `b1, b2, ..., bk`.  
+Each chosen shift `b` costs exactly `b`, and the total cost must not exceed a given budget `S`.
+
+When multiple layers expose the same position, that position is counted only once.
+
+Your goal is to design the shift set `B = {b1, ..., bk}` so that the total number of distinct exposed positions is as large as possible.
+
+Formally, maximize
+
+`| (A + b1) ∪ (A + b2) ∪ ... ∪ (A + bk) |`
+
+subject to all feasibility rules below.
+
+This is an optimization problem: every feasible output receives a score based on how good its objective value is.
+
+---
+
+## Input
+The first line contains an integer `t` — the number of test cases.
+
+Each test case consists of:
+
+- one line with four integers `n, k, U, S`
+- one line with `n` distinct integers `a1, a2, ..., an`
+
+### Constraints
+For every test case:
+
+- `1 ≤ t ≤ 50`
+- `1 ≤ n ≤ 250`
+- `1 ≤ k ≤ 120`
+- `k ≤ U ≤ 10^6`
+- `1 ≤ ai ≤ 10^6`
+- all `ai` are distinct
+- `k(k+1)/2 ≤ S ≤ 10^12`
+
+The last condition guarantees that the baseline solution `B = {1, 2, ..., k}` is always feasible.
+
+---
+
+## Output
+For each test case, output exactly two lines.
+
+- The first line must contain the word `YES`.
+- The second line must contain `k` **distinct** integers `b1, b2, ..., bk`.
+
+### Feasibility requirements
+For a test case, your output is feasible iff:
+
+- exactly `k` integers are printed,
+- all chosen shifts are distinct,
+- `1 ≤ bj ≤ U` for every `j`,
+- `b1 + b2 + ... + bk ≤ S`.
+
+If any requirement is violated, that test case receives objective value `0`.
+
+Any feasible set of shifts is allowed.
+
+---
+
+## Objective
+For a feasible output, define
+
+`Cover(B) = | ⋃_{b in B} { ai + b : 1 ≤ i ≤ n } |`
+
+That is, `Cover(B)` is the number of distinct integers among all `n*k` sums `ai + bj`.
+
+You must **maximize** `Cover(B)`.
+
+---
+
+## Scoring
+For each test case, define the **baseline** shift set as
+
+`B0 = {1, 2, ..., k}`
+
+which is always feasible by the input constraints.
+
+Let
+
+- `O = Cover(B)` be your objective value,
+- `O0 = Cover(B0)` be the baseline objective value.
+
+The per-test score is
+
+`score = clamp( 100 * O / O0 , 0 , 1000 )`
+
+where
+
+`clamp(x, L, R) = max(L, min(x, R))`.
+
+So:
+
+- matching the baseline gives `100` points on that test,
+- doing better than baseline gives more than `100`,
+- invalid output gives `0`,
+- the score is capped at `1000` per test.
+
+The final score for the whole input is the arithmetic mean of the per-test scores.
+
+---
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+Input
+```text
+1
+3 3 10 8
+1 2 4
+```
+
+Sample output
+```text
+YES
+1 3 4
+```
+
+Brief explanation:
+
+- The chosen shifts are distinct, in range `[1, 10]`, and their sum is `1 + 3 + 4 = 8`, so the output is feasible.
+- The exposed positions are:
+  - `A+1 = {2, 3, 5}`
+  - `A+3 = {4, 5, 7}`
+  - `A+4 = {5, 6, 8}`
+- Their union is `{2, 3, 4, 5, 6, 7, 8}`, so `Cover(B) = 7`.
+
+The baseline is `B0 = {1, 2, 3}`:
+
+- `A+1 = {2, 3, 5}`
+- `A+2 = {3, 4, 6}`
+- `A+3 = {4, 5, 7}`
+
+Its union is `{2, 3, 4, 5, 6, 7}`, so `O0 = 6`.
+
+Therefore the sample output gets per-test score
+
+`100 * 7 / 6 = 116.666...`
+```

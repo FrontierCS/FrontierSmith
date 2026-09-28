@@ -1,0 +1,56 @@
+{
+  "name": "FrontierSmith parity subset",
+  "num_problems": 10,
+  "problems": [
+    {
+      "problem_id": "frontiersmith_180",
+      "parity_index": 1,
+      "frontiercs_id": "306"
+    },
+    {
+      "problem_id": "frontiersmith_167",
+      "parity_index": 2,
+      "frontiercs_id": "307"
+    },
+    {
+      "problem_id": "frontiersmith_56",
+      "parity_index": 3,
+      "frontiercs_id": "308"
+    },
+    {
+      "problem_id": "frontiersmith_151",
+      "parity_index": 4,
+      "frontiercs_id": "309"
+    },
+    {
+      "problem_id": "frontiersmith_114",
+      "parity_index": 5,
+      "frontiercs_id": "310"
+    },
+    {
+      "problem_id": "frontiersmith_143",
+      "parity_index": 6,
+      "frontiercs_id": "311"
+    },
+    {
+      "problem_id": "frontiersmith_139",
+      "parity_index": 7,
+      "frontiercs_id": "312"
+    },
+    {
+      "problem_id": "frontiersmith_107",
+      "parity_index": 8,
+      "frontiercs_id": "313"
+    },
+    {
+      "problem_id": "frontiersmith_184",
+      "parity_index": 9,
+      "frontiercs_id": "314"
+    },
+    {
+      "problem_id": "frontiersmith_50",
+      "parity_index": 10,
+      "frontiercs_id": "315"
+    }
+  ]
+}

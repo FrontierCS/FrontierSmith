@@ -1,0 +1,176 @@
+```markdown
+# Ascending Workshop Tracks
+
+## Problem
+
+A conference has received a long list of workshop proposals in a fixed calendar order.  
+Proposal `i` has:
+
+- difficulty `d_i`
+- duration `t_i`
+- educational value `v_i`
+
+You may schedule proposals into `k` parallel study tracks. Track `j` has a total time budget `C_j`.
+
+A schedule is **feasible** if:
+
+1. Each proposal is assigned to **at most one** track.
+2. Within each track, assigned proposals appear in **strictly increasing index order**.
+3. Within each track, difficulties are **strictly increasing**.
+4. The sum of durations on track `j` does not exceed `C_j`.
+
+You may also skip proposals.
+
+Your goal is to build a high-value schedule.
+
+This is an optimization problem: exact methods are expected to be too slow on the full data, so good heuristics matter.
+
+## Input
+
+The first line contains a single integer `T`, the number of instances.
+
+For each instance:
+
+- The first line contains two integers `n` and `k`.
+- The second line contains `k` integers `C_1, C_2, ..., C_k`.
+- The next `n` lines each contain three integers `d_i, t_i, v_i`.
+
+## Output
+
+For each instance, output exactly `k` lines.
+
+For track `j`, output one line in the form:
+
+`s_j p_1 p_2 ... p_{s_j}`
+
+where:
+
+- `s_j` is the number of proposals assigned to track `j`
+- `p_1, p_2, ..., p_{s_j}` are the assigned proposal indices for that track
+
+Requirements for feasibility:
+
+- `0 <= s_j <= n`
+- indices on each line must be strictly increasing
+- for each consecutive pair on the same line, the corresponding difficulties must be strictly increasing
+- each proposal index may appear on **at most one** output line of the instance
+- the total duration of proposals on track `j` must be at most `C_j`
+
+Empty tracks should be printed as `0`.
+
+If an instance output is malformed or infeasible, its objective value is defined to be `0`.
+
+## Objective
+
+For a feasible instance output, let `S` be the set of all assigned proposals.
+
+The objective value is:
+
+\[
+\text{Value} = \sum_{i \in S} v_i
+\]
+
+You must **maximize** this value.
+
+## Scoring
+
+Each instance is scored independently.
+
+Let:
+
+- `Y` = your objective value for the instance
+- `B` = the baseline objective value for the same instance
+
+The baseline is the following deterministic greedy algorithm:
+
+1. For each track `j`, initialize:
+   - remaining time `rem_j = C_j`
+   - last used difficulty `last_j = -1`
+2. Process proposals in increasing index order `i = 1..n`.
+3. A track `j` is feasible for proposal `i` if:
+   - `rem_j >= t_i`, and
+   - `last_j < d_i`
+4. If no track is feasible, skip proposal `i`.
+5. Otherwise assign proposal `i` to the feasible track `j` that minimizes:
+   - first: `rem_j - t_i`
+   - second (tie-break): larger `last_j`
+   - third (tie-break): smaller `j`
+6. After assignment:
+   - `rem_j -= t_i`
+   - `last_j = d_i`
+
+The per-instance score is:
+
+\[
+\text{score}_\text{inst} = 100 \cdot \min\left(3,\; \frac{Y}{\max(1,B)}\right)
+\]
+
+So:
+
+- matching the baseline gives about `100` points on that instance
+- doing worse gives less than `100`
+- doing better gives more than `100`
+- the per-instance score is capped at `300`
+
+The final score is the arithmetic mean of `score_inst` over all instances.
+
+## Constraints
+
+- `1 <= T <= 20`
+- `1 <= n <= 8000`
+- `1 <= k <= 30`
+- `1 <= C_j <= 10^12`
+- `1 <= d_i <= 10^9`
+- `1 <= t_i <= 10^9`
+- `0 <= v_i <= 10^9`
+- Sum of `n` over all instances in one test file does not exceed `50000`
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample input
+```text
+1
+6 2
+5 6
+1 2 5
+3 2 8
+2 3 7
+4 3 10
+5 2 6
+6 4 12
+```
+
+### Sample output
+```text
+2 1 2
+2 3 4
+```
+
+### Explanation
+
+- Track 1 uses proposals `1, 2`
+  - indices increase: `1 < 2`
+  - difficulties increase: `1 < 3`
+  - duration: `2 + 2 = 4 <= 5`
+- Track 2 uses proposals `3, 4`
+  - indices increase: `3 < 4`
+  - difficulties increase: `2 < 4`
+  - duration: `3 + 3 = 6 <= 6`
+
+No proposal is used twice.
+
+The objective value is:
+
+\[
+v_1 + v_2 + v_3 + v_4 = 5 + 8 + 7 + 10 = 30
+\]
+
+If, for example, the baseline value on this instance were `24`, then the instance score would be:
+
+\[
+100 \cdot \min(3, 30/24) = 125
+\]
+```

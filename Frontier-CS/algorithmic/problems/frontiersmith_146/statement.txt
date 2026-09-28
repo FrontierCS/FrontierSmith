@@ -1,0 +1,172 @@
+```markdown
+# Sparse Rectangle Codec for a Digit Interaction Matrix
+
+## Problem
+
+A string of decimal digits `s` defines an `n × n` interaction matrix `B`:
+
+- `n = |s|`
+- `d_i = s_i - '0'` for `1 ≤ i ≤ n`
+- `B[i][j] = d_i · d_j`
+
+You want to **compress** this matrix using at most `K` weighted axis-aligned rectangles.
+
+A rectangle is described by five integers:
+
+- `x y z t w`
+- `1 ≤ x ≤ y ≤ n`
+- `1 ≤ z ≤ t ≤ n`
+
+It adds value `w` to every cell `(i, j)` such that `x ≤ i ≤ y` and `z ≤ j ≤ t`.
+
+If you output rectangles `R_1, R_2, ..., R_m`, then the reconstructed matrix `C` is:
+
+\[
+C[i][j] = \sum_{r=1}^{m} w_r \cdot [x_r \le i \le y_r \land z_r \le j \le t_r]
+\]
+
+where `m ≤ K`.
+
+Your task is to choose the rectangles so that `C` approximates `B` as well as possible.
+
+Rectangles may overlap. Identical rectangles are allowed. Weights may be negative.
+
+## Input
+
+The input contains a single test instance.
+
+- The first line contains one integer `K`.
+- The second line contains a string `s` of decimal digits.
+
+## Output
+
+On the first line, print one integer `m` — the number of rectangles you output.
+
+Then print `m` lines, each containing five integers:
+
+`x y z t w`
+
+Feasibility requirements:
+
+- `0 ≤ m ≤ K`
+- `1 ≤ x ≤ y ≤ n`
+- `1 ≤ z ≤ t ≤ n`
+- `-10^6 ≤ w ≤ 10^6`
+
+If the output is malformed or infeasible, the score for that test is `0`.
+
+## Objective
+
+Minimize the total absolute reconstruction error:
+
+\[
+E = \sum_{i=1}^{n} \sum_{j=1}^{n} |B[i][j] - C[i][j]|
+\]
+
+Equivalently,
+
+\[
+E = \sum_{i=1}^{n} \sum_{j=1}^{n} \left|d_i d_j - \sum_{r=1}^{m} w_r \cdot [x_r \le i \le y_r \land z_r \le j \le t_r]\right|
+\]
+
+Smaller `E` is better. A perfect reconstruction has `E = 0`.
+
+## Scoring
+
+Let the **baseline** be the empty solution (`m = 0`), which reconstructs every cell as `0`.
+
+Its error is
+
+\[
+E_0 = \sum_{i=1}^{n} \sum_{j=1}^{n} B[i][j] = \left(\sum_{i=1}^{n} d_i\right)^2
+\]
+
+For one test file:
+
+- If `E_0 > 0`, then
+
+\[
+\text{score} = 10^6 \cdot \max\left(0,\ 1 - \frac{E}{E_0}\right)
+\]
+
+- If `E_0 = 0` (that is, all digits are `0`), then
+  - score `= 10^6` if `E = 0`
+  - score `= 0` otherwise
+
+So:
+
+- the baseline gets score `0`
+- a perfect reconstruction gets score `10^6`
+- partial improvements receive proportionally intermediate scores
+
+For a full submission over multiple hidden test files, the final score is the arithmetic mean of per-test scores, rounded down to the nearest integer.
+
+## Constraints
+
+- `1 ≤ |s| ≤ 4000`
+- `1 ≤ K ≤ 60`
+- Time limit: 3 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Sample input
+```text
+2
+12
+```
+
+### Sample output
+```text
+2
+1 2 1 2 2
+2 2 2 2 2
+```
+
+### Explanation
+
+Here `s = "12"`, so
+
+\[
+B =
+\begin{bmatrix}
+1 & 2 \\
+2 & 4
+\end{bmatrix}
+\]
+
+The output uses:
+
+1. one rectangle covering the whole matrix with weight `2`
+2. one `1 × 1` rectangle on cell `(2,2)` with weight `2`
+
+Thus
+
+\[
+C =
+\begin{bmatrix}
+2 & 2 \\
+2 & 4
+\end{bmatrix}
+\]
+
+and the total absolute error is
+
+\[
+E = |1-2| + |2-2| + |2-2| + |4-4| = 1
+\]
+
+The baseline error is
+
+\[
+E_0 = (1+2)^2 = 9
+\]
+
+So the sample score on this test would be
+
+\[
+10^6 \cdot \left(1 - \frac{1}{9}\right) \approx 888888.88
+\]
+
+This is only an example format; it is not necessarily optimal.
+```

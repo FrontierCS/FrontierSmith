@@ -1,0 +1,179 @@
+```markdown
+# Breach-and-Regen Vaults
+
+## Problem
+
+A museum is modeled as an undirected graph of rooms connected by reinforced doors.
+
+- Room `1` is the entrance and is accessible from the start.
+- Each room `i` has an artifact value `v_i`.
+- Each door has:
+  - two endpoint rooms `u, w`,
+  - an initial durability `a`,
+  - a nightly repair amount `y`.
+
+You have exactly `T` days to raid the museum.
+
+A door is either:
+
+- **unbroken**, with a current durability `h > 0`, or
+- **broken**, in which case it stays broken forever.
+
+### Daily process
+
+For each day from `1` to `T`:
+
+1. **Start-of-day accessibility**  
+   A room is accessible if it is connected to room `1` using only already broken doors.
+
+2. **Attack phase**  
+   You have `P` demolition points for the day.  
+   You may distribute them among doors, subject to all of the following:
+   - only **unbroken** doors may be attacked;
+   - a door may be attacked on that day only if **at least one of its endpoints is accessible at the start of that day**;
+   - the total damage assigned that day is at most `P`.
+
+   If an unbroken door with current durability `h` receives total damage `d` that day, its durability becomes `max(0, h - d)`.
+
+3. **Newly broken doors open immediately**  
+   Any door whose durability became `0` during the attack phase becomes broken permanently.  
+   Rooms that become connected to room `1` through broken doors are now accessible, and their artifact values are collected immediately if they were not collected before.
+
+4. **Night repair**  
+   Every still-unbroken door with current durability `h > 0` repairs by its own amount `y`, becoming  
+   `min(a, h + y)`.  
+   Broken doors are never repaired.
+
+Your task is to choose all attacks for all `T` days to maximize the total value of collected artifacts.
+
+## Input
+
+The input describes one instance.
+
+- The first line contains four integers  
+  `n m T P`  
+  — number of rooms, number of doors, number of days, and daily demolition budget.
+- The second line contains `n` integers  
+  `v_1 v_2 ... v_n`  
+  — artifact values of the rooms.
+- Each of the next `m` lines contains four integers  
+  `u_j w_j a_j y_j`  
+  describing door `j`.
+
+Doors are numbered from `1` to `m` in the order given in the input.
+
+## Output
+
+Print exactly `T` lines.
+
+On day `t`, output one line of the form:
+
+`k e_1 d_1 e_2 d_2 ... e_k d_k`
+
+where:
+
+- `k` is the number of attacked doors on that day,
+- `e_i` is a door index,
+- `d_i` is the positive integer damage assigned to that door on that day.
+
+### Feasibility requirements
+
+For every day:
+
+- all `e_i` must be distinct;
+- each `d_i` must be at least `1`;
+- `d_1 + d_2 + ... + d_k <= P`;
+- every attacked door must be unbroken at the start of that day;
+- every attacked door must have at least one endpoint accessible at the start of that day.
+
+If any rule is violated, the submission is considered **invalid** and its objective value for the instance is `0`.
+
+## Objective
+
+Let `V` be the total value of all rooms that become accessible at any time from day `1` to day `T`, including room `1` if it has positive value.
+
+Your objective is to **maximize `V`**.
+
+## Scoring
+
+For each test instance, let:
+
+- `V` = your objective value,
+- `B` = the objective value of the following deterministic baseline strategy.
+
+### Baseline strategy
+
+For each day:
+
+1. Compute the set of doors attackable at the start of the day.
+2. Sort those unbroken doors by:
+   - increasing current durability,
+   - then increasing door index.
+3. Traverse that order with remaining budget `P`:
+   - if the next door needs at most the remaining budget to break, assign exactly that much damage and continue;
+   - otherwise, assign all remaining budget to that door and stop for the day.
+
+The baseline is simulated under the same rules as any submission.
+
+### Per-instance score
+
+If the output is invalid, the score for that instance is `0`.
+
+Otherwise the per-instance score is:
+
+`score = 1,000,000 * min(2, (V + 1) / (B + 1))`
+
+This means:
+
+- matching the baseline gives `1,000,000`,
+- doing worse gives less than `1,000,000`,
+- doing better gives more than `1,000,000`,
+- the score is capped at `2,000,000` per instance.
+
+The final score is the arithmetic mean of per-instance scores over all test instances.
+
+## Constraints
+
+- `2 <= n <= 400`
+- `1 <= m <= 2000`
+- `1 <= T <= 200`
+- `1 <= P <= 10000`
+- `0 <= v_i <= 10^9`
+- `1 <= u_j, w_j <= n`
+- `u_j != w_j`
+- `1 <= a_j <= 10^5`
+- `1 <= y_j <= 10^5`
+- The graph is undirected and connected.
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+5 5 3 5
+0 7 8 6 9
+1 2 4 1
+1 3 5 0
+2 4 6 2
+3 4 3 1
+4 5 5 3
+```
+
+### Output
+```text
+1 1 4
+1 2 5
+1 4 3
+```
+
+### Explanation
+
+- Day 1: break door `1` (`1-2`), making room `2` accessible and collecting value `7`.
+- Day 2: break door `2` (`1-3`), making room `3` accessible and collecting value `8`.
+- Day 3: break door `4` (`3-4`), making room `4` accessible and collecting value `6`.
+
+Total collected value: `V = 21`.
+
+The judge also simulates the baseline strategy on the same instance, computes its value `B`, and then applies the scoring formula.
+```

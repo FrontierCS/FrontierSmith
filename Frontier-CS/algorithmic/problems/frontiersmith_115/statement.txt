@@ -1,0 +1,174 @@
+```markdown
+# Budgeted Resistive Backbone
+
+## Problem
+You are designing a probe backbone on a chip.
+
+There are `n` terminals placed from left to right and numbered `1..n`.  
+You may install some candidate traces between terminals. Each candidate trace has:
+
+- two endpoints `a_i < b_i`,
+- electrical resistance `r_i`, where `r_i` is either `0` or `1` ohm,
+- fabrication cost `c_i`.
+
+After installation, all chosen traces form one undirected resistive network.  
+You are also given `d` probe demands. Demand `j` specifies two terminals `s_j < t_j` and a positive weight `w_j`. For each demand, low effective resistance between `s_j` and `t_j` is desirable.
+
+Your task is to choose which candidate traces to install, subject to a total fabrication budget.
+
+This is an optimization problem: many different feasible outputs are valid, and better networks receive higher scores.
+
+## Input
+The first line contains four integers:
+
+`n m d B`
+
+- `n`: number of terminals
+- `m`: number of candidate traces
+- `d`: number of probe demands
+- `B`: total fabrication budget
+
+The next `m` lines each contain four integers:
+
+`a_i b_i r_i c_i`
+
+meaning candidate trace `i` connects terminals `a_i` and `b_i`, has resistance `r_i ∈ {0,1}`, and fabrication cost `c_i`.
+
+The next `d` lines each contain three integers:
+
+`s_j t_j w_j`
+
+meaning demand `j` is between terminals `s_j` and `t_j`, with weight `w_j`.
+
+## Output
+Output a feasible set of candidate trace indices to install.
+
+The first line must contain an integer `k` — the number of installed traces.
+
+The second line must contain `k` distinct integers in `[1, m]`, the indices of the installed traces, in any order.  
+If `k = 0`, the second line may be empty.
+
+A submission is **feasible** iff:
+
+- all listed indices are distinct and between `1` and `m`,
+- the total fabrication cost of the chosen traces is at most `B`.
+
+If the output is infeasible, the score for that test is `0`.
+
+## Objective
+Let `S` be the set of installed traces.
+
+For each demand `j`, define its resistance value `R_j(S)` as follows:
+
+1. Consider only installed traces.
+2. First, contract every connected component formed only by installed `0`-ohm traces into a single supernode.
+3. All installed `1`-ohm traces between resulting supernodes remain as unit resistors. Parallel resistors are allowed.
+4. If `s_j` and `t_j` are in the same supernode after step 2, then `R_j(S) = 0`.
+5. Otherwise:
+   - if the two supernodes are disconnected in the remaining network, define `R_j(S) = n`,
+   - else define `R_j(S)` as the **effective resistance** between those two supernodes in the standard electrical sense:
+     inject `1` ampere at `s_j`, extract `1` ampere at `t_j`, and let the resulting voltage difference be `R_j(S)`.
+
+The objective value of `S` is
+
+\[
+F(S) = \sum_{j=1}^{d} w_j \cdot R_j(S)
+\]
+
+Your goal is to **minimize** `F(S)`.
+
+## Scoring
+For each test, the judge computes a deterministic baseline solution `S_base`:
+
+1. Start with `S_base = ∅` and remaining budget `B_rem = B`.
+2. Sort demands by decreasing `w_j`; break ties by smaller demand index.
+3. Process demands in that order. For a demand `(s_j, t_j)`:
+   - Treat every already installed trace as having additional cost `0`.
+   - Every not-yet-installed trace `i` has additional cost `c_i`.
+   - Among all **forward paths** from `s_j` to `t_j` using candidate traces in the direction `a_i -> b_i`, choose one minimizing:
+     1. total additional cost,
+     2. then total electrical resistance along the path,
+     3. then lexicographically smallest sequence of edge indices.
+   - If no such path exists, skip this demand.
+   - If the chosen path’s total additional cost is at most `B_rem`, install all traces on that path and decrease `B_rem` accordingly. Otherwise skip this demand.
+4. Let `F_base = F(S_base)`.
+
+Let your feasible solution be `S` with objective value `F = F(S)`.
+
+The score for this test is
+
+\[
+\text{score} =
+\begin{cases}
+0, & \text{if the output is infeasible},\\[4pt]
+2{,}000{,}000, & \text{if } F = 0,\\[4pt]
+\left\lfloor 1{,}000{,}000 \cdot \min\!\left(2,\ \frac{F_{base}}{F}\right) \right\rfloor, & \text{otherwise.}
+\end{cases}
+\]
+
+So:
+
+- matching the baseline gets `1,000,000`,
+- improving on the baseline gets more than `1,000,000`,
+- worse solutions get less than `1,000,000`,
+- invalid solutions get `0`.
+
+For a full submission, scores are summed over all test files.
+
+## Constraints
+- `2 ≤ n ≤ 1500`
+- `1 ≤ m ≤ 8000`
+- `1 ≤ d ≤ 80`
+- `1 ≤ B ≤ 10^6`
+- `1 ≤ a_i < b_i ≤ n`
+- `r_i ∈ {0,1}`
+- `1 ≤ c_i ≤ 10^4`
+- `1 ≤ s_j < t_j ≤ n`
+- `1 ≤ w_j ≤ 10^4`
+
+The hidden tests are chosen so that exhaustive optimization is not practical.
+
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample Input
+```text
+5 6 2 5
+1 2 0 1
+2 5 1 2
+1 3 0 1
+3 5 1 2
+2 3 1 1
+3 4 0 1
+1 5 3
+2 4 1
+```
+
+### Sample Output
+```text
+4
+1 2 5 6
+```
+
+### Explanation
+The chosen traces cost `1 + 2 + 1 + 1 = 5`, which exactly uses the budget.
+
+Installed network:
+
+- `1 --0Ω-- 2 --1Ω-- 5`
+- `2 --1Ω-- 3 --0Ω-- 4`
+
+So:
+
+- demand `(1,5)` has effective resistance `1`,
+- demand `(2,4)` has effective resistance `1`.
+
+Hence the objective is
+
+\[
+F = 3 \cdot 1 + 1 \cdot 1 = 4.
+\]
+
+This sample output is only one feasible solution; better or worse solutions may also exist.
+```

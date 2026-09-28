@@ -1,0 +1,275 @@
+```markdown
+# Sparse Alloy Sourcing
+
+## Problem
+
+A manufacturer must fulfill many customer contracts for iron–aluminum–tin alloys.
+
+Each **supplier** offers a single raw stream with a fixed composition:
+- iron fraction,
+- aluminum fraction,
+- tin fraction.
+
+For each supplier `i`:
+- if you buy any positive amount from that supplier, you pay a **setup cost** `F_i`,
+- you then pay a **variable cost** `C_i` per ton purchased,
+- if the supplier is used at all, the total purchased amount must be between `L_i` and `U_i` tons.
+
+Each **contract** `j` requires exactly `Q_j` tons of alloy with an exact target composition:
+- iron fraction `x_j`,
+- aluminum fraction `y_j`,
+- tin fraction `z_j`.
+
+You may split any supplier’s material across many contracts.  
+Each contract may use material from **at most 4 suppliers**.
+
+Your task is to output a feasible sourcing-and-blending plan with minimum total cost.
+
+To guarantee feasibility, the first three suppliers are always:
+1. pure iron `(1, 0, 0)`,
+2. pure aluminum `(0, 1, 0)`,
+3. pure tin `(0, 0, 1)`,
+
+with `L_i = 0` and sufficiently large `U_i`.
+
+---
+
+## Input
+
+The first line contains two integers:
+
+`m n` — number of suppliers and number of contracts.
+
+The next `m` lines each contain 7 real numbers describing one supplier:
+
+`a_i b_i c_i C_i F_i L_i U_i`
+
+where:
+- `a_i, b_i, c_i` are the iron / aluminum / tin fractions,
+- `C_i` is variable cost per ton,
+- `F_i` is setup cost,
+- `L_i` is minimum total purchase if used,
+- `U_i` is maximum total purchase.
+
+The next `n` lines each contain 4 real numbers describing one contract:
+
+`x_j y_j z_j Q_j`
+
+where:
+- `x_j, y_j, z_j` are the required iron / aluminum / tin fractions,
+- `Q_j` is the required tonnage.
+
+All composition triples sum to exactly `1` in the input.
+
+---
+
+## Output
+
+Output a sparse blending plan.
+
+The first line must contain one integer:
+
+`R` — the number of nonzero `(contract, supplier, amount)` assignments.
+
+Each of the next `R` lines must contain:
+
+`j i t`
+
+meaning: use `t` tons of supplier `i` in contract `j`.
+
+### Feasibility requirements
+
+Let `y_{j,i}` be the total amount assigned from supplier `i` to contract `j` after summing duplicate pairs, if any.
+
+Your output is **feasible** iff all of the following hold:
+
+1. `1 <= j <= n`, `1 <= i <= m`, and `t > 0` for every listed assignment.
+2. For every contract `j`, at most **4** suppliers have positive `y_{j,i}`.
+3. For every contract `j`:
+   - total mass matches:
+     \[
+     \sum_i y_{j,i} = Q_j
+     \]
+   - iron matches:
+     \[
+     \sum_i a_i y_{j,i} = x_j Q_j
+     \]
+   - aluminum matches:
+     \[
+     \sum_i b_i y_{j,i} = y_j Q_j
+     \]
+   - tin matches:
+     \[
+     \sum_i c_i y_{j,i} = z_j Q_j
+     \]
+4. For every supplier `i`, let
+   \[
+   X_i = \sum_j y_{j,i}
+   \]
+   Then either:
+   - `X_i = 0`, or
+   - `L_i <= X_i <= U_i`.
+
+For floating-point checking, the judge uses absolute tolerance
+
+\[
+\varepsilon = 10^{-6} \cdot \max(1, Q_j)
+\]
+
+for each contract balance/composition equation, and
+
+\[
+10^{-6} \cdot \max(1, U_i)
+\]
+
+for supplier bounds.
+
+If your output is infeasible, its score for that test case is `0`.
+
+---
+
+## Objective
+
+Minimize the total sourcing cost:
+
+\[
+\text{Cost} = \sum_{i : X_i > 0} \left(F_i + C_i X_i\right)
+\]
+
+where `X_i` is the total amount purchased from supplier `i`.
+
+---
+
+## Scoring
+
+For each test case:
+
+- Let `C` be your cost if your output is feasible.
+- Let `B` be the **baseline cost**, defined as using only the first three suppliers (pure iron, pure aluminum, pure tin).
+
+Since those suppliers are pure, the baseline is:
+
+\[
+D_{\text{Fe}} = \sum_j x_j Q_j,\quad
+D_{\text{Al}} = \sum_j y_j Q_j,\quad
+D_{\text{Sn}} = \sum_j z_j Q_j
+\]
+
+\[
+B =
+[\!D_{\text{Fe}}>0\!]\,(F_1 + C_1 D_{\text{Fe}})
++
+[\!D_{\text{Al}}>0\!]\,(F_2 + C_2 D_{\text{Al}})
++
+[\!D_{\text{Sn}}>0\!]\,(F_3 + C_3 D_{\text{Sn}})
+\]
+
+where `[...]` is `1` if the condition is true, otherwise `0`.
+
+The test-case score is:
+
+\[
+\text{score} = 10^6 \cdot \operatorname{clamp}\!\left(\frac{B}{C},\,0,\,2\right)
+\]
+
+If your output is infeasible, `score = 0`.
+
+The final score is the arithmetic mean of test-case scores.
+
+Thus:
+- matching the baseline gives `1,000,000`,
+- beating the baseline gives more than `1,000,000`,
+- halving the baseline cost reaches the cap `2,000,000`,
+- worse solutions still receive partial credit.
+
+---
+
+## Constraints
+
+- `1 <= m <= 300`
+- `1 <= n <= 500`
+- all input numbers have at most 6 digits after the decimal point
+- `0 <= a_i, b_i, c_i, x_j, y_j, z_j <= 1`
+- `a_i + b_i + c_i = 1`
+- `x_j + y_j + z_j = 1`
+- `0 <= L_i <= U_i`
+- `0 <= C_i, F_i <= 10^6`
+- `0 < Q_j <= 10^6`
+
+Additional guarantees:
+- supplier `1` is `(1,0,0)`,
+- supplier `2` is `(0,1,0)`,
+- supplier `3` is `(0,0,1)`,
+- suppliers `1..3` have `L_i = 0`,
+- suppliers `1..3` have enough `U_i` to satisfy all demand.
+
+- Time limit: 2 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample Input
+```text
+5 2
+1 0 0 10 5 0 100
+0 1 0 12 5 0 100
+0 0 1 20 5 0 100
+0.5 0.5 0 8 10 2 10
+0.2 0.3 0.5 9 8 1 10
+0.4 0.4 0.2 5
+0.2 0.3 0.5 4
+```
+
+### Sample Output
+```text
+4
+1 4 2.8
+1 5 2
+1 1 0.2
+2 5 4
+```
+
+### Explanation
+
+- Contract 1 gets:
+  - `2.8` tons from supplier 4,
+  - `2` tons from supplier 5,
+  - `0.2` tons of pure iron.
+- Contract 2 gets:
+  - `4` tons from supplier 5.
+
+This is feasible:
+- each contract uses at most 4 suppliers,
+- both target compositions are matched exactly,
+- supplier 4 is used for `2.8` tons, satisfying `2 <= X_4 <= 10`,
+- supplier 5 is used for `6` tons, satisfying `1 <= X_5 <= 10`.
+
+Cost:
+- supplier 1: `5 + 10 * 0.2 = 7`
+- supplier 4: `10 + 8 * 2.8 = 32.4`
+- supplier 5: `8 + 9 * 6 = 62`
+
+Total:
+\[
+C = 101.4
+\]
+
+Baseline (pure metals only):
+- total iron demand = `2.8`
+- total aluminum demand = `3.2`
+- total tin demand = `3.0`
+
+\[
+B = (5 + 10 \cdot 2.8) + (5 + 12 \cdot 3.2) + (5 + 20 \cdot 3) = 141.4
+\]
+
+So the sample score for this single test case is:
+
+\[
+10^6 \cdot \frac{141.4}{101.4} \approx 1{,}394{,}477
+\]
+
+(ignoring final rounding details).
+```

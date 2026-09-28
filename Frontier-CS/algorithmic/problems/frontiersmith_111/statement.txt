@@ -1,0 +1,233 @@
+```markdown
+# Double-Sided Parade
+
+## Problem
+You are organizing a parade of **N** double-sided placards.  
+Each placard must appear **exactly once** in a single line of march, and for each placard you must choose which side faces the audience:
+
+- the **red** side shows value `A_i`
+- the **blue** side shows value `B_i`
+
+The total audience excitement has two parts:
+
+1. **Individual appeal**: each placard contributes the value written on its visible side.
+2. **Transition bonus**: for some ordered pairs of placards, placing one immediately after another gives an extra bonus that depends on the visible sides of both placards.
+
+Your task is to output:
+- a permutation of the placards,
+- and an orientation choice for each position,
+
+so as to maximize the total excitement.
+
+This is an optimization problem: there may be many good solutions, and exact optimization is not expected to be feasible under the constraints.
+
+---
+
+## Input
+The input is given in the following format:
+
+```text
+N M
+A_1 B_1
+A_2 B_2
+...
+A_N B_N
+u_1 v_1 RR_1 RB_1 BR_1 BB_1
+u_2 v_2 RR_2 RB_2 BR_2 BB_2
+...
+u_M v_M RR_M RB_M BR_M BB_M
+```
+
+- `N`: number of placards
+- `M`: number of directed transition records
+
+For each placard `i`:
+- `A_i`: value if placard `i` is shown red-side forward
+- `B_i`: value if placard `i` is shown blue-side forward
+
+For each transition record `k`:
+- `u_k`, `v_k`: distinct placard indices
+- `RR_k`: bonus if `u_k` is immediately followed by `v_k`, with both shown red
+- `RB_k`: bonus if `u_k` is immediately followed by `v_k`, with `u_k` red and `v_k` blue
+- `BR_k`: bonus if `u_k` is immediately followed by `v_k`, with `u_k` blue and `v_k` red
+- `BB_k`: bonus if `u_k` is immediately followed by `v_k`, with both shown blue
+
+If no transition record is given for an ordered pair `(u, v)`, then the bonus for placing `u` immediately before `v` is `0` regardless of orientations.
+
+---
+
+## Output
+Output exactly two lines.
+
+### Line 1
+A permutation `P_1 P_2 ... P_N` of `1,2,...,N`.
+
+`P_j` is the placard placed at position `j` in the parade.
+
+### Line 2
+A binary string `S` of length `N`.
+
+- `S_j = '0'` means placard `P_j` is shown **red-side forward**
+- `S_j = '1'` means placard `P_j` is shown **blue-side forward**
+
+### Feasibility
+A submission is **feasible** iff:
+
+- the first line contains each integer `1..N` exactly once,
+- the second line has length exactly `N`,
+- every character of the second line is either `0` or `1`.
+
+If the output is malformed or infeasible, the score for that test case is `0`.
+
+---
+
+## Objective
+Let the visible value of placard `P_j` be:
+
+- `A_{P_j}` if `S_j = '0'`
+- `B_{P_j}` if `S_j = '1'`
+
+Then the total objective value is:
+
+```text
+F = (sum of visible values of all placards)
+    + (sum of transition bonuses for all adjacent pairs)
+```
+
+More precisely,
+
+```text
+F = Σ_{j=1..N} value(P_j, S_j)
+  + Σ_{j=1..N-1} bonus(P_j, S_j, P_{j+1}, S_{j+1})
+```
+
+where:
+
+- `value(i, 0) = A_i`
+- `value(i, 1) = B_i`
+
+and for an adjacent pair `(u, v)`:
+
+- if a record for `(u, v)` exists, use its corresponding `RR / RB / BR / BB` entry,
+- otherwise the bonus is `0`.
+
+Your goal is to **maximize `F`**.
+
+---
+
+## Scoring
+For each test case, the judge also computes a **baseline solution** as follows:
+
+1. For each placard `i`, choose its better visible side:
+   - red if `A_i >= B_i`,
+   - blue otherwise.
+2. Let `W_i = max(A_i, B_i)`.
+3. Sort placards in **non-increasing** order of `W_i`.
+   - Break ties by smaller placard index.
+4. Use that order and those orientations to obtain the baseline objective value `F_base`.
+
+Since `A_i, B_i >= 1`, we always have `F_base > 0`.
+
+For a feasible submission with objective value `F`, the score for that test case is:
+
+```text
+Score = round(1,000,000 × min(2.0, F / F_base))
+```
+
+For an infeasible submission:
+
+```text
+Score = 0
+```
+
+The final score is the **arithmetic mean** of the scores over all test cases.
+
+A score above `1,000,000` means your solution outperformed the baseline on average.  
+Scores are capped at `2,000,000` per test case.
+
+---
+
+## Constraints
+- `1 <= N <= 100000`
+- `0 <= M <= 300000`
+- `1 <= A_i, B_i <= 10^9`
+- `1 <= u_k, v_k <= N`
+- `u_k != v_k`
+- `0 <= RR_k, RB_k, BR_k, BB_k <= 10^9`
+- No ordered pair `(u_k, v_k)` appears more than once.
+
+All input values are integers.
+
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+---
+
+## Example
+
+### Sample Input
+```text
+4 5
+8 3
+4 7
+6 5
+2 9
+1 2 5 1 4 0
+2 4 2 8 1 6
+1 3 0 3 7 1
+3 2 4 4 0 2
+3 4 5 2 3 9
+```
+
+### Sample Output
+```text
+1 3 2 4
+0111
+```
+
+### Explanation
+The parade is:
+
+- placard `1`, red side visible → `8`
+- placard `3`, blue side visible → `5`
+- placard `2`, blue side visible → `7`
+- placard `4`, blue side visible → `9`
+
+Visible-value sum:
+
+```text
+8 + 5 + 7 + 9 = 29
+```
+
+Adjacent bonuses:
+
+- `1 -> 3` with `(red, blue)` gives `RB = 3`
+- `3 -> 2` with `(blue, blue)` gives `BB = 2`
+- `2 -> 4` with `(blue, blue)` gives `BB = 6`
+
+Transition-bonus sum:
+
+```text
+3 + 2 + 6 = 11
+```
+
+So the objective value is:
+
+```text
+F = 29 + 11 = 40
+```
+
+The baseline chooses orientations maximizing each placard's own value, then sorts by those values:
+- placard `4` blue (`9`)
+- placard `1` red (`8`)
+- placard `2` blue (`7`)
+- placard `3` red (`6`)
+
+Its objective is `31`, so this sample output would receive:
+
+```text
+round(1,000,000 × 40 / 31) = 1,290,323
+```
+
+for this test case.
+```

@@ -1,0 +1,222 @@
+```markdown
+# Heatmap Digit Compression
+
+## Problem
+
+A data center stores a positive integer in each cell of a rectangular memory heatmap.  
+To cool the system, you may apply **compression pulses**. A pulse selects an axis-aligned subrectangle and replaces every number inside it by the **sum of its decimal digits**.
+
+Applying many pulses is expensive, so each pulse has a cost:
+- **fixed activation cost** `F`, plus
+- **area cost** equal to the number of cells in the chosen rectangle.
+
+Your goal is to design a sequence of pulses that minimizes the total heat remaining in the grid.
+
+Formally, for a positive integer `x`, define:
+
+- `sd(x)` = sum of decimal digits of `x`
+
+If a pulse is applied to rectangle `(r1, c1) ... (r2, c2)`, then every covered cell value `x` becomes `sd(x)`.
+
+A cell may be covered multiple times; then `sd` is applied repeatedly.
+
+You are given:
+- a grid of initial values,
+- a maximum number of pulses `K`,
+- a total budget `C`,
+- a fixed activation cost `F`.
+
+You may output **any feasible sequence** of at most `K` pulses whose total cost does not exceed `C`.
+
+This is an optimization problem: the judge will compute the final heat of your solution and score it continuously against a deterministic baseline.
+
+---
+
+## Input
+
+The first line contains an integer `T` — the number of test cases.
+
+For each test case:
+
+- The first line contains five integers  
+  `H W K C F`
+  - `H` — number of rows
+  - `W` — number of columns
+  - `K` — maximum number of pulses
+  - `C` — total budget
+  - `F` — fixed activation cost per pulse
+
+- The next `H` lines each contain `W` integers: the initial grid values `a[r][c]`.
+
+---
+
+## Output
+
+For each test case, output:
+
+- one line with an integer `M` — the number of pulses you use (`0 <= M <= K`)
+- then `M` lines, each containing four integers  
+  `r1 c1 r2 c2`  
+  describing one pulse rectangle with:
+  - `1 <= r1 <= r2 <= H`
+  - `1 <= c1 <= c2 <= W`
+
+The pulses are applied **in the order printed**.
+
+A solution is **feasible** iff:
+- `0 <= M <= K`
+- every rectangle is valid
+- the total cost
+
+\[
+\sum_{j=1}^{M} \left(F + (r2_j-r1_j+1)(c2_j-c1_j+1)\right) \le C
+\]
+
+If your output for a test case is infeasible, that test case receives score `0`.
+
+---
+
+## Objective
+
+For each test case, let the final grid after all your pulses be `b`.
+
+Your objective value is the **final heat**:
+
+\[
+Heat = \sum_{r=1}^{H}\sum_{c=1}^{W} b[r][c]
+\]
+
+Lower is better.
+
+---
+
+## Scoring
+
+For each test case, the judge also computes a deterministic **baseline solution**:
+
+1. Start from the initial grid.
+2. Let remaining budget be `C` and remaining pulse count be `K`.
+3. While both hold:
+   - remaining pulse count > 0
+   - remaining budget >= `F + 1`
+4. Among all cells, compute the immediate gain of applying a `1x1` pulse:
+   \[
+   gain(r,c)=x-sd(x)
+   \]
+   where `x` is the cell's current value.
+5. Pick the cell with maximum `gain`; break ties by smaller row, then smaller column.
+6. If the best gain is `0`, stop.
+7. Apply a `1x1` pulse to that cell, decrease remaining budget by `F+1`, and decrease remaining pulse count by `1`.
+
+Let:
+- `B` = final heat of the baseline
+- `S` = final heat of your feasible solution
+
+The per-test score is:
+
+\[
+score = 10^6 \cdot \mathrm{clamp}\!\left(\frac{B}{S},\,0,\,5\right)
+\]
+
+where
+
+\[
+\mathrm{clamp}(x,0,5)=
+\begin{cases}
+0 & x<0 \\
+x & 0 \le x \le 5 \\
+5 & x>5
+\end{cases}
+\]
+
+If your output is infeasible, the per-test score is `0`.
+
+The overall score is the floor of the arithmetic mean of all per-test scores.
+
+Notes:
+- The baseline always scores exactly `1,000,000` on a test case.
+- Better-than-baseline solutions score above `1,000,000`.
+- Worse-than-baseline solutions score below `1,000,000`.
+
+---
+
+## Constraints
+
+- `1 <= T <= 20`
+- `1 <= H, W <= 400`
+- `1 <= K <= 200`
+- `1 <= F <= 10^6`
+- `1 <= C <= 10^9`
+- `1 <= a[r][c] <= 10^18`
+- `\sum (H \cdot W)` over all test cases `<= 2 * 10^5`
+
+The judge evaluates each test case deterministically.
+
+This optimization problem is intended to be computationally hard in practice: exact optimization over all possible rectangles and overlaps is infeasible at these limits, so heuristic methods are expected.
+
+- Time limit: 10 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+1
+2 3 2 12 5
+9999 9999 9999
+8 5 7
+```
+
+### Output
+```text
+1
+1 1 1 3
+```
+
+### Explanation
+
+The submitted solution uses one pulse on the whole first row.
+
+- Rectangle area = `3`
+- Pulse cost = `F + area = 5 + 3 = 8`
+- Total cost `8 <= 12`, so the solution is feasible.
+
+After the pulse:
+
+- `9999 -> 36` for each of the three cells in row 1
+- row 2 is unchanged
+
+Final grid:
+```text
+36 36 36
+8  5  7
+```
+
+So the final heat is:
+
+\[
+36+36+36+8+5+7=128
+\]
+
+The baseline can afford two `1x1` pulses (each costs `6`) and will use them on two of the `9999` cells, ending with heat `10091`.
+
+Thus the raw ratio is:
+
+\[
+\frac{10091}{128} \approx 78.84
+\]
+
+After clamping to at most `5`, the per-test score is:
+
+\[
+10^6 \cdot 5 = 5{,}000{,}000
+\]
+
+This example is tiny; on real tests, there are many possible trade-offs between:
+- large rectangles vs. small rectangles,
+- first hits vs. repeated hits on the same region,
+- using fewer pulses with larger area vs. more targeted pulses,
+- spending budget on dense high-value zones vs. scattered outliers.
+```

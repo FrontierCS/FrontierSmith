@@ -1,0 +1,172 @@
+```markdown
+# Kalila and Dimna's Mobile Camps
+
+## Problem
+Kalila and Dimna now work for a larger logging company.  
+The jungle contains `n` marked trees. Tree `i` is located at `(x_i, y_i)`, has height `h_i`, and if it is completely cut, its stump can be turned into a **mobile charging camp** with electricity rate `q_i`.
+
+They start from a permanent depot at `(x_0, y_0)` with electricity rate `q_0`.
+
+Work is organized into **days**.
+
+On each day, they must choose exactly one **camp**:
+- either the depot (`0`), or
+- a tree that was completely cut on some **previous** day.
+
+From that camp, they make one trip through the jungle, visit some still-uncut trees in an order of their choice, cut each visited tree completely, and return to the same camp.
+
+### Day rules
+If a day uses camp `c` and visits trees `v_1, v_2, ..., v_k`, then:
+
+- All `v_j` must be distinct and still uncut before that day.
+- The total cut height on that day must satisfy:
+
+  `h_{v_1} + h_{v_2} + ... + h_{v_k} <= B`
+
+  where `B` is the daily carrying/battery limit.
+- Travel cost is the Manhattan tour length:
+
+  `dist(c, v_1) + dist(v_1, v_2) + ... + dist(v_{k-1}, v_k) + dist(v_k, c)`
+
+  where `dist(a, b) = |x_a - x_b| + |y_a - y_b|`, and camp `0` uses depot coordinates.
+- Electricity cost is:
+
+  `q_c * (h_{v_1} + ... + h_{v_k})`
+
+Trees cut on a day become available as camps only starting from the **next** day.
+
+Your task is to output any feasible logging plan that cuts all trees completely while minimizing total cost.
+
+This is an optimization challenge: exact optimal solutions are not expected.
+
+## Input
+The input describes one test instance.
+
+- First line: two integers `n` and `B`
+- Second line: three integers `x_0 y_0 q_0`
+- Next `n` lines: four integers `x_i y_i h_i q_i` for `i = 1..n`
+
+## Output
+Output a feasible plan.
+
+- First line: one integer `D` — the number of days
+- Next `D` lines:  
+  `c k v_1 v_2 ... v_k`
+
+where:
+- `c` is the camp used on that day (`0` for depot, otherwise a previously cut tree id),
+- `k >= 1` is the number of trees cut that day,
+- `v_1, ..., v_k` is the visit order for that day.
+
+### Feasibility requirements
+A submission is feasible iff all of the following hold:
+
+1. Every tree id from `1` to `n` appears **exactly once** among all output lists.
+2. For each day, all listed trees are distinct and uncut before that day starts.
+3. For each day, `c = 0` or `c` is a tree cut on some earlier day.
+4. For each day, the total height of listed trees is at most `B`.
+5. `1 <= D <= n`.
+
+If the output is infeasible, the score for that test is `0`.
+
+## Objective
+Minimize the total operating cost:
+
+`TotalCost = sum over all days (TravelCost_day + ElectricityCost_day)`
+
+with:
+
+- `TravelCost_day` equal to the Manhattan length of that day's closed tour,
+- `ElectricityCost_day = q_c * (sum of heights cut that day)`.
+
+The judge computes this value exactly from your output.
+
+## Scoring
+For each test file:
+
+- Let `C_you` be your total cost.
+- Let `C_base` be the total cost of the deterministic baseline algorithm below.
+
+Your test score is:
+
+`Score_test = clamp(0, 200, 100 * C_base / C_you)`
+
+where `clamp(L, R, x) = max(L, min(R, x))`.
+
+So:
+- matching the baseline gives `100` points,
+- doing better than the baseline gives more than `100`,
+- doing worse gives less than `100`,
+- infeasible output gives `0`.
+
+The final score is the arithmetic mean of `Score_test` over all official test files.
+
+### Baseline algorithm
+The baseline is defined as follows.
+
+Let the set of available camps initially be `{0}`. Let all trees be uncut.
+
+Repeat until all trees are cut:
+
+1. Choose the available camp `c` with minimum electricity rate `q_c`.  
+   Break ties by smaller id (`0 < 1 < 2 < ... < n`).
+2. Start a new day at camp `c`, with remaining capacity `rem = B` and current position `cur = c`.
+3. While there exists an uncut tree with height at most `rem`:
+   - choose the uncut tree `i` minimizing `dist(cur, i)`,
+   - break ties by smaller id,
+   - append `i` to today's route,
+   - mark `i` as cut for future selection inside this same construction step,
+   - set `rem -= h_i`,
+   - set `cur = i`.
+4. End the day, and add all trees cut that day to the set of available camps.
+
+The baseline's route order is exactly the order chosen in step 3.
+
+## Constraints
+- `1 <= n <= 5000`
+- `1 <= B <= 10^9`
+- `|x_0|, |y_0|, |x_i|, |y_i| <= 10^6`
+- `1 <= h_i <= B`
+- `0 <= q_0, q_i <= 10^6`
+
+All costs fit in signed 64-bit integers.
+
+- Time limit: 2 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample input
+```text
+4 7
+0 0 8
+1 0 2 6
+2 0 2 3
+0 3 4 5
+5 1 3 0
+```
+
+### Sample output
+```text
+3
+0 2 1 2
+2 1 4
+4 1 3
+```
+
+### Explanation
+A feasible plan is:
+
+- Day 1: start from depot `0`, cut trees `1, 2`
+- Day 2: start from camp `2`, cut tree `4`
+- Day 3: start from camp `4`, cut tree `3`
+
+Its total cost is:
+
+- Day 1: travel `0->1->2->0 = 1 + 1 + 2 = 4`, electricity `8 * (2+2) = 32`, total `36`
+- Day 2: travel `2->4->2 = 4 + 4 = 8`, electricity `3 * 3 = 9`, total `17`
+- Day 3: travel `4->3->4 = 7 + 7 = 14`, electricity `0 * 4 = 0`, total `14`
+
+So `TotalCost = 36 + 17 + 14 = 67`.
+
+The judge would compare `67` to the baseline cost on this same input and award a continuous score accordingly.
+```

@@ -1,0 +1,163 @@
+```markdown
+# Subsequence Shuffle Challenge
+
+## Problem
+You are arranging `N` uniquely numbered exhibits in a single line.  
+Your arrangement is represented by a permutation `P` of `(1,2,...,N)`, where `P_j` is the exhibit placed at position `j`.
+
+Visitors have submitted `M` preferred routes.  
+Route `i` consists of a sequence of distinct exhibit IDs
+
+`B_i = (B_{i,1}, B_{i,2}, ..., B_{i,T_i})`
+
+with a satisfaction weight `W_i`.
+
+A route is **satisfied** if those exhibits appear in your final lineup from left to right in exactly that order, not necessarily consecutively.  
+Formally, route `i` is satisfied if there exist indices
+
+`1 <= p_1 < p_2 < ... < p_{T_i} <= N`
+
+such that
+
+`P_{p_j} = B_{i,j}` for all `j`.
+
+However, the museum also wants the lineup to feel “shuffled”.  
+If the exhibit numbers in the lineup contain a long strictly increasing subsequence, the arrangement is considered too predictable.
+
+Let `LIS(P)` be the length of the longest strictly increasing subsequence of the permutation `P`.
+
+Your goal is to output a permutation `P` maximizing:
+
+`Objective(P) = (sum of weights of satisfied routes) - C * LIS(P)^2`
+
+where `C` is a given penalty coefficient.
+
+---
+
+## Input
+The input consists of a single test case in the following format:
+
+```text
+N M C
+T_1 W_1 B_{1,1} B_{1,2} ... B_{1,T_1}
+T_2 W_2 B_{2,1} B_{2,2} ... B_{2,T_2}
+...
+T_M W_M B_{M,1} B_{M,2} ... B_{M,T_M}
+```
+
+### Meaning
+- `N`: number of exhibits
+- `M`: number of visitor routes
+- `C`: penalty coefficient
+- For each route `i`:
+  - `T_i`: length of the route
+  - `W_i`: weight earned if the route is satisfied
+  - `B_{i,1} ... B_{i,T_i}`: distinct exhibit IDs in the required order
+
+---
+
+## Output
+Print a permutation `P_1 P_2 ... P_N` of `1,2,...,N`.
+
+### Feasibility requirements
+Your output is **valid** iff:
+- exactly `N` integers are printed,
+- each is between `1` and `N`,
+- every value appears exactly once.
+
+If the output is invalid, the score for that test case is `0`.
+
+---
+
+## Objective
+For a valid permutation `P`:
+
+1. For each route `i`, define:
+   - `sat_i(P) = 1` if route `i` is satisfied,
+   - `sat_i(P) = 0` otherwise.
+
+2. Let
+   - `RouteScore(P) = sum_{i=1..M} W_i * sat_i(P)`
+   - `L = LIS(P)`
+
+3. Then
+   - `Objective(P) = RouteScore(P) - C * L^2`
+
+The judge computes this value exactly.
+
+---
+
+## Scoring
+Let:
+- `BASE` be the objective value of the **baseline permutation**
+  ```text
+  N, N-1, ..., 2, 1
+  ```
+- `UB = sum_{i=1..M} W_i`
+
+For each test case, your score is:
+
+```text
+Score = floor(10^9 * max(0, Objective(P) - BASE) / max(1, UB - BASE))
+```
+
+### Notes
+- The baseline always receives score `0`.
+- Since `Objective(P) <= UB`, the score is at most `10^9`.
+- If your output is invalid, the score is `0` for that test case.
+- On the full judge, the total score is the sum of scores over all test cases.
+
+This scoring gives a continuous gradient: any improvement over the baseline increases the score.
+
+---
+
+## Constraints
+- `1 <= N <= 5000`
+- `1 <= M <= 50000`
+- `1 <= C <= 10^6`
+- `2 <= T_i <= 20`
+- `1 <= W_i <= 10^6`
+- `1 <= B_{i,j} <= N`
+- Within each route, all `B_{i,j}` are distinct
+- `sum_{i=1..M} T_i <= 200000`
+
+### Practical limits
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+---
+
+## Example
+### Sample Input
+```text
+5 4 3
+3 10 2 4 1
+2 6 1 3
+3 8 5 4 2
+2 4 2 3
+```
+
+### Sample Output
+```text
+2 5 4 1 3
+```
+
+### Explanation
+For `P = (2,5,4,1,3)`:
+- Route `(2,4,1)` is satisfied.
+- Route `(1,3)` is satisfied.
+- Route `(5,4,2)` is not satisfied.
+- Route `(2,3)` is satisfied.
+
+So the total satisfied weight is `10 + 6 + 4 = 20`.
+
+The longest increasing subsequence of `(2,5,4,1,3)` has length `2`, so the penalty is:
+
+`C * LIS(P)^2 = 3 * 2^2 = 12`
+
+Hence:
+
+`Objective(P) = 20 - 12 = 8`
+
+The baseline permutation is `(5,4,3,2,1)`, whose objective here is `5`, so this output improves on the baseline and receives a positive score.
+```

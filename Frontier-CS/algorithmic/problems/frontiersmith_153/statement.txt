@@ -1,0 +1,224 @@
+```markdown
+# Square-Signal Clustering
+
+## Problem
+
+Chef has discovered a new way to make numbers “resonate”.
+
+For any positive integer \(x\), define its **square-free signature** as
+
+\[
+sf(x) = \prod_{p^{e} \parallel x,\ e\ \text{odd}} p
+\]
+
+That is, \(sf(x)\) is the product of all primes whose exponent in \(x\) is odd.
+
+A classical fact is:
+
+- \(x \cdot y\) is a perfect square **iff** \(sf(x) = sf(y)\).
+
+Now Chef has \(n\) crystals. Crystal \(i\) starts with integer label \(a_i\) and has importance \(w_i\).
+
+Chef may tune a crystal by repeatedly applying the following operation:
+
+- choose a prime \(p\),
+- multiply the current number by \(p\).
+
+Each such operation toggles whether \(p\) appears in the crystal’s square-free signature.
+
+So, if a crystal with signature \(sf(a_i)\) is tuned until it has signature \(sf(a_j)\), the minimum number of operations needed is exactly the size of the symmetric difference of the prime sets of these two signatures.
+
+---
+
+Chef wants to organize the crystals into **signal groups**.
+
+You must choose, for each crystal \(i\), some representative crystal \(b_i\) (\(1 \le b_i \le n\)).  
+Crystal \(i\) will be tuned until its final signature becomes \(sf(a_{b_i})\).
+
+All crystals assigned to the same representative end up with the same final signature, so every ordered pair inside that group resonates.
+
+Using a representative at least once opens one signal group and incurs a fixed maintenance cost.
+
+Your task is to output any valid assignment that maximizes the total net resonance.
+
+## Input
+
+The first line contains an integer \(T\), the number of test cases.
+
+Each test case has the following format:
+
+- one line with three integers  
+  \[
+  n\ \ C\ \ F
+  \]
+  where:
+  - \(n\) = number of crystals,
+  - \(C\) = cost of one prime-multiplication operation,
+  - \(F\) = fixed cost for each used representative,
+
+- one line with \(n\) integers  
+  \[
+  a_1, a_2, \dots, a_n
+  \]
+
+- one line with \(n\) integers  
+  \[
+  w_1, w_2, \dots, w_n
+  \]
+
+## Output
+
+For each test case, output one line with \(n\) integers:
+
+\[
+b_1\ b_2\ \dots\ b_n
+\]
+
+where \(1 \le b_i \le n\).
+
+This means crystal \(i\) is assigned to representative \(b_i\), and will be tuned to final signature \(sf(a_{b_i})\).
+
+### Feasibility
+Your output is feasible iff every \(b_i\) is an integer in \([1,n]\).
+
+## Objective
+
+For a fixed test case, let:
+
+- \(P_i\) be the set of primes dividing \(sf(a_i)\),
+- the tuning cost of assigning \(i\) to representative \(b_i\) be
+  \[
+  C \cdot |P_i \triangle P_{b_i}|
+  \]
+  where \(\triangle\) is symmetric difference,
+
+- the set of used representatives be
+  \[
+  U = \{ b_i \mid 1 \le i \le n \}.
+  \]
+
+For each used representative \(r \in U\), define its group
+\[
+G_r = \{ i \mid b_i = r \}.
+\]
+
+The **resonance value** of that group is
+\[
+\left(\sum_{i \in G_r} w_i\right)^2
+\]
+because every ordered pair \((i,j)\) in the same group contributes \(w_i w_j\).
+
+The total objective value is:
+
+\[
+V =
+\sum_{r \in U}
+\left(\sum_{i \in G_r} w_i\right)^2
+\;-\;
+C \sum_{i=1}^{n} |P_i \triangle P_{b_i}|
+\;-\;
+F \cdot |U|.
+\]
+
+Your goal is to **maximize** \(V\).
+
+## Scoring
+
+For each test case, define the **baseline assignment** as follows:
+
+- for each distinct square-free signature appearing in the input, pick its smallest index as representative,
+- assign every crystal to the representative having the same signature as itself.
+
+This baseline performs zero tuning operations.
+
+Let the baseline objective value for the test case be \(B\).  
+The official test data guarantees that \(B > 0\).
+
+For your output with objective value \(V\), the score for that test case is
+
+\[
+S = \mathrm{clamp}\left(0,\ \left\lfloor 10^6 \cdot \frac{V}{B} \right\rfloor,\ 2 \cdot 10^6\right)
+\]
+
+where \(\mathrm{clamp}(L,x,R)=\max(L,\min(x,R))\).
+
+The final score is
+
+\[
+\left\lfloor \frac{1}{T} \sum S \right\rfloor.
+\]
+
+So:
+
+- matching the baseline gives about **1,000,000** points on that test case,
+- doing better gives more,
+- doing worse gives less.
+
+## Constraints
+
+- \(1 \le T \le 20\)
+- \(1 \le n \le 5 \cdot 10^4\)
+- \(1 \le a_i \le 10^6\)
+- \(1 \le w_i \le 10^4\)
+- \(0 \le C \le 10^6\)
+- \(0 \le F \le 10^{12}\)
+- \(\sum n\) over all test cases \(\le 2 \cdot 10^5\)
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+
+Sample input
+```text
+1
+4 10 10
+2 8 3 12
+3 1 2 2
+```
+
+Sample output
+```text
+1 1 1 1
+```
+
+Brief explanation:
+
+- \(sf(2)=2\), \(sf(8)=2\), \(sf(3)=3\), \(sf(12)=3\).
+- The sample output puts all crystals into one group with final signature \(2\).
+
+Group weight sum:
+- \(3+1+2+2=8\), so resonance reward is \(8^2=64\).
+
+Tuning costs:
+- crystals 1 and 2 already have signature \(2\): cost \(0\),
+- crystal 3 must change from signature \(3\) to \(2\): 2 prime multiplications,
+- crystal 4 must also change from \(3\) to \(2\): 2 prime multiplications.
+
+So total operation count is \(4\), and total tuning penalty is \(4 \cdot 10 = 40\).
+
+Used representatives:
+- only representative \(1\) is used, so fixed cost is \(10\).
+
+Hence:
+\[
+V = 64 - 40 - 10 = 14.
+\]
+
+Baseline:
+- one group for signature \(2\): weights \(3+1=4\), reward \(16\),
+- one group for signature \(3\): weights \(2+2=4\), reward \(16\),
+- no tuning cost, two groups, fixed cost \(20\).
+
+So
+\[
+B = 16+16-20 = 12.
+\]
+
+Score:
+\[
+\left\lfloor 10^6 \cdot \frac{14}{12} \right\rfloor = 1166666.
+\]
+
+```

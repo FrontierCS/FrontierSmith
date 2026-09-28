@@ -1,0 +1,249 @@
+```markdown
+# Shared Matrix Product Cache
+
+## Problem
+A data center stores a fixed chain of matrices
+
+- \(A_1, A_2, \dots, A_K\)
+
+where matrix \(A_i\) has dimensions \(p_{i-1} \times p_i\).
+
+During the day, clients submit requests for products of **contiguous** subsequences of this chain.  
+A request \((L, R)\) asks for the matrix product
+
+\[
+A_L A_{L+1} \cdots A_R
+\]
+
+with \(1 \le L < R \le K\).
+
+You may answer the requests in **any order** and reuse intermediate products across different requests.  
+However, your system has a limited cache capacity: only a bounded total size of intermediate matrices may be stored at the same time.
+
+Your task is to output a valid sequence of cache operations and matrix multiplications that answers all requests while minimizing the total number of scalar multiplications performed.
+
+### Available objects
+- Every original matrix \(A_i\) is always available.
+- Original matrices do **not** count toward cache usage.
+- You may create and delete intermediate products of contiguous ranges.
+
+### Intermediate product
+A cached block \([l, r]\) represents the matrix product
+
+\[
+A_l A_{l+1} \cdots A_r
+\]
+
+and has dimensions \(p_{l-1} \times p_r\).
+
+Its cache size is
+
+\[
+\text{size}(l,r)=p_{l-1}\cdot p_r
+\]
+
+(number of scalar entries).
+
+### Allowed operations
+You must output a sequence of operations. The following are allowed:
+
+1. `MUL l k r`  
+   Create block \([l,r]\) by multiplying two **currently available** adjacent blocks:
+   - \([l,k]\)
+   - \([k+1,r]\)
+
+   where \(l \le k < r\).
+
+   The scalar multiplication cost added to your objective is
+
+   \[
+   p_{l-1}\cdot p_k \cdot p_r
+   \]
+
+   The new block \([l,r]\) becomes cached.
+
+2. `DEL l r`  
+   Delete the cached block \([l,r]\).
+
+3. `OUT q`  
+   Mark request \(q\) as answered. This is valid only if the block corresponding to request \(q\) is currently available.
+
+### Validity rules
+- Original matrices correspond to blocks \([i,i]\) and are always available.
+- You may not delete original matrices.
+- A `MUL` operation is valid only if both input blocks are currently available.
+- A `MUL` operation may only create a block \([l,r]\) with \(l<r\).
+- At any time, there may be **at most one cached copy** of any nontrivial block \([l,r]\).
+- `DEL l r` is valid only if \([l,r]\) is currently cached.
+- Each request must be answered by exactly one `OUT q`.
+- Cache usage after every operation must not exceed the capacity \(C\).
+- Operations have no numerical effect beyond the above model; the judge checks only feasibility and total cost.
+
+The optimization challenge is to choose:
+- which intermediate blocks to materialize,
+- when to delete them,
+- and in which order to answer requests.
+
+---
+
+## Input
+The input describes one instance.
+
+- First line: three integers  
+  `K Q C`
+  - \(K\): number of matrices
+  - \(Q\): number of requests
+  - \(C\): cache capacity
+
+- Second line: \(K+1\) integers  
+  `p0 p1 ... pK`
+
+- Next \(Q\) lines: two integers  
+  `L_i R_i` describing request \(i\)
+
+### Meaning
+- Matrix \(A_i\) has dimensions \(p_{i-1} \times p_i\).
+- Request \(i\) asks for \(A_{L_i}A_{L_i+1}\cdots A_{R_i}\).
+
+---
+
+## Output
+Output a sequence of operations.
+
+- First line: an integer `S` — the number of operations.
+- Next `S` lines: each line is one of:
+
+  - `MUL l k r`
+  - `DEL l r`
+  - `OUT q`
+
+### Feasibility requirements
+Your output is feasible if all rules in the Problem section are satisfied.
+
+If the output is infeasible, the score for that test is 0.
+
+---
+
+## Objective
+Minimize the total scalar multiplication cost:
+
+\[
+\text{Cost}=\sum_{\text{all `MUL l k r`}} p_{l-1}\cdot p_k\cdot p_r
+\]
+
+`DEL` and `OUT` cost 0.
+
+---
+
+## Scoring
+For each test instance:
+
+- Let \(B\) be the **baseline cost**.
+- Let \(C_{\text{you}}\) be your total cost.
+- If your output is infeasible, your score for that test is 0.
+
+Otherwise:
+
+\[
+\text{Score}_{\text{test}} = 100 \times \min\left(2,\; \frac{B}{C_{\text{you}}}\right)
+\]
+
+Higher is better.
+
+### Baseline
+The baseline answers each request **independently**, with **no sharing across requests**.
+
+For each request \((L,R)\), compute the minimum scalar multiplication cost for multiplying the chain \(A_L\cdots A_R\) using the standard matrix-chain dynamic programming recurrence. Let that cost be \(\text{dp}[L][R]\).
+
+Then
+
+\[
+B=\sum_{i=1}^{Q} \text{dp}[L_i][R_i]
+\]
+
+A submission matching this baseline receives score 100 on that test.  
+Better solutions can score above 100, up to a maximum of 200 per test.
+
+### Final ranking
+The final score is the average of `Score_test` over all hidden tests.
+
+---
+
+## Constraints
+- \(2 \le K \le 220\)
+- \(1 \le Q \le 2000\)
+- \(1 \le p_i \le 2000\)
+- \(1 \le L_i < R_i \le K\)
+- \(1 \le C \le 10^7\)
+- Hidden tests guarantee that every request result fits in cache:
+  \[
+  C \ge \max_i \bigl(p_{L_i-1}\cdot p_{R_i}\bigr)
+  \]
+- Use 64-bit integers for costs.
+
+Additional output limit:
+- \(1 \le S \le 1{,}000{,}000\)
+
+### Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+### Sample input
+```text
+4 2 2000
+40 20 30 10 30
+1 3
+1 4
+```
+
+### Sample output
+```text
+5
+MUL 2 2 3
+MUL 1 1 3
+OUT 1
+MUL 1 3 4
+OUT 2
+```
+
+### Explanation
+The matrices are:
+- \(A_1: 40\times 20\)
+- \(A_2: 20\times 30\)
+- \(A_3: 30\times 10\)
+- \(A_4: 10\times 30\)
+
+The schedule does:
+1. Build \([2,3]\): cost \(20\cdot 30\cdot 10=6000\)
+2. Build \([1,3]\): cost \(40\cdot 20\cdot 10=8000\)
+3. Answer request 1 \((1,3)\)
+4. Build \([1,4]\) from \([1,3]\) and \(A_4\): cost \(40\cdot 10\cdot 30=12000\)
+5. Answer request 2 \((1,4)\)
+
+Total cost:
+
+\[
+6000+8000+12000=26000
+\]
+
+Baseline:
+- best cost for \((1,3)\) is \(14000\)
+- best cost for \((1,4)\) is \(26000\)
+
+So
+
+\[
+B=14000+26000=40000
+\]
+
+Score for this example:
+
+\[
+100 \times \min\left(2,\frac{40000}{26000}\right)\approx 153.846
+\]
+
+This illustrates that sharing cached intermediates across requests can beat the independent-per-request baseline.
+```

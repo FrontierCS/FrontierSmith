@@ -1,0 +1,173 @@
+```markdown
+# Layered Mural Auction
+
+## Problem
+A city wants to cover a rectangular wall with a mural.
+
+The wall is divided into an `H × W` grid of unit cells. For each cell, the city specifies:
+
+- a **target color**,
+- an **importance weight**.
+
+You receive `N` painting offers. Offer `i` paints one axis-aligned rectangular region in a single color and charges a fixed cost.
+
+You may accept any number of offers and choose the **execution order**. If several accepted offers cover the same cell, the **last** accepted offer covering that cell determines the final visible color of that cell. Cells not covered by any accepted offer remain **blank**.
+
+Using too many different visible colors is undesirable. The city prefers at most `K` visible colors, but this is a **soft** limit: using more than `K` colors is allowed and incurs a penalty.
+
+Your task is to output an ordered list of accepted offers that minimizes the total penalty.
+
+## Input
+The input describes one instance.
+
+- First line:  
+  `H W P K N F`
+  - `H`, `W`: wall dimensions
+  - `P`: number of possible colors, labeled `1..P`
+  - `K`: preferred maximum number of visible non-blank colors
+  - `N`: number of offers
+  - `F`: coefficient for the color-overflow penalty
+
+- Next `H` lines: the target color grid  
+  Each line contains `W` integers `T[r][c]` (`1 <= T[r][c] <= P`).
+
+- Next `H` lines: the importance grid  
+  Each line contains `W` integers `V[r][c]` (`1 <= V[r][c]`).
+
+- Next `N` lines: the offers  
+  Offer `i` is given as  
+  `color top left bottom right cost`
+  meaning:
+  - `color` in `1..P`
+  - rectangle corners `(top, left)` to `(bottom, right)` inclusive
+  - `cost` is the price of accepting this offer
+
+Offers are indexed from `1` to `N` in the order they appear in the input.
+
+## Output
+Output a valid plan:
+
+- First line: an integer `M` — the number of accepted offers.
+- Second line: `M` distinct integers — the IDs of the accepted offers, in the exact execution order.
+
+If `M = 0`, the second line may be empty or omitted.
+
+A submission is **valid** if:
+
+- `0 <= M <= N`
+- all listed offer IDs are distinct
+- all listed offer IDs are between `1` and `N`
+
+If the output is invalid, the score for that test file is `0`.
+
+## Objective
+Let the final visible color of cell `(r, c)` be:
+
+- the color of the last selected offer whose rectangle contains `(r, c)`, or
+- `0` if no selected offer covers the cell (blank).
+
+Let `D` be the number of distinct visible colors among all non-blank cells.
+
+The total penalty is:
+
+1. **Cell penalty**
+   For each cell `(r, c)`:
+   - `0` if the final visible color equals `T[r][c]`
+   - `V[r][c]` if the cell is painted but with the wrong color
+   - `2 * V[r][c]` if the cell is blank
+
+2. **Offer cost**
+   - the sum of `cost` over all accepted offers
+
+3. **Color-overflow penalty**
+   - `F * max(0, D - K)^2`
+
+So the objective is to minimize:
+
+\[
+\sum_{r=1}^{H}\sum_{c=1}^{W}\text{cellPenalty}(r,c)
+\;+\;
+\sum_{i \in \text{accepted}} cost_i
+\;+\;
+F \cdot \max(0, D-K)^2
+\]
+
+All computations use exact integer arithmetic.
+
+## Scoring
+For each test file:
+
+- Let `Y` be your total penalty.
+- Let `B` be the baseline penalty obtained by the **empty plan** (`M = 0`).
+
+The score for that file is:
+
+\[
+\text{score} = \operatorname{round}\left(10^6 \cdot \frac{B}{B + Y}\right)
+\]
+
+Properties:
+
+- Perfect score on a file is approached when `Y` is very small.
+- The baseline empty plan gets exactly `500000`.
+- Better solutions than the baseline score above `500000`.
+- Worse solutions score below `500000`.
+
+The final contest score is the **sum** of the scores over all test files.
+
+## Constraints
+- `1 <= H, W <= 120`
+- `1 <= P <= 30`
+- `1 <= K <= P`
+- `1 <= N <= 3000`
+- `1 <= F <= 10^9`
+- `1 <= cost <= 10^9`
+- `1 <= V[r][c] <= 10^6`
+- `1 <= top <= bottom <= H`
+- `1 <= left <= right <= W`
+
+The official test set is designed so that exhaustive search is infeasible.
+
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+## Example
+Sample Input
+```text
+3 5 3 3 5 20
+1 1 1 2 2
+1 1 1 2 2
+3 3 3 2 2
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 2 3 2
+2 1 4 3 5 2
+3 3 1 3 3 2
+1 1 1 3 5 6
+2 2 3 3 4 1
+```
+
+Sample Output
+```text
+3
+1 2 3
+```
+
+Brief explanation:
+
+- Offer 1 paints the top-left `2×3` block with color `1`
+- Offer 2 paints the rightmost two columns with color `2`
+- Offer 3 paints the bottom-left `1×3` block with color `3`
+
+This exactly matches the target mural, so the cell penalty is `0`.
+The visible colors are `{1,2,3}`, so there is no overflow penalty because `K = 3`.
+The total penalty is just the sum of accepted offer costs: `2 + 2 + 2 = 6`.
+
+The empty-plan baseline leaves every cell blank, so its penalty is `2 * 15 = 30`.
+Therefore this output scores approximately:
+
+\[
+10^6 \cdot \frac{30}{30 + 6} \approx 833333
+\]
+```

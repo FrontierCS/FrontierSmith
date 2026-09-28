@@ -1,0 +1,198 @@
+```markdown
+# Museum Embroidery Planner
+
+## Problem
+
+A museum wants to reproduce a damaged piece of cross-stitch embroidery.
+
+The cloth is an `N × M` grid of square cells. Each non-empty cell must contain a **full cross** on the **front** side of the cloth, using the color written in that cell. A full cross consists of exactly two front-side diagonal stitches:
+
+- `\` from the top-left corner of the cell to the bottom-right corner,
+- `/` from the top-right corner of the cell to the bottom-left corner.
+
+A **session** is one continuous use of a single thread color. During a session:
+
+1. the needle enters the cloth from the outside at some boundary vertex,
+2. a sequence of front-side diagonal stitches is made,
+3. between consecutive front-side stitches, the thread moves on the **back** side only along grid edges,
+4. the needle exits the cloth at some boundary vertex.
+
+All stitches in one session must use the same color, but a cell’s two diagonals may be placed in different sessions of that color.
+
+Your task is to output any feasible set of sessions and minimize the total amount of thread used.
+
+### Geometry
+
+Grid vertices have coordinates `(r, c)` with `0 ≤ r ≤ N` and `0 ≤ c ≤ M`.
+
+For a cell `(i, j)` (1-indexed):
+
+- diagonal `\` connects `(i-1, j-1)` and `(i, j)`,
+- diagonal `/` connects `(i-1, j)` and `(i, j-1)`.
+
+Each front-side diagonal may be traversed in either direction.
+
+### Cost model
+
+All costs are integers in **milli-units**:
+
+- each front-side diagonal stitch costs **1414**,
+- each back-side move along one grid edge costs **1000**,
+- starting a session costs an additional **500**,
+- ending a session costs an additional **500**.
+
+If a session starts at vertex `v`, the shortest back-side distance from the boundary to `v` is
+
+`db(v) = min(r, N-r, c, M-c)`.
+
+So the start of a session contributes `500 + 1000 * db(v)`, and similarly for the end.
+
+If one front stitch ends at vertex `u` and the next front stitch starts at vertex `v`, the back-side transition cost is
+
+`1000 * (|ur - vr| + |uc - vc|)`.
+
+The total objective is the sum of all session costs.
+
+## Input
+
+The first line contains two integers:
+
+`N M`
+
+Then follow `N` lines, each with `M` characters.
+
+Each character is either:
+
+- `.` — empty cell,
+- `A` to `Z` — a non-empty cell that must receive a full cross in that color.
+
+At least one cell is non-empty.
+
+## Output
+
+On the first line, output an integer `S` — the number of sessions.
+
+Then for each session, output:
+
+- one line: `color K`
+  - `color` is an uppercase letter `A` to `Z`,
+  - `K` is the number of front-side diagonal stitches in this session (`K ≥ 1`),
+- followed by `K` lines, each describing one front-side diagonal stitch:
+
+`i j d o`
+
+where:
+
+- `1 ≤ i ≤ N`, `1 ≤ j ≤ M`,
+- `d` is either `/` or `\`,
+- `o` is `0` or `1`, indicating the direction:
+
+For cell `(i, j)`:
+
+- if `d = \`:
+  - `o = 0`: start `(i-1, j-1)`, end `(i, j)`
+  - `o = 1`: start `(i, j)`, end `(i-1, j-1)`
+- if `d = /`:
+  - `o = 0`: start `(i-1, j)`, end `(i, j-1)`
+  - `o = 1`: start `(i, j-1)`, end `(i-1, j)`
+
+### Feasibility requirements
+
+Your output is feasible iff all of the following hold:
+
+1. Every session uses exactly one color.
+2. Every stitch `(i, j, d)` is used at most once in the whole output.
+3. If a stitch `(i, j, d)` appears in a session of color `X`, then input cell `(i, j)` must contain `X`.
+4. For every non-empty cell, both diagonals `\` and `/` appear exactly once in total.
+5. Empty cells must not appear in any stitch.
+
+Any infeasible output receives score `0`.
+
+## Objective
+
+Minimize the total thread cost.
+
+For one session with stitches `t1, t2, ..., tK`:
+
+- let `start(t)` and `end(t)` be the stitch endpoints determined by `(d, o)`,
+- session cost is
+
+`500 + 1000 * db(start(t1))`
+`+ 1414 * K`
+`+ Σ_{x=1..K-1} 1000 * Manhattan(end(tx), start(t(x+1)))`
+`+ 1000 * db(end(tK)) + 500`
+
+The objective value for a test is the sum of session costs over all sessions.
+
+## Scoring
+
+For each test case, let:
+
+- `O` = your objective value,
+- `B` = the objective value of the **baseline solution** below.
+
+Your score for that test is:
+
+`score = 100 * min(2, B / O)`
+
+If your output is infeasible, the score is `0`.
+
+The final score is the average of `score` over all test cases.
+
+### Baseline solution
+
+The baseline is deterministic and easy to implement:
+
+For each color from `A` to `Z`:
+
+1. collect all cells of that color in row-major order,
+2. if the list is non-empty, create exactly one session for that color,
+3. for each such cell `(i, j)` in that order, append:
+   - `(i, j, \, 0)`
+   - `(i, j, /, 1)`
+
+This defines `B`.
+
+## Constraints
+
+- `1 ≤ N, M ≤ 200`
+- Cells use only `.` or `A`..`Z`
+- At least one cell is non-empty
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample Input
+```text
+2 2
+AB
+.A
+```
+
+### Sample Output
+```text
+2
+A 4
+1 1 \ 0
+1 1 / 1
+2 2 \ 0
+2 2 / 1
+B 2
+1 2 \ 0
+1 2 / 1
+```
+
+### Explanation
+
+There are three non-empty cells, so six front-side diagonals must be stitched in total.
+
+The sample output uses:
+
+- one session for color `A`, handling two cells,
+- one session for color `B`, handling one cell.
+
+It is feasible because every non-empty cell gets both diagonals exactly once, and no empty cell is used.
+
+For this particular input, the sample output is exactly the baseline solution, so its score on this test would be `100`.
+```

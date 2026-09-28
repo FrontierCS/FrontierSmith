@@ -1,0 +1,189 @@
+# Connected Palette Pruning
+
+## Problem
+
+A conservator is digitizing a large painted mural represented by an `H × W` grid of cells.  
+Each cell has a **color** `c` in `1..C`. All cells of the same color must be treated together.
+
+For storage reasons, the conservator may **remove** some colors.  
+Removing color `c` deletes **all** cells whose color is `c`.
+
+However, several marked cells are historically important and must remain visible.  
+Also, after all deletions, the remaining cells must still form **one single 4-connected region**.
+
+Each color `c` has a positive preservation cost `p_c`. If color `c` is kept, its cost is paid once, regardless of how many cells of that color appear.
+
+Your task is to output a set of colors to **keep** so that:
+
+- every marked cell remains,
+- the remaining cells are non-empty,
+- the remaining cells form a single 4-connected component,
+- and the total preservation cost is as small as possible.
+
+Two cells are 4-connected if they share a side.  
+A set of cells is 4-connected if every two cells in the set are connected by a path using only cells in the set and 4-neighbor moves.
+
+This is an optimization problem: any feasible solution is accepted, and better solutions receive higher scores.
+
+---
+
+## Input
+
+The first line contains an integer `T`, the number of test cases.
+
+For each test case:
+
+- The first line contains four integers `H, W, C, K`
+  - `H`: number of rows
+  - `W`: number of columns
+  - `C`: number of colors
+  - `K`: number of marked cells
+- The second line contains `C` integers `p_1, p_2, ..., p_C`, where `p_c` is the cost of keeping color `c`.
+- The next `H` lines each contain `W` integers. The `j`-th integer on the `i`-th of these lines is the color of cell `(i, j)`.
+- The next `K` lines each contain two integers `r, c`, the coordinates of a marked cell (1-indexed).
+
+Additional guarantees:
+
+- Every color `1..C` appears at least once in the grid.
+- All marked cells are distinct.
+
+---
+
+## Output
+
+For each test case, output:
+
+- One line containing an integer `M` — the number of colors you keep.
+- One line containing `M` distinct integers — the kept color IDs.
+
+A submission is **feasible** for a test case if all of the following hold:
+
+1. `0 < M <= C`
+2. All listed color IDs are distinct integers in `1..C`
+3. Every marked cell has a color that is listed
+4. Let the remaining cells be exactly the grid cells whose color is listed.  
+   Then the remaining cells must form one single non-empty 4-connected component.
+
+If any of these conditions fail, the solution for that test case is infeasible.
+
+---
+
+## Objective
+
+For a feasible solution, let `S` be the set of kept colors.
+
+The objective value is:
+
+\[
+\text{cost}(S)=\sum_{c \in S} p_c
+\]
+
+Your goal is to **minimize** this cost.
+
+Infeasible outputs do not receive objective credit.
+
+---
+
+## Scoring
+
+For each test case `t`, define the **baseline** solution as:
+
+- keep **all** colors `1..C`
+
+This is always feasible, because the full `H × W` grid is non-empty and 4-connected.
+
+Let:
+
+\[
+B_t = \sum_{c=1}^{C} p_c
+\]
+
+be the baseline cost for test case `t`.
+
+If your output for test case `t` is infeasible, then:
+
+\[
+\text{score}_t = 0
+\]
+
+Otherwise, if your feasible solution has cost `X_t`, then:
+
+\[
+\text{score}_t = \min\left(100,\; 20 \cdot \frac{B_t}{X_t}\right)
+\]
+
+So:
+
+- the baseline solution always scores `20` points on that test case,
+- lower-cost feasible solutions score higher,
+- scores are capped at `100` per test case.
+
+The final score is the arithmetic mean of `score_t` over all test cases.
+
+---
+
+## Constraints
+
+- `1 <= T`
+- `1 <= H, W`
+- `1 <= C <= H \cdot W`
+- `1 <= K <= H \cdot W`
+- `1 <= p_c <= 10^9`
+- `1 <=` sum of `H · W` over all test cases `<= 3 × 10^5`
+- Time limit: 2 seconds
+- Memory limit: 512 MB
+
+The test data are designed so that exhaustive search over color subsets is not viable.
+
+---
+
+## Example
+
+### Sample Input
+```text
+1
+3 4 5 2
+5 2 4 3 6
+1 2 2 3
+1 4 5 3
+1 4 5 3
+1 1
+3 4
+```
+
+### Sample Output
+```text
+3
+1 2 3
+```
+
+### Explanation
+
+Kept colors are `{1, 2, 3}`.
+
+Remaining cells are:
+
+- color `1`: left column
+- color `2`: cells `(1,2)` and `(1,3)`
+- color `3`: right column
+
+These remaining cells form one 4-connected component, and both marked cells `(1,1)` and `(3,4)` remain.
+
+Objective cost:
+
+\[
+5 + 2 + 3 = 10
+\]
+
+Baseline cost (keep all colors):
+
+\[
+5 + 2 + 4 + 3 + 6 = 20
+\]
+
+Score for this test case:
+
+\[
+\min(100,\;20 \cdot 20 / 10) = 40
+\]
+

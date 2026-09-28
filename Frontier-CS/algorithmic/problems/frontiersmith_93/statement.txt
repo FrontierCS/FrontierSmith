@@ -1,0 +1,179 @@
+```markdown
+# Archive of Almost-Happy Tickets
+
+## Problem
+
+The Berland Transport Museum is restoring a collection of old bus tickets.  
+Each ticket is a string of decimal digits of **even** length; some digits are still visible, while others have been erased and are written as `?`.
+
+The museum has a limited stock of replacement digit stickers: for each digit `0` to `9`, a given number of stickers is available. Every erased position must be restored using exactly one sticker, and the global stock limits must be respected.
+
+After restoration, each ticket receives an **appeal value** based on three criteria:
+
+1. **Happy bonus** — collectors especially value tickets whose first-half digit sum equals the second-half digit sum.
+2. **Near-happy bonus** — even if not perfectly happy, tickets with small half-sum difference are still attractive.
+3. **Style bonus** — repeated adjacent digits are visually pleasing.
+
+Your task is to output a complete restoration of all tickets that maximizes the total appeal.
+
+This is an optimization problem: any feasible restoration is accepted, and better restorations receive higher scores.
+
+---
+
+## Input
+
+The input contains one test instance.
+
+- The first line contains one integer `m` — the number of tickets.
+- For each ticket `i` (`1 <= i <= m`):
+  - The first line contains five integers  
+    `n_i  A_i  B_i  C_i  H_i`
+    - `n_i` — the ticket length (even),
+    - `A_i` — happy bonus,
+    - `B_i` — near-happy coefficient,
+    - `C_i` — style coefficient,
+    - `H_i` — near-happy radius.
+  - The second line contains a string `s_i` of length `n_i`, consisting of digits `0`-`9` and `?`.
+- The last line contains 10 integers  
+  `S_0 S_1 ... S_9`,  
+  where `S_d` is the number of available stickers of digit `d`.
+
+### Guarantees
+- `sum over all tickets of count('?') = S_0 + S_1 + ... + S_9`
+- Therefore, every erased position can be filled iff your output uses exactly the given sticker counts.
+
+---
+
+## Output
+
+Output `m` lines.
+
+On line `i`, print a fully restored digit string `t_i` of length `n_i` for ticket `i`.
+
+A submission is **feasible** if all of the following hold:
+
+1. `t_i` has length exactly `n_i`.
+2. `t_i` contains only digits `0`-`9`.
+3. For every position where `s_i` already contains a digit, `t_i` has the same digit.
+4. Across all positions where `s_i` contains `?`, the number of written copies of digit `d` is exactly `S_d` for every `d = 0..9`.
+
+If any of these conditions is violated, the submission is infeasible.
+
+---
+
+## Objective
+
+For each restored ticket `t_i`:
+
+- Let `L_i` be the sum of the first `n_i / 2` digits.
+- Let `R_i` be the sum of the last `n_i / 2` digits.
+- Let `D_i = |L_i - R_i|`.
+- Let `E_i` be the number of indices `j` (`1 <= j < n_i`) such that `t_i[j] = t_i[j+1]`.
+
+Its appeal is:
+
+- `A_i`, if `D_i = 0`, otherwise `0`
+- plus `B_i * max(0, H_i - D_i)`
+- plus `C_i * E_i`
+
+So:
+
+`appeal_i = (D_i == 0 ? A_i : 0) + B_i * max(0, H_i - D_i) + C_i * E_i`
+
+The total objective is:
+
+`OBJ = sum of appeal_i over all tickets`
+
+Your goal is to **maximize `OBJ`**.
+
+---
+
+## Scoring
+
+For each test instance, let:
+
+- `OBJ_you` be the objective value of your feasible output,
+- `OBJ_base` be the objective value of the following baseline restoration.
+
+### Baseline restoration
+Starting from the original tickets, process tickets in input order, and within each ticket process positions from left to right.
+
+Whenever a `?` is encountered, replace it with the **smallest digit `d` such that there is still at least one unused sticker `d` remaining**. Decrease the remaining count of that digit by 1.
+
+This always produces a feasible restoration.
+
+### Score formula
+If your output is infeasible, the score for the instance is `0`.
+
+Otherwise, the instance score is:
+
+`score = 1000 * min(3, (OBJ_you + 1) / (OBJ_base + 1))`
+
+The final score over a test set is the arithmetic mean of instance scores.
+
+This scoring is continuous: improving the objective improves the score, and outperforming the baseline yields a score above `1000` on that instance.
+
+---
+
+## Constraints
+
+- `1 <= m <= 300`
+- `2 <= n_i <= 2000`
+- `n_i` is even
+- `0 <= A_i, B_i, C_i <= 10^6`
+- `0 <= H_i <= 9 * n_i / 2`
+- Total length of all tickets: `sum n_i <= 2 * 10^5`
+- Total number of `?` over all tickets: at most `2 * 10^5`
+
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+---
+
+## Example
+
+### Input
+```text
+2
+4 20 3 2 5
+?2?3
+6 15 2 1 7
+1??0?4
+1 1 2 1 0 0 0 0 0 0
+```
+
+### Output
+```text
+0223
+113024
+```
+
+### Explanation
+This output is feasible:
+
+- It respects all fixed digits.
+- Across all erased positions, it uses:
+  - one `0`,
+  - one `1`,
+  - two `2`s,
+  - one `3`,
+  matching the available sticker counts.
+
+Ticket 1: `0223`
+- Left sum = `0+2 = 2`
+- Right sum = `2+3 = 5`
+- `D = 3`
+- Adjacent equal pairs: one (`22`)
+- Appeal = `0 + 3 * (5 - 3) + 2 * 1 = 8`
+
+Ticket 2: `113024`
+- Left sum = `1+1+3 = 5`
+- Right sum = `0+2+4 = 6`
+- `D = 1`
+- Adjacent equal pairs: one (`11`)
+- Appeal = `0 + 2 * (7 - 1) + 1 * 1 = 13`
+
+So `OBJ = 21`.
+
+The judge also computes the baseline restoration and scores your solution by the ratio `(OBJ_you + 1) / (OBJ_base + 1)`.
+```

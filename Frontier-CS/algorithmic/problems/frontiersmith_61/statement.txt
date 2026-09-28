@@ -1,0 +1,170 @@
+```markdown
+# Rhythm Streak Planner
+
+## Problem
+You are preparing for a rhythm-game performance with `n` notes, numbered from `1` to `n`.
+
+For each note `i`, if you play without any preparation, you hit it correctly with probability `p_i` and miss it with probability `1 - p_i`. Outcomes of different notes are independent.
+
+A realized play is a string of length `n` over:
+- `O` = hit
+- `X` = miss
+
+Its **streak score** is computed as follows:
+
+- Split the string into maximal consecutive blocks of `O`.
+- If a block has length `L`, it contributes `L^2`.
+- The total score is the sum over all such blocks.
+
+Example: `OOXOOOXXOO` has blocks of lengths `2, 3, 2`, so its score is `2^2 + 3^2 + 2^2 = 17`.
+
+Before the performance, you may buy some **training modules**.  
+Each module affects one contiguous segment of notes and makes misses less likely on that segment.
+
+Module `j` is described by:
+- interval `[l_j, r_j]`
+- cost `c_j`
+- miss factor `f_j` (`0 <= f_j <= 1`)
+
+If you buy module `j`, then for every note `i` with `l_j <= i <= r_j`, the miss probability of note `i` is multiplied by `f_j`.
+
+If several bought modules cover the same note, their effects multiply.
+
+So for a chosen set of modules `S`, the final hit probability of note `i` is:
+
+\[
+P_i = 1 - (1 - p_i)\prod_{j \in S,\ l_j \le i \le r_j} f_j
+\]
+
+You have a total budget `B`.  
+Your task is to output any feasible set of modules whose **expected streak score** is as large as possible.
+
+This is an optimization problem: better solutions receive better scores.
+
+## Input
+The input contains one test instance.
+
+- The first line contains three integers `n`, `m`, `B`  
+  — number of notes, number of available modules, and total budget.
+- The second line contains `n` real numbers `p_1, p_2, ..., p_n`.
+- Then follow `m` lines. The `j`-th of them contains four values:
+  - `l_j`, `r_j` (`1 <= l_j <= r_j <= n`)
+  - `c_j` (`1 <= c_j`)
+  - `f_j` (`0 <= f_j <= 1`)
+
+## Output
+Output a feasible set of modules.
+
+- The first line must contain an integer `k` — the number of chosen modules.
+- The second line must contain `k` distinct integers — their 1-based indices.
+
+If `k = 0`, the second line may be empty.
+
+A submission is **feasible** if:
+- all chosen indices are distinct and between `1` and `m`,
+- the total cost of chosen modules is at most `B`.
+
+If the output is infeasible, the objective value for that test is treated as `0`.
+
+## Objective
+Let `S` be the chosen feasible set of modules, and let `P_i` be the resulting hit probability of note `i`.
+
+The objective is to **maximize the expected streak score**.
+
+For deterministic evaluation, the expected score is defined exactly by the random process above.  
+Equivalently, it can be computed by the recurrence:
+
+- `E_0 = 0`
+- `R_0 = 0`
+
+For `i = 1..n`:
+- `E_i = E_{i-1} + P_i * (2 * R_{i-1} + 1)`
+- `R_i = P_i * (R_{i-1} + 1)`
+
+Then the objective value is `E_n`.
+
+Here `R_i` is the expected length of the current trailing hit streak after processing note `i`.
+
+## Scoring
+Let:
+
+- `V_sub` = your objective value on the test,
+- `V_base` = the objective value of the **baseline solution**,
+- `U = n^2` = the theoretical maximum possible streak score.
+
+The per-test score is:
+
+- if `U = V_base`:
+  - `1,000,000` if `V_sub = U`,
+  - otherwise `0`;
+- else:
+
+\[
+\text{score} = 1{,}000{,}000 \cdot \mathrm{clamp}\left(\frac{V_{sub} - V_{base}}{U - V_{base}}, 0, 1\right)
+\]
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+The overall score is the average of per-test scores over all hidden tests.
+
+### Baseline solution
+The baseline is defined deterministically as follows:
+
+1. Compute `V_empty`, the objective value when no modules are chosen.
+2. For each module `j`, compute `V_j`, the objective value when only module `j` is chosen.
+3. Define its standalone density as:
+
+\[
+d_j = \frac{V_j - V_{empty}}{c_j}
+\]
+
+4. Sort modules by:
+   - decreasing `d_j`,
+   - then increasing `c_j`,
+   - then increasing index.
+5. Traverse modules in that order and add a module if it still fits in the remaining budget.
+
+The baseline objective `V_base` is the expected streak score of the set selected by this rule.
+
+## Constraints
+- `1 <= n <= 200000`
+- `1 <= m <= 200000`
+- `1 <= B <= 10^18`
+- `0 <= p_i <= 1`
+- `1 <= c_j <= 10^18`
+- `0 <= f_j <= 1`
+- Each `p_i` and `f_j` has at most 6 digits after the decimal point.
+
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+Input
+```text
+5 3 5
+0.5 0.3 0.8 0.2 0.6
+1 3 3 0.5
+3 5 2 0.2
+2 4 4 0.7
+```
+
+Output
+```text
+2
+1 2
+```
+
+In this example, modules `1` and `2` cost `3 + 2 = 5`, so the solution is feasible.
+
+Their combined effect gives final hit probabilities:
+
+- `P_1 = 1 - (1 - 0.5) * 0.5 = 0.75`
+- `P_2 = 1 - (1 - 0.3) * 0.5 = 0.65`
+- `P_3 = 1 - (1 - 0.8) * 0.5 * 0.2 = 0.98`
+- `P_4 = 1 - (1 - 0.2) * 0.2 = 0.84`
+- `P_5 = 1 - (1 - 0.6) * 0.2 = 0.92`
+
+Using the recurrence from the objective definition, this yields an expected streak score of about `15.6469256`.
+
+The sample output is only one feasible submission; other outputs may score better or worse.
+```

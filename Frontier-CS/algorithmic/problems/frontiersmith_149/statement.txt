@@ -1,0 +1,224 @@
+```markdown
+# Shelf Styling with Switching Costs
+
+## Problem
+
+A store has received `n` colored display cubes. The color of the `j`-th cube is `a_j`.
+
+You must place all cubes onto `m` shelves. Shelf `i` has exactly `s_i` positions, and  
+` s_1 + s_2 + ... + s_m = n `.  
+Within each shelf, the order of cubes matters.
+
+The store wants each shelf to look visually varied, but also wants to avoid spreading the same color across too many shelves because that makes restocking harder.
+
+For each shelf `i`, you are given:
+
+- `s_i` — its length,
+- `d_i` — its desired separation distance,
+- `w_i` — how important the shelf is.
+
+For each color `c` from `1` to `q`, you are given:
+
+- `h_c` — the handling penalty for using color `c` on more than one shelf.
+
+Your task is to output **any arrangement** of all cubes onto the shelves. The arrangement is always feasible as long as every input cube is used exactly once. Different arrangements receive different scores.
+
+---
+
+### Shelf congestion
+
+Suppose shelf `i` contains the sequence
+
+`c_{i,1}, c_{i,2}, ..., c_{i,s_i}`.
+
+Fix a color `x`. Let its occurrences on shelf `i` be at positions
+
+`p_1 < p_2 < ... < p_k`.
+
+Its congestion contribution on this shelf is
+
+`sum over j=1..k-1 of max(0, d_i - (p_{j+1} - p_j))`.
+
+So consecutive equal colors that are too close create penalty; equal colors far enough apart create no penalty.
+
+The total congestion of shelf `i` is
+
+`w_i * (sum of the above over all colors x)`.
+
+---
+
+### Color splitting penalty
+
+Let `b_c` be the number of shelves that contain at least one cube of color `c`.
+
+Then color `c` contributes
+
+`h_c * (b_c - 1)`
+
+to the total cost.
+
+So using a color on one shelf is free, on two shelves costs `h_c`, on three shelves costs `2*h_c`, and so on.
+
+---
+
+You must minimize:
+
+`TotalCost = (sum of shelf congestions) + (sum of color splitting penalties)`.
+
+## Input
+
+The first line contains a single integer `t` — the number of test cases.
+
+For each test case:
+
+- The first line contains three integers `n, m, q`  
+  — the number of cubes, shelves, and possible colors.
+- The second line contains `n` integers `a_1, a_2, ..., a_n`  
+  where `a_j` is the color of cube `j`.
+- The third line contains `q` integers `h_1, h_2, ..., h_q`  
+  — handling penalties of the colors.
+- The fourth line contains `m` integers `s_1, s_2, ..., s_m`  
+  — shelf sizes.
+- The fifth line contains `m` integers `d_1, d_2, ..., d_m`  
+  — desired separation distances.
+- The sixth line contains `m` integers `w_1, w_2, ..., w_m`  
+  — shelf importance weights.
+
+## Output
+
+For each test case, output exactly `m` lines.
+
+Line `i` must contain exactly `s_i` integers: the colors placed on shelf `i`, in order from left to right.
+
+### Feasibility rules
+
+Your output for a test case is **feasible** iff:
+
+- each printed color is an integer between `1` and `q`,
+- the `i`-th line contains exactly `s_i` integers,
+- across all `m` lines, each color `c` appears exactly as many times as it appears in the input multiset `{a_1, ..., a_n}`.
+
+If a test case output is infeasible, its score for that test case is `0`.
+
+## Objective
+
+For a feasible output, define:
+
+- `ShelfCost_i = w_i * sum_x sum_j max(0, d_i - (p_{j+1} - p_j))`,
+  where `p_1 < ... < p_k` are the positions of color `x` on shelf `i`.
+- `SplitCost = sum_c h_c * (b_c - 1)`,
+  where `b_c` is the number of shelves containing color `c`.
+
+Then
+
+`TotalCost = sum_i ShelfCost_i + SplitCost`.
+
+Your goal is to **minimize `TotalCost`**.
+
+All costs are evaluated using 64-bit signed integer arithmetic.
+
+## Scoring
+
+For each test case, the judge also computes a **baseline solution** with cost `B` using the following deterministic algorithm.
+
+### Baseline algorithm
+
+Process shelves in input order `1..m`.
+
+Maintain the remaining count of each color.
+
+To build shelf `i`, fill positions from left to right. At each position:
+
+1. Consider the last `d_i - 1` colors already placed on this shelf  
+   (if `d_i = 1`, this set is empty).
+2. Among colors with positive remaining count:
+   - first prefer colors **not appearing** in those last `d_i - 1` positions,
+   - among them choose the color with the **largest remaining count**,
+   - break ties by choosing the **smallest color id**.
+3. If no color satisfies the first preference, choose among **all** remaining colors:
+   - largest remaining count,
+   - tie by smallest color id.
+
+After choosing a color, place it, decrement its remaining count, and continue.
+
+Let the baseline cost for the test case be `B`, and your feasible cost be `U`.
+
+The test-case score is:
+
+- `0`, if your output is infeasible;
+- `200`, if `B = 0` and `U = 0`;
+- `0`, if `B = 0` and `U > 0`;
+- otherwise:
+
+`Score = 100 * 2B / (B + U)`.
+
+So:
+
+- matching the baseline gives `100`,
+- improving on the baseline gives a score in `(100, 200]`,
+- doing worse gives a score in `(0, 100)`.
+
+For a file with multiple test cases, the file score is the arithmetic mean of the test-case scores.
+
+## Constraints
+
+- `1 <= t <= 10^4`
+- `1 <= m <= n <= 2 * 10^5`
+- `1 <= q <= n`
+- `1 <= a_j <= q`
+- `0 <= h_c <= 10^6`
+- `1 <= s_i <= n`
+- `s_1 + s_2 + ... + s_m = n`
+- `1 <= d_i <= s_i`
+- `1 <= w_i <= 10^6`
+- The sum of `n` over all test cases does not exceed `2 * 10^5`
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+1
+8 2 3
+1 1 1 2 2 3 3 3
+5 3 4
+4 4
+2 3
+1 2
+```
+
+### Output
+```text
+1 3 1 2
+3 1 2 3
+```
+
+### Explanation
+
+Shelf 1 is `[1, 3, 1, 2]` with `d_1 = 2`, `w_1 = 1`.
+
+- Color `1` appears at positions `1` and `3`, gap `2`, so penalty `max(0, 2 - 2) = 0`.
+- Other colors do not repeat.
+
+So `ShelfCost_1 = 0`.
+
+Shelf 2 is `[3, 1, 2, 3]` with `d_2 = 3`, `w_2 = 2`.
+
+- Color `3` appears at positions `1` and `4`, gap `3`, so penalty `max(0, 3 - 3) = 0`.
+
+So `ShelfCost_2 = 0`.
+
+Each of colors `1`, `2`, and `3` appears on both shelves, so:
+
+- color `1`: `5 * (2 - 1) = 5`
+- color `2`: `3 * (2 - 1) = 3`
+- color `3`: `4 * (2 - 1) = 4`
+
+Hence `SplitCost = 12`, and the total cost is `12`.
+
+For this test case, the baseline algorithm also achieves cost `12`, so the score is
+
+`100 * 2*12 / (12 + 12) = 100`.
+```

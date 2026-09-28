@@ -1,0 +1,196 @@
+```markdown
+# Sparse Backbone Packing
+
+## Problem
+
+A country has `n` stations connected by `m` undirected links.  
+You may activate several **backbone lines**. Each backbone line must be a **simple path** in the graph.
+
+Each station `i` has a profit `w_i` if it is served by some activated backbone line.
+
+However, dense interactions are undesirable:
+
+- Activating one backbone line costs `A`.
+- If a backbone line contains two stations that are adjacent in the graph but **not consecutive on the chosen path**, that extra edge is a **chord** and costs `B`.
+- For two different backbone lines `P` and `Q`, let `cross(P,Q)` be the number of graph edges with one endpoint in `P` and the other in `Q`.  
+  The first such edge is tolerated, but every additional one costs `C`.  
+  So this pair contributes `C · max(0, cross(P,Q) - 1)`.
+
+Your task is to output any collection of vertex-disjoint simple paths and maximize total profit.
+
+A station may belong to **at most one** backbone line. Unused stations are allowed.
+
+## Input
+
+The first line contains an integer `t` — the number of test cases.
+
+For each test case:
+
+- The first line contains `5` integers  
+  `n m A B C`
+- The second line contains `n` integers  
+  `w_1 w_2 ... w_n`
+- The next `m` lines each contain two integers `u v`, denoting an undirected edge.
+
+The graph is simple and connected.
+
+## Output
+
+For each test case, output:
+
+- On the first line, a single integer `k` — the number of backbone lines you activate.
+- Then output `k` lines.  
+  For each backbone line, output:
+  - an integer `len` (`len >= 2`),
+  - followed by `len` distinct vertices in the order they appear on the path.
+
+### Feasibility requirements
+
+Your output for a test case is **feasible** iff all of the following hold:
+
+1. `0 <= k <= n`
+2. Every listed backbone line has `len >= 2`
+3. Within each backbone line, all listed vertices are distinct
+4. For every consecutive pair of vertices on a backbone line, there is an edge in the graph
+5. No vertex appears in more than one backbone line
+
+If a test case output is infeasible, that test case receives score `0`.
+
+## Objective
+
+For a feasible solution, let:
+
+- `Used` = set of all vertices that belong to some backbone line
+- `k` = number of backbone lines
+- `ChordCount` = total number of graph edges whose endpoints lie on the same backbone line but are **not consecutive** on that line
+- For every unordered pair of distinct backbone lines `(P,Q)`, let `cross(P,Q)` be the number of graph edges with one endpoint in `P` and one endpoint in `Q`
+
+Your objective value is
+
+\[
+\text{OBJ} =
+\sum_{v \in Used} w_v
+\;-\; A \cdot k
+\;-\; B \cdot \text{ChordCount}
+\;-\; C \cdot \sum_{P<Q}\max(0, cross(P,Q)-1).
+\]
+
+You must **maximize** `OBJ`.
+
+### Notes on evaluation
+
+- An edge between consecutive vertices of the same output path is part of the path and **does not** count as a chord.
+- Every other edge whose endpoints lie on the same output path **does** count as one chord.
+- Unused vertices do not directly affect the objective.
+
+## Scoring
+
+For each test case, the judge computes your objective value `OBJ_you`.
+
+It also computes a deterministic **baseline** objective `OBJ_base` as follows:
+
+1. Build adjacency lists in the exact order edges appear in the input.
+2. Run a standard DFS from vertex `1`, exploring neighbors in adjacency-list order.  
+   This defines `parent[v]` and `depth[v]`.
+3. Mark all vertices unused.
+4. Process vertices in decreasing depth; break ties by smaller vertex index.
+5. Whenever a vertex `v != 1` and its DFS parent `parent[v]` are both unused, create a backbone line of length `2`:  
+   `[v, parent[v]]`, and mark both used.
+6. Let `OBJ_dfs` be the objective value of this set of length-2 paths.
+7. Define  
+   \[
+   OBJ_{base} = \max(0, OBJ_{dfs}).
+   \]
+
+For your solution, define
+
+\[
+OBJ_{nonneg} = \max(0, OBJ_{you}).
+\]
+
+The score for one test case is
+
+\[
+\text{score} =
+\min\left(10^6,\;
+\left\lfloor
+500000 \cdot \frac{OBJ_{nonneg}+1}{OBJ_{base}+1}
+\right\rfloor
+\right).
+\]
+
+Thus:
+
+- matching the baseline gives about `500000` points on that test,
+- doing better gives more,
+- doing worse gives less,
+- infeasible output gives `0`.
+
+The final score for the whole input file is the arithmetic mean of test-case scores, rounded down.
+
+## Constraints
+
+- `1 <= t <= 2 * 10^4`
+- `2 <= n <= 3 * 10^5`
+- `n - 1 <= m <= 8 * 10^5`
+- `0 <= A, B, C <= 10^6`
+- `1 <= w_i <= 10^6`
+- The graph is simple, undirected, and connected
+- Sum of `n` over all test cases does not exceed `3 * 10^5`
+- Sum of `m` over all test cases does not exceed `8 * 10^5`
+
+## Constraints
+
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample input
+```text
+1
+6 7 3 2 4
+5 4 3 2 6 1
+1 2
+2 3
+3 4
+4 5
+5 6
+2 5
+1 6
+```
+
+### Sample output
+```text
+2
+3 1 2 3
+2 5 6
+```
+
+### Explanation
+
+The chosen backbone lines are:
+
+- `1 - 2 - 3`
+- `5 - 6`
+
+Used stations: `{1,2,3,5,6}`, giving profit  
+`5 + 4 + 3 + 6 + 1 = 19`.
+
+There are `2` backbone lines, so activation cost is `2 * 3 = 6`.
+
+There are no chords inside either line.
+
+Between the two lines there are two graph edges: `(2,5)` and `(1,6)`, so
+
+- `cross = 2`
+- interference penalty = `4 * (2 - 1) = 4`
+
+Hence
+
+\[
+OBJ = 19 - 6 - 0 - 4 = 9.
+\]
+
+The baseline for this test case is computed by the DFS rule from the statement, and your score is obtained by comparing your nonnegative objective to that baseline objective.
+```

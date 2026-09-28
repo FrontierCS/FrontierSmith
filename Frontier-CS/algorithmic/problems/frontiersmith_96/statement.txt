@@ -1,0 +1,196 @@
+```markdown
+# Berland Mural Restoration
+
+## Problem
+
+The chroniclers also described a later ritual: instead of copying a black-and-white slab as fast as possible, pretenders had to restore a **multicolored mural** on a stone wall.
+
+The wall is an `N × M` grid. Each cell must end up in one of `K` colors, numbered `0..K-1`.  
+Initially, the entire wall is color `0` (white plaster).
+
+A restoration plan is a sequence of **strokes**. In one stroke, you choose:
+
+- a color `c`,
+- a non-empty set `S` of cells,
+
+such that `S` is **side-connected**: for any two cells of `S`, there is a path inside `S` moving only up/down/left/right.
+
+Then all cells in `S` are recolored to `c`.
+
+Strokes may overlap, and later strokes may repaint earlier ones.
+
+Each stroke has a cost:
+
+- `A[c]` — setup cost for preparing pigment `c`,
+- `B[c] × |S|` — paint consumption,
+- `E × perimeter(S)` — masking/edge-finishing cost,
+
+where `perimeter(S)` is the number of unit grid edges having one side in `S` and the other side either outside the board or in a cell not belonging to `S`.
+
+If the final color of a cell is wrong, a penalty is paid for that cell.
+
+Your task is to output any valid sequence of strokes minimizing the total restoration loss.
+
+## Input
+
+The input contains:
+
+- one line with four integers `N M K E`
+- one line with `K` integers `A[0], A[1], ..., A[K-1]`
+- one line with `K` integers `B[0], B[1], ..., B[K-1]`
+- `N` lines, each a string of length `M`, consisting of digits `0..9`:
+  - the target color of each cell
+- `N` lines, each containing `M` integers:
+  - `P[i][j]`, the penalty if cell `(i, j)` ends with the wrong color
+
+Color `0` is the initial color of every cell.
+
+## Output
+
+Output a restoration plan.
+
+- First line: integer `T` — number of strokes
+
+Then for each stroke:
+
+- one line: `c s`
+  - `c` is the color used in this stroke
+  - `s` is the number of cells in the stroke
+- next `s` lines: `r x`
+  - the 1-indexed row and column of a cell in this stroke
+
+### Feasibility requirements
+
+Your output is **valid** iff all of the following hold:
+
+- `0 ≤ T ≤ 4000`
+- the total number of listed cells over all strokes is at most `120000`
+- for every stroke:
+  - `0 ≤ c < K`
+  - `1 ≤ s ≤ N × M`
+  - all listed coordinates are inside the board
+  - no cell is listed twice in the same stroke
+  - the listed set of cells is side-connected
+
+If the output is malformed, the score for that test is `0`.
+
+If the output is valid, the judge applies the strokes in order to an initially all-`0` board and computes the objective below, even if the final mural is imperfect.
+
+## Objective
+
+Let the valid output produce strokes `(c_t, S_t)` for `t = 1..T`.
+
+The total loss is:
+
+\[
+L
+=
+\sum_{t=1}^{T}
+\Big(
+A[c_t] + B[c_t]\cdot |S_t| + E\cdot perimeter(S_t)
+\Big)
+\;+\;
+\sum_{i=1}^{N}\sum_{j=1}^{M}
+\big[
+final(i,j)\neq target(i,j)
+\big]\cdot P[i][j]
+\]
+
+where `final(i,j)` is the color of cell `(i,j)` after all strokes, and `[condition]` is `1` if the condition is true and `0` otherwise.
+
+Your goal is to **minimize `L`**.
+
+## Scoring
+
+For each test, define the **baseline loss** `BL` as the loss of the following deterministic solution:
+
+- for every cell whose target color is not `0`, paint that single cell once with its target color
+- do nothing for cells whose target color is `0`
+
+This baseline always reaches the exact target, so:
+
+\[
+BL = \sum_{target(i,j)\neq 0} \left( A[target(i,j)] + B[target(i,j)] + 4E \right)
+\]
+
+For a valid submission with loss `L`, the per-test score is:
+
+- if `BL = 0`:
+  - `1000000` if `L = 0`
+  - `0` otherwise
+- else:
+
+\[
+score = \left\lfloor 10^6 \cdot \min\left(2,\frac{BL}{L}\right) \right\rfloor
+\]
+
+Thus:
+
+- matching the baseline gets `1,000,000`
+- improving on the baseline gets more than `1,000,000`
+- much better solutions are capped at `2,000,000`
+- worse solutions still receive partial credit
+
+The final score is the sum of per-test scores over all test files.
+
+## Constraints
+
+- `1 ≤ N, M ≤ 60`
+- `2 ≤ K ≤ 9`
+- `0 ≤ E ≤ 10000`
+- `0 ≤ A[c], B[c] ≤ 10000`
+- target colors are digits in `0..K-1`
+- `1 ≤ P[i][j] ≤ 10^6`
+- Time limit: 3 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+3 4 2 1
+3 3
+1 1
+1111
+1001
+1111
+100 100 100 100
+100 100 100 100
+100 100 100 100
+```
+
+### Output
+```text
+1
+1 10
+1 1
+1 2
+1 3
+1 4
+2 1
+2 4
+3 1
+3 2
+3 3
+3 4
+```
+
+### Explanation
+
+The output paints the 10-cell ring in one connected stroke with color `1`.
+
+- setup cost: `3`
+- area cost: `10 × 1 = 10`
+- perimeter of the ring: `18`
+- total loss: `3 + 10 + 18 = 31`
+
+The mural is exact, so there is no penalty.
+
+The baseline paints each of the 10 non-zero cells separately:
+
+\[
+BL = 10 \times (3 + 1 + 4) = 80
+\]
+
+So this solution is much better than baseline; its score reaches the cap.
+```

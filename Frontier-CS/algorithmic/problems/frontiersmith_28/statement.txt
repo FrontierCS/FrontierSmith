@@ -1,0 +1,247 @@
+```markdown
+# Staircase Sculpture Contracts
+
+## Problem
+
+A stone workshop has received many custom orders for **staircase sculptures**.
+
+There are `N` raw stone blocks. Block `i` contains `S_i` stones.  
+You may carve several sculptures from the same block, as long as the total number of stones taken from that block does not exceed `S_i`.
+
+A staircase sculpture is defined by two integers `(k, h)`:
+
+- `k` — number of steps, with `k >= 2`
+- `h` — height of the highest step, with `h >= k`
+
+Its step heights are exactly:
+
+`h, h-1, h-2, ..., h-k+1`
+
+So the numbers of stones used by the steps are consecutive positive integers decreasing by `1`.
+
+The total number of stones required is
+
+`T(k, h) = k * (2h - k + 1) / 2`
+
+There are `M` customer contracts.  
+For contract `j`, you may choose any staircase `(k, h)` satisfying:
+
+- `L_j <= k <= U_j`
+- `k <= h <= H_j`
+
+If contract `j` is fulfilled with such a staircase, it earns
+
+`R_j(k, h) = D_j + A_j * k + B_j * h - C_j * T(k, h)`
+
+You may fulfill each contract **at most once**.
+
+Each fulfilled contract must be carved **entirely from one block**.  
+A block may serve multiple contracts.
+
+Using block `i` for at least one contract incurs a one-time setup cost `F_i`.
+
+Your task is to choose which contracts to fulfill, choose `(k, h)` for each chosen contract, and assign each chosen contract to a block, so as to maximize total profit.
+
+---
+
+## Input
+
+The first line contains two integers:
+
+`N M`
+
+The next `N` lines describe the blocks:
+
+`S_i F_i`
+
+- `S_i` — stones in block `i`
+- `F_i` — setup cost of block `i`
+
+The next `M` lines describe the contracts:
+
+`L_j U_j H_j A_j B_j C_j D_j`
+
+- `L_j`, `U_j` — allowed range for the number of steps
+- `H_j` — maximum allowed highest step
+- `A_j`, `B_j`, `C_j`, `D_j` — reward parameters
+
+All indices are 1-based.
+
+---
+
+## Output
+
+On the first line, output an integer `Q` — the number of fulfilled contracts.
+
+Then output `Q` lines, each describing one fulfilled contract:
+
+`contract_id block_id k h`
+
+Requirements for a feasible output:
+
+- `1 <= contract_id <= M`
+- `1 <= block_id <= N`
+- all `contract_id` values must be distinct
+- for each chosen contract `j`, the chosen `(k, h)` must satisfy:
+  - `L_j <= k <= U_j`
+  - `k <= h <= H_j`
+- for every block `i`, the sum of `T(k, h)` over all contracts assigned to `i` must not exceed `S_i`
+
+Any contract not listed is considered unfulfilled.
+
+If the output is infeasible, the submission receives `0` score for that test.
+
+---
+
+## Objective
+
+For a feasible solution, let:
+
+- `UsedBlocks` be the set of blocks assigned at least one contract
+- `RewardSum = sum of R_j(k, h)` over all fulfilled contracts
+- `SetupSum = sum of F_i` over all `i` in `UsedBlocks`
+
+The objective value is
+
+`Profit = RewardSum - SetupSum`
+
+Your goal is to **maximize** `Profit`.
+
+All computations use signed 64-bit integers.
+
+---
+
+## Scoring
+
+This is an optimization problem with continuous scoring.
+
+For each test case:
+
+1. Let `O` be your solution's profit.
+2. Let `B` be the profit of the following deterministic baseline.
+3. Let `U` be the following easy upper bound.
+
+### Baseline
+
+For each contract `j`:
+
+- Enumerate all feasible pairs `(k, h)`.
+- Let `(k*_j, h*_j)` be the feasible pair maximizing the density  
+  `R_j(k, h) / T(k, h)`.
+- Break ties by:
+  1. larger `R_j(k, h)`
+  2. smaller `T(k, h)`
+  3. smaller `k`
+  4. smaller `h`
+
+If the best reward `R_j(k*_j, h*_j)` is not positive, discard the contract.
+
+Sort the remaining contracts by:
+
+1. descending density `R_j / T_j`
+2. descending reward `R_j`
+3. ascending contract id
+
+Process contracts in that order. For each contract, consider all blocks with enough remaining capacity.  
+If assigning it to block `i` would increase the total profit by
+
+- `R_j` if block `i` is already used
+- `R_j - F_i` otherwise
+
+choose the block with maximum positive increase.  
+Break ties by:
+
+1. larger remaining capacity before assignment
+2. smaller block id
+
+If no block gives positive increase, skip the contract.  
+The resulting profit is `B`.
+
+### Upper bound
+
+For each contract `j`, define
+
+`U_j = max(0, max feasible R_j(k, h))`
+
+Then
+
+`U = sum of U_j over all contracts`
+
+This ignores block capacities and setup costs, so it is a valid upper bound.
+
+### Test score
+
+If `U = B`:
+
+- score is `1` if `O = U`
+- score is `0` otherwise
+
+Else:
+
+`score = clamp((O - B) / (U - B), 0, 1)`
+
+where `clamp(x, 0, 1) = min(1, max(0, x))`.
+
+### Final score
+
+If there are multiple test cases, the final score is:
+
+`100000 * average(test score)`
+
+So matching the baseline gives `0`, reaching the upper bound gives full score, and improvements in between receive proportional credit.
+
+---
+
+## Constraints
+
+- `1 <= N <= 1000`
+- `1 <= M <= 3000`
+- `1 <= S_i <= 10^12`
+- `0 <= F_i <= 10^9`
+- `2 <= L_j <= U_j <= 60`
+- `U_j <= H_j <= 500`
+- `0 <= A_j, B_j, C_j, D_j <= 10^6`
+
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+---
+
+## Example
+
+### Input
+```text
+3 4
+12 4
+10 1
+20 7
+2 4 6 7 5 2 3
+3 5 7 8 4 1 0
+2 3 4 4 7 3 2
+2 6 6 5 1 2 10
+```
+
+### Output
+```text
+3
+1 1 2 6
+2 3 3 7
+3 2 2 4
+```
+
+### Explanation
+
+The output fulfills contracts `1`, `2`, and `3`.
+
+- Contract `1` uses staircase `(2, 6)`, requiring `T = 11` stones from block `1`
+- Contract `2` uses staircase `(3, 7)`, requiring `T = 18` stones from block `3`
+- Contract `3` uses staircase `(2, 4)`, requiring `T = 7` stones from block `2`
+
+The block capacities are respected:
+
+- block `1`: `11 <= 12`
+- block `2`: `7 <= 10`
+- block `3`: `18 <= 20`
+
+The judge computes each chosen contract's reward using the given formula, subtracts setup costs for the used blocks, and obtains the final profit. The score is then determined by comparing that profit to the baseline and the upper bound on this test.
+```

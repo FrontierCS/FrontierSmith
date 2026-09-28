@@ -1,0 +1,205 @@
+```markdown
+# Pentagonal Patrol
+
+## Problem
+
+Nastya has sneaked into the country of Strange Bees again.  
+This time the bees are no longer reacting online: they want to publish a **full patrol schedule** in advance.
+
+The beehive is modeled by a connected undirected graph. Each vertex is a chamber, each edge is a tunnel. The graph has the following “pentagonal honeycomb” properties:
+
+- the degree of every vertex is at most 3;
+- every edge belongs to some simple cycle of length at most 5.
+
+There are `k` patrol bees. You must choose, for each bee, where it starts and how it moves during the next `H` minutes.
+
+Nastya sees the whole patrol schedule beforehand. She then chooses any initial chamber not occupied by a bee. After that, time proceeds as follows:
+
+- At time `0`, the bees are at their chosen starting vertices, and Nastya is at her chosen starting vertex.
+- For each minute `t = 1..H`:
+  1. all bees move simultaneously; each bee may either stay or move through one edge;
+  2. if a bee moves onto Nastya’s current chamber, Nastya is caught immediately;
+  3. otherwise, Nastya must move through exactly one edge to a chamber not occupied by any bee after their move.
+
+Your schedule is evaluated against **all possible choices and movements of Nastya** consistent with these rules.
+
+Each chamber `v` has a honey value `w_v`. A chamber is considered **at risk at time `t`** if Nastya could be in that chamber at time `t` while avoiding capture.
+
+Your goal is to design a patrol minimizing the total honey value of all at-risk chambers over the whole horizon.
+
+---
+
+## Input
+
+The input consists of a single test instance.
+
+- The first line contains four integers  
+  `n m k H`  
+  — the number of vertices, edges, bees, and minutes.
+
+- The second line contains `n` integers  
+  `w_1 w_2 ... w_n`  
+  — the honey values of the vertices.
+
+- Each of the next `m` lines contains two integers `u v`  
+  — an undirected edge between vertices `u` and `v`.
+
+Vertices are numbered from `1` to `n`.
+
+---
+
+## Output
+
+Output exactly `k` lines.
+
+The `i`-th line must contain `H + 1` integers
+
+`p[i][0] p[i][1] ... p[i][H]`
+
+where `p[i][t]` is the vertex occupied by bee `i` at time `t`.
+
+### Feasibility requirements
+
+Your output is **feasible** iff all of the following hold:
+
+- `1 <= p[i][t] <= n` for all `i, t`;
+- for every bee `i` and every `t = 1..H`, either:
+  - `p[i][t] = p[i][t-1]`, or
+  - there is an edge between `p[i][t-1]` and `p[i][t]`.
+
+Different bees are allowed to occupy the same vertex at the same time.
+
+If the output is infeasible, the score for this test is `0`.
+
+---
+
+## Objective
+
+For each time `t`, let `B_t` be the set of vertices occupied by at least one bee at time `t`.
+
+Define the set `R_t` of vertices where Nastya could be at time `t` without having been caught earlier.
+
+- Initially:
+
+  `R_0 = V \ B_0`
+
+  because Nastya may choose any unoccupied starting vertex.
+
+- For each `t = 1..H`:
+
+  First, Nastya survives the bees’ move only if her previous vertex is not in `B_t`.  
+  Let
+
+  `S_t = R_{t-1} \ B_t`.
+
+  Then she must move along one edge to an unoccupied vertex. So
+
+  `R_t = { x not in B_t | there exists y in S_t with edge (y, x) }`.
+
+The **exposure** of your patrol is
+
+`E = sum over t=0..H of sum over v in R_t of w_v`.
+
+Your objective is to **minimize `E`**.
+
+---
+
+## Scoring
+
+Let
+
+- `E` be the exposure of your submission;
+- `B` be the exposure of the **baseline patrol** defined below.
+
+The score for this test is
+
+`floor(1,000,000 * min(3, (B + 1) / (E + 1)))`.
+
+So:
+
+- matching the baseline gives about `1,000,000` points;
+- doing worse gives less;
+- doing better gives more, up to a cap of `3,000,000`.
+
+### Baseline patrol
+
+The baseline is constructed as follows:
+
+1. Choose `k` **distinct** starting vertices greedily.
+2. At each step, pick the vertex `v` (not already chosen) that maximizes the total honey value of vertices whose graph distance from at least one chosen vertex in `C ∪ {v}` is at most `2`.
+3. Break ties by smaller vertex index.
+4. After `k` vertices are chosen, each bee stays forever on its assigned starting vertex:
+   `p[i][0] = p[i][1] = ... = p[i][H]`.
+
+The baseline exposure `B` is computed by the same rules as any other patrol.
+
+### Aggregation
+
+If a test file contains multiple instances, the final score is the sum of test scores over all instances.
+
+---
+
+## Constraints
+
+- `4 <= n <= 5000`
+- `n - 1 <= m <= 3n`
+- `1 <= w_v <= 1000`
+- `3 <= k <= min(20, n)`
+- `1 <= H <= 4n`
+- The graph is connected and simple.
+- The degree of every vertex is at most `3`.
+- Every edge belongs to some simple cycle of length at most `5`.
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+5 5 2 3
+3 1 4 1 5
+1 2
+2 3
+3 4
+4 5
+5 1
+```
+
+### Sample output
+```text
+1 2 3 4
+3 4 5 1
+```
+
+### Explanation
+
+There are two bees and `H = 3`.
+
+Their positions are:
+
+- Bee 1: `1 -> 2 -> 3 -> 4`
+- Bee 2: `3 -> 4 -> 5 -> 1`
+
+So the occupied sets are:
+
+- `B_0 = {1, 3}`
+- `B_1 = {2, 4}`
+- `B_2 = {3, 5}`
+- `B_3 = {1, 4}`
+
+Reachable Nastya positions:
+
+- `R_0 = {2, 4, 5}`, weight `1 + 1 + 5 = 7`
+- `R_1 = {1}`, weight `3`
+- `R_2 = {2}`, weight `1`
+- `R_3 = {3}`, weight `4`
+
+Hence the exposure is
+
+`E = 7 + 3 + 1 + 4 = 15`.
+
+The test score is then computed from this `E` and the baseline exposure `B` for the same instance.
+```

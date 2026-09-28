@@ -1,0 +1,204 @@
+```markdown
+# Bicolored Inspection Network
+
+## Problem
+
+You are given a labeled undirected graph of candidate corridors between venues.  
+You must open some of these corridors and assign every venue to one of two security zones.
+
+A submitted network must satisfy:
+
+1. **Connected:** every venue must be reachable from every other venue using opened corridors.
+2. **Bipartite:** every opened corridor must connect venues of **different** zones.
+3. **Tour-friendly bonus:** venues with odd degree are inconvenient, because a closed inspection tour is only possible when all degrees are even. You are **not required** to make the graph Eulerian, but odd-degree venues are penalized.
+
+Each candidate corridor has an integer utility, which may be positive or negative.
+
+Your task is to choose:
+- a binary zone label for each vertex, and
+- a subset of candidate edges to open,
+
+so as to maximize the total utility minus the odd-degree penalty.
+
+This is an optimization challenge: any feasible solution is accepted, and better solutions receive higher scores.
+
+---
+
+## Input
+
+The first line contains a single integer `T` — the number of test cases.
+
+Each test case begins with a line containing three integers:
+
+- `N` — number of venues (`2 <= N <= 400`)
+- `M` — number of candidate corridors (`N-1 <= M <= 40000`)
+- `P` — penalty paid for each odd-degree vertex (`0 <= P <= 10^6`)
+
+The next `M` lines describe the candidate edges.  
+Edge `i` is given by three integers:
+
+- `u_i`, `v_i` (`1 <= u_i < v_i <= N`)
+- `w_i` (`-10^6 <= w_i <= 10^6`)
+
+meaning there is a candidate undirected edge between vertices `u_i` and `v_i` with utility `w_i`.
+
+Additional guarantees:
+
+- No self-loops
+- No duplicate edges
+- Each input graph is connected
+
+Let `G = (V, E)` denote the candidate graph.
+
+---
+
+## Output
+
+For each test case, output a feasible solution in the following format:
+
+1. A line with `N` integers `c_1 c_2 ... c_N`, where each `c_i` is either `0` or `1`  
+   (`c_i` is the zone/color assigned to vertex `i`).
+2. A line with one integer `K` — the number of opened edges.
+3. A line with `K` distinct edge indices `e_1 e_2 ... e_K`  
+   where each index is in `[1, M]`.
+
+Edge indices refer to the order in which edges appear in the input.
+
+### Feasibility requirements
+
+Your output for a test case is **feasible** iff all of the following hold:
+
+- `K >= N-1`
+- all chosen edge indices are distinct and valid
+- for every chosen edge `(u, v)`, the colors satisfy `c_u != c_v`
+- the graph formed by the chosen edges is connected on all `N` vertices
+
+If a test case output is infeasible, its score for that test case is `0`.
+
+Colorings that differ only by swapping `0` and `1` are considered equivalent.
+
+---
+
+## Objective
+
+For a feasible submitted graph `H = (V, S)`:
+
+- Let `W(H) = sum of w_e over all selected edges e in S`
+- Let `odd(H) = number of vertices whose degree in H is odd`
+
+Your objective value is:
+
+`Value(H) = W(H) - P * odd(H)`
+
+You must **maximize** `Value(H)`.
+
+Remarks:
+
+- Because `H` must be connected and bipartite, every feasible solution is a connected bipartite spanning subgraph of the candidate graph.
+- If `odd(H) = 0`, then `H` is Eulerian, so the odd-degree penalty encourages Eulerian solutions without requiring them.
+
+---
+
+## Scoring
+
+For each test case, the judge computes:
+
+- `X` = your objective value `Value(H)` if your output is feasible
+- otherwise that test case receives score `0`
+
+### Baseline
+
+Let `B` be the objective value of a **maximum-weight spanning tree** of the candidate graph:
+
+- among all spanning trees, maximize the sum of selected edge weights
+- for that tree `T`, compute  
+  `B = W(T) - P * odd(T)`
+
+Since every tree is connected and bipartite, this baseline is always feasible.
+
+### Upper bound
+
+Let
+
+`U = sum of max(0, w_e) over all candidate edges e`
+
+Since penalties are nonnegative and no solution can gain more than all positive edge weights, `U` is a valid instance-specific upper bound on the objective.
+
+### Test-case score
+
+For each test case:
+
+`score = 10^6 * clamp( (X - B) / max(1, U - B), 0, 1 )`
+
+where `clamp(z, 0, 1) = max(0, min(1, z))`.
+
+- Matching the baseline gives score `0`
+- Reaching or exceeding `U` gives score `10^6`
+- Improvements over the baseline are rewarded smoothly
+
+If your output is infeasible, the score for that test case is `0`.
+
+### Total score
+
+Your final score is the sum of test-case scores over all hidden test cases.
+
+---
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+Additional aggregate limits in official tests:
+
+- `sum(N) <= 4000`
+- `sum(M) <= 200000`
+
+These limits are large enough that exact optimization is generally infeasible; good heuristics are expected to outperform straightforward solutions.
+
+---
+
+## Example
+
+### Sample input
+```text
+1
+4 5 3
+1 2 5
+2 3 4
+3 4 5
+4 1 4
+1 3 -2
+```
+
+### Sample output
+```text
+0 1 0 1
+4
+1 2 3 4
+```
+
+### Explanation
+
+The selected edges are:
+
+- `1-2` with weight `5`
+- `2-3` with weight `4`
+- `3-4` with weight `5`
+- `4-1` with weight `4`
+
+They form a connected bipartite 4-cycle under colors `(0,1,0,1)`.
+
+- Total edge utility: `5 + 4 + 5 + 4 = 18`
+- All four vertices have degree `2`, so `odd(H) = 0`
+- Objective value: `18 - 3 * 0 = 18`
+
+For this instance, a maximum-weight spanning tree has total weight `14` and exactly `2` odd-degree vertices, so the baseline is:
+
+`B = 14 - 3*2 = 8`
+
+Also,
+
+`U = 5 + 4 + 5 + 4 = 18`
+
+Thus this submission reaches the upper bound and gets the maximum score for the test case.
+```

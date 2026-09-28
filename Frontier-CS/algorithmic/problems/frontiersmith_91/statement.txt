@@ -1,0 +1,161 @@
+```markdown
+# Rising Signature Library
+
+## Problem
+A company stores a massive collection of telemetry logs. Each log is a sequence of integer event codes.  
+To compress the archive, you want to build a small **library of rising signatures**.
+
+A **rising signature** is any **strictly increasing** sequence of integers.  
+A log **matches** a signature if that signature appears as a **subsequence** of the log.
+
+You may output up to `K` signatures, with a total of at most `B` integers across the whole library.
+
+For each log, only the **longest** matching signature in your library matters. Your goal is to design a library that maximizes the total weighted matched length over all logs.
+
+This is an optimization challenge: every valid output receives a score based on how much better it is than a baseline library.
+
+## Input
+The input describes one test instance.
+
+- The first line contains four integers  
+  `m V K B`
+  - `m` = number of logs
+  - `V` = maximum possible event code value
+  - `K` = maximum number of signatures you may output
+  - `B` = maximum total length of all output signatures
+
+Then follow `m` logs.
+
+For each log `j`:
+
+- One line with two integers  
+  `w_j n_j`
+  - `w_j` = weight (importance) of the log
+  - `n_j` = length of the log
+- One line with `n_j` integers  
+  `a_{j,1} a_{j,2} ... a_{j,n_j}`
+
+A signature `x_1, x_2, ..., x_t` matches log `j` if there exist indices  
+`1 <= p_1 < p_2 < ... < p_t <= n_j` such that  
+`a_{j,p_i} = x_i` for all `i`.
+
+## Output
+Your output must describe a library of signatures.
+
+- First line: one integer `q` — the number of signatures you output.
+- Next `q` lines: one signature per line in the format  
+  `t x_1 x_2 ... x_t`
+
+### Feasibility requirements
+Your output is **valid** iff all of the following hold:
+
+- `0 <= q <= K`
+- For every signature:
+  - `t >= 1`
+  - `1 <= x_i <= V`
+  - `x_1 < x_2 < ... < x_t`  (strictly increasing)
+- The total length of all signatures satisfies  
+  `sum(t) <= B`
+
+If any requirement is violated, the output is invalid and receives objective value `0`.
+
+## Objective
+For each log `j`, let
+
+- `L_j` = the maximum length of any output signature that matches log `j`
+- If no signature matches log `j`, then `L_j = 0`
+
+Your objective is to **maximize**
+\[
+\text{OBJ} = \sum_{j=1}^{m} w_j \cdot L_j
+\]
+
+Only the longest matching signature contributes for each log; multiple matches do not stack.
+
+## Scoring
+For each test case, let:
+
+- `OBJ_sub` = objective value of your valid submission
+- `OBJ_base` = objective value of the baseline library defined below
+
+Your per-test score is
+
+\[
+\text{Score}_{test} =
+\begin{cases}
+0 & \text{if the output is invalid} \\
+\min\left(2000,\;1000 \cdot \frac{OBJ_{sub}}{OBJ_{base}}\right) & \text{otherwise}
+\end{cases}
+\]
+
+The overall score is the average of `Score_test` over all test files.
+
+### Baseline library
+The baseline uses only singleton signatures.
+
+1. Start with all logs uncovered.
+2. Repeat at most `min(K, B)` times:
+   - For each value `v` in `[1, V]`, compute the total weight of currently uncovered logs that contain `v` at least once.
+   - Choose the value `v` with maximum total weight. Break ties by choosing the smallest `v`.
+   - If this maximum total weight is `0`, stop.
+   - Add the singleton signature `[v]` to the library.
+   - Mark every log containing `v` as covered.
+3. Compute `OBJ_base` using the same objective definition as above.
+
+Under the stated constraints, `OBJ_base > 0`.
+
+## Constraints
+- `1 <= m <= 5 * 10^4`
+- `1 <= V <= 10^5`
+- `1 <= K <= 100`
+- `1 <= B <= 2000`
+- `1 <= w_j <= 10^4`
+- `1 <= n_j <= 500`
+- `sum n_j <= 10^6`
+
+## Constraints
+- Time limit: 8 seconds
+- Memory limit: 1024 MB
+
+## Example
+Sample input:
+```text
+4 9 2 5
+3 5
+2 7 4 3 8
+2 6
+2 4 3 7 4 5
+4 4
+1 2 3 9
+1 5
+6 1 2 5 7
+```
+
+Sample output:
+```text
+2
+3 2 3 8
+2 1 2
+```
+
+Brief explanation:
+
+- Signature `[2,3,8]` matches the first log, so that log contributes `3 * 3 = 9`.
+- Signature `[1,2]` matches the third and fourth logs, contributing `4 * 2 = 8` and `1 * 2 = 2`.
+- The second log matches neither signature, contributing `0`.
+
+So:
+\[
+OBJ = 9 + 0 + 8 + 2 = 19
+\]
+
+The baseline chooses singleton signatures greedily. In this instance it first picks `[2]`, which covers all four logs, so `OBJ_base = 3+2+4+1 = 10`.
+
+Therefore the sample submission would receive
+
+\[
+1000 \cdot \frac{19}{10} = 1900
+\]
+
+for this test case.
+```

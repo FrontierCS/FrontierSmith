@@ -1,0 +1,177 @@
+```markdown
+# Extreme Finder Microcode
+
+## Problem
+You are given a multiset of weighted arrays.  
+For each array, the goal is to output **one position of a minimum element** and **one position of a maximum element**.
+
+However, you are **not** allowed to output answers separately for each array.  
+Instead, for every test instance you must submit **one adaptive comparison program**: a ternary decision tree whose internal nodes compare two positions `i` and `j`, and whose leaves output a pair `(p, q)`.
+
+For a particular array, the judge starts at the root of your tree:
+
+- at a comparison node `C i j`, it checks whether `a[i] < a[j]`, `a[i] = a[j]`, or `a[i] > a[j]`,
+- follows the corresponding edge,
+- and counts **one comparison**.
+
+When a leaf `A p q` is reached, your program claims that:
+
+- `p` is an index of a minimum element of the array,
+- `q` is an index of a maximum element of the array.
+
+If several positions contain the minimum or maximum value, **any** such position is accepted.
+
+Your tree is evaluated **only** on the arrays given in the input for that test instance.  
+So this is a program-synthesis / compression problem: build a small, efficient comparison tree specialized to the provided data.
+
+---
+
+## Input
+The first line contains an integer `T` — the number of test instances.
+
+For each instance:
+
+- The first line contains two integers `n` and `k`:
+  - `n` — array length,
+  - `k` — number of arrays in this instance.
+- Then follow `k` lines.  
+  Each line contains:
+  - an integer `w_s` — the weight of the array,
+  - then `n` integers `a[s][1], a[s][2], ..., a[s][n]`.
+
+All arrays in one instance have the same length `n`.
+
+---
+
+## Output
+For each test instance, output one decision tree.
+
+First output one integer `L` — the number of nodes in your tree.
+
+Then output `L` lines describing nodes `1..L`.  
+Node `1` is the root.
+
+There are two node types:
+
+- `C i j lt eq gt`  
+  A comparison node:
+  - compare positions `i` and `j` (`1 <= i, j <= n`, `i != j`);
+  - if `a[i] < a[j]`, go to node `lt`;
+  - if `a[i] = a[j]`, go to node `eq`;
+  - if `a[i] > a[j]`, go to node `gt`.
+
+- `A p q`  
+  An answer node:
+  - claim that `p` is a minimum position,
+  - and `q` is a maximum position.
+
+### Feasibility requirements
+For every instance:
+
+- `1 <= L <= 100000`,
+- every referenced node id must be in `[1, L]`,
+- for every comparison node at index `v`, all children must satisfy `child > v`.
+
+The last rule guarantees that the graph is acyclic and every run terminates.
+
+If your output for an instance is malformed or violates these rules, that instance receives score `0`.
+
+Unreachable nodes are allowed, but they still count toward `L`.
+
+---
+
+## Objective
+For one test instance, let:
+
+- `W = sum(w_s)` over all arrays in the instance,
+- `d_s` = number of comparison nodes visited by array `s`,
+- `e_s = 0` if the reached answer node is correct for array `s`,
+- `e_s = 1` otherwise.
+
+Define the penalty
+`P(n) = 10 * (ceil(3n/2) - 2) + 1`.
+
+Your objective value for the instance is
+
+`C = ( sum over s of w_s * (d_s + P(n) * e_s) ) / W`.
+
+You must **minimize** `C`.
+
+A wrong answer is therefore much more expensive than saving a few comparisons, but partial solutions still receive a meaningful score.
+
+---
+
+## Scoring
+For an instance of length `n`, define the baseline
+
+`B(n) = ceil(3n/2) - 2`.
+
+This is the classic worst-case number of comparisons needed to always find both a minimum and a maximum.
+
+Your score for one instance is
+
+`score_instance = clamp( 1_000_000 * B(n) / C , 0 , 2_000_000 )`
+
+where `clamp(x, lo, hi) = max(lo, min(hi, x))`.
+
+The final score is the arithmetic mean of `score_instance` over all test instances.
+
+### Baseline strategy
+The baseline is the standard pairwise tournament method:
+
+- compare elements in pairs,
+- from each pair, send the smaller one to the min-candidates and the larger one to the max-candidates,
+- then find the minimum among min-candidates and the maximum among max-candidates.
+
+Its cost is exactly `B(n)` comparisons for every array, independent of array contents.
+
+---
+
+## Constraints
+- `1 <= T <= 20`
+- `1 <= n <= 50`
+- `1 <= k <= 20000`
+- `1 <= w_s <= 1000`
+- `0 <= a[s][i] <= 10^9`
+- Sum of `k` over the whole input `<= 100000`
+- Sum of `k * n` over the whole input `<= 3 * 10^6`
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+### Sample input
+```text
+1
+3 3
+1 1 5 2
+2 4 4 7
+1 6 2 2
+```
+
+### Sample output
+```text
+4
+C 1 2 2 3 4
+A 1 2
+A 1 3
+A 2 1
+```
+
+### Explanation
+The root compares positions `1` and `2`.
+
+- For `[1,5,2]`, we have `a1 < a2`, so we go to node `2` and answer `(1,2)`.
+- For `[4,4,7]`, we have `a1 = a2`, so we go to node `3` and answer `(1,3)`.
+- For `[6,2,2]`, we have `a1 > a2`, so we go to node `4` and answer `(2,1)`.
+
+Each array uses exactly `1` comparison, and all answers are correct.
+
+So the weighted objective is `C = 1`.
+
+For `n = 3`, the baseline is `B(3) = ceil(4.5) - 2 = 3`.
+
+Thus the raw score is `1_000_000 * 3 / 1 = 3_000_000`, which is capped at `2_000_000`.
+```

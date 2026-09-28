@@ -1,0 +1,192 @@
+```markdown
+# Square-Free Cargo Loading
+
+## Problem
+
+A shipping company has `K` sealed crates and `N` cargo items.  
+Each item `i` has a profit `V_i` and a prime-factor description
+
+\[
+X_i = \prod_{j=1}^{M_i} p_{i,j}^{e_{i,j}}
+\]
+
+where all `p_{i,j}` on the same line are distinct primes.
+
+If several items are placed into the same crate, their labels are multiplied together.  
+A crate is **safe** if the product of labels of all items inside it is **square-free**; that is, no prime square divides the product.
+
+You may either:
+
+- discard an item, or
+- assign it to exactly one crate among `1..K`.
+
+Your goal is to maximize the total profit of the loaded items while keeping **every** crate safe.
+
+### Safety rule
+
+A loading plan is feasible if for every crate `c` and every prime `p`:
+
+\[
+\sum_{\text{item } i \text{ assigned to } c} \text{exponent of } p \text{ in } X_i \le 1
+\]
+
+Equivalently:
+
+- an item containing `p^2` cannot share a crate with anything at all (including being alone), and
+- two items sharing a prime cannot go into the same crate.
+
+Different crates are independent: the same prime may appear in different crates.
+
+---
+
+## Input
+
+The first line contains an integer `T`, the number of test cases.
+
+For each test case:
+
+- The first line contains two integers `N` and `K`.
+- Then follow `N` lines.  
+  The `i`-th such line contains:
+
+\[
+V_i\ \ M_i\ \ p_{i,1}\ e_{i,1}\ \ p_{i,2}\ e_{i,2}\ \ \dots \ \ p_{i,M_i}\ e_{i,M_i}
+\]
+
+meaning item `i` has profit `V_i` and label  
+\[
+X_i=\prod_{j=1}^{M_i} p_{i,j}^{e_{i,j}}
+\]
+
+All primes on the same item are distinct.
+
+---
+
+## Output
+
+For each test case, output one line with `N` integers `a_1, a_2, ..., a_N`.
+
+- `a_i = 0` means item `i` is discarded.
+- `a_i = c` (`1 <= c <= K`) means item `i` is placed into crate `c`.
+
+### Feasibility requirements
+
+A submission is feasible for a test case if:
+
+- exactly `N` integers are output for that test case;
+- every `a_i` is in `[0, K]`;
+- every crate satisfies the square-free safety rule above.
+
+If a test case output is infeasible, its objective value is treated as `0`, and its score is `0`.
+
+---
+
+## Objective
+
+For a feasible loading plan, let
+
+\[
+O = \sum_{i : a_i \ne 0} V_i
+\]
+
+be the total profit of all loaded items.
+
+Your objective is to **maximize `O`**.
+
+---
+
+## Scoring
+
+Let `B` be the profit obtained by the following deterministic baseline algorithm on the same test case.
+
+### Baseline algorithm
+
+1. Ignore any item having some exponent `e_{i,j} >= 2`.
+2. For every remaining item, define its density as
+   \[
+   D_i = \frac{V_i}{M_i}
+   \]
+3. Sort the remaining items by:
+   - decreasing `D_i`,
+   - then decreasing `V_i`,
+   - then increasing item index.
+4. Process items in that order.  
+   Place each item into the **lowest-indexed** crate where adding it keeps that crate safe.  
+   If no such crate exists, discard the item.
+
+Let `O` be your feasible profit and `B` the baseline profit.
+
+For each test case, the raw score is:
+
+\[
+S = \min\left(2{,}000{,}000,\ \left\lfloor 1{,}000{,}000 \cdot \frac{O+1}{B+1} \right\rfloor \right)
+\]
+
+- If your result matches the baseline exactly, you get about `1,000,000` points.
+- Doing better than the baseline gives more than `1,000,000`.
+- Doing worse gives less than `1,000,000`.
+- Infeasible output gives `0`.
+
+If an input file contains multiple test cases, the final score for that file is the arithmetic mean of the per-test raw scores, rounded down.
+
+---
+
+## Constraints
+
+- `1 <= T <= 20`
+- `1 <= K <= 8`
+- `1 <= N <= 4000`
+- `1 <= V_i <= 10^9`
+- `1 <= M_i <= 15`
+- `2 <= p_{i,j} <= 10^9`
+- `1 <= e_{i,j} <= 60`
+- Within one item, all `p_{i,j}` are distinct
+- Sum of `N` over one input file `<= 20000`
+- Sum of all `M_i` over one input file `<= 200000`
+
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+1
+6 2
+10 1 2 1
+12 1 3 1
+7 2 2 1 5 1
+9 1 2 2
+8 2 3 1 5 1
+11 1 7 1
+```
+
+### Sample output
+```text
+1 1 2 0 2 1
+```
+
+### Explanation
+
+The assignment means:
+
+- crate 1: items 1, 2, 6 with labels `2`, `3`, `7`, product `42` (square-free)
+- crate 2: items 3, 5 with labels `2*5`, `3*5` — this would **not** be safe because prime `5` appears twice
+
+So the shown output is actually **infeasible** and would score `0`.
+
+A feasible high-profit solution is for example:
+
+- item 1 -> crate 1
+- item 2 -> crate 1
+- item 3 -> crate 2
+- item 4 -> discard (`2^2`, cannot be loaded anywhere)
+- item 5 -> discard
+- item 6 -> crate 1
+
+with profit `10 + 12 + 7 + 11 = 40`.
+
+The judge computes your profit `O`, the baseline profit `B`, and then applies the scoring formula.
+```

@@ -1,0 +1,134 @@
+```markdown
+# Wildcard Anagram Market
+
+## Problem
+
+You are given a base string `s` of length `n`, consisting of lowercase English letters and the wildcard character `?`.
+
+Each `?` must be replaced by exactly one lowercase English letter, producing a final string `u`.
+
+There are `m` customer requests. Request `j` is described by:
+
+- an interval `[l_j, r_j]` in the final string,
+- a positive weight `w_j`,
+- a lowercase string `t_j` of length `r_j - l_j + 1`.
+
+Request `j` is **satisfied** if the substring `u[l_j..r_j]` is an anagram of `t_j`, i.e. both strings contain exactly the same multiset of letters.
+
+Your task is to choose the replacements for all wildcard positions so as to satisfy requests with as much total weight as possible.
+
+This is an optimization problem: different feasible outputs may obtain different scores.
+
+## Input
+
+The input contains one instance.
+
+- The first line contains two integers `n` and `m`.
+- The second line contains the string `s` of length `n`.
+- Then follow `m` lines. The `j`-th of them contains:
+  - two integers `l_j`, `r_j`,
+  - an integer `w_j`,
+  - a lowercase string `t_j` of length exactly `r_j - l_j + 1`.
+
+Positions are 1-based.
+
+## Output
+
+Output one string `u` of length `n` such that:
+
+- for every position `i`:
+  - if `s[i]` is a lowercase letter, then `u[i]` must be exactly `s[i]`,
+  - if `s[i] = '?'`, then `u[i]` may be any lowercase English letter.
+
+If the output does not satisfy these rules, it is considered **infeasible**.
+
+## Objective
+
+For a feasible output `u`, define the **unsatisfied weight**
+
+\[
+C(u) = \sum_{j=1}^{m} w_j \cdot [\,u[l_j..r_j]\text{ is not an anagram of }t_j\,]
+\]
+
+where `[condition]` is `1` if the condition is true and `0` otherwise.
+
+Your goal is to **minimize** `C(u)`.
+
+Equivalently, you are maximizing the total weight of satisfied requests.
+
+## Scoring
+
+For each official test file:
+
+1. Let `B` be the baseline unsatisfied weight obtained by replacing every `?` in `s` with `'a'`.
+2. Let `C` be your unsatisfied weight.
+
+The per-test score is:
+
+- `0`, if your output is infeasible;
+- `1,000,000`, if `B = 0` and your output is feasible;
+- otherwise
+
+\[
+\text{score} = 1{,}000{,}000 \cdot \max\left(0,\frac{B-C}{B}\right)
+\]
+
+The final score is the arithmetic mean of per-test scores over all test files.
+
+Notes:
+
+- Matching the baseline gets score `0` on that test.
+- Improving on the baseline gives a proportionally higher score.
+- Achieving `C = 0` gets the maximum possible score on that test whenever `B > 0`.
+
+## Constraints
+
+- `1 <= n <= 100000`
+- `1 <= m <= 100000`
+- `s` consists only of lowercase English letters and `?`
+- `1 <= l_j <= r_j <= n`
+- `1 <= w_j <= 10^9`
+- `|t_j| = r_j - l_j + 1`
+- The total length of all request strings satisfies  
+  \[
+  \sum_{j=1}^{m} |t_j| \le 300000
+  \]
+
+## Constraints
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+8 4
+bb??x???
+1 3 4 aab
+2 4 7 aba
+6 8 5 baa
+4 6 6 xab
+```
+
+### Output
+```text
+bbaaxbaa
+```
+
+### Explanation
+The output is feasible because it keeps the fixed letters of `s` and replaces each `?` by a lowercase letter.
+
+The four requested intervals become:
+
+- `u[1..3] = "bba"` → anagram of `"aab"`: satisfied
+- `u[2..4] = "baa"` → anagram of `"aba"`: satisfied
+- `u[6..8] = "baa"` → anagram of `"baa"`: satisfied
+- `u[4..6] = "axb"` → anagram of `"xab"`: satisfied
+
+So `C(u) = 0`.
+
+The baseline replaces every `?` with `'a'`, giving `bbaaxaaa`.  
+That baseline satisfies only the first two requests, so its unsatisfied weight is `5 + 6 = 11`.
+
+Thus this output gets the maximum score on this test.
+```

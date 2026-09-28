@@ -1,0 +1,235 @@
+```markdown
+# Delta Evacuation Ferry
+
+## Problem
+
+A storm is approaching a river delta. Greg has one ferry stationed at the **shelter dock** and must evacuate people from many other docks to safety.
+
+There are `m` docks, numbered `1..m`. Dock `1` is the shelter dock.  
+There are `n` people, indexed `1..n`. Person `i`:
+
+- is initially waiting at dock `s_i` (`2 <= s_i <= m`),
+- has weight `w_i`,
+- has urgency `u_i`.
+
+The ferry:
+
+- starts at dock `1` at time `0`,
+- can carry at most `C` people at once,
+- can carry total weight at most `K`,
+- may move between any two docks.
+
+Travel time between docks `a` and `b` is the Manhattan distance
+
+`dist(a,b) = |x_a - x_b| + |y_a - y_b|`.
+
+Boarding and unloading take zero time.
+
+A person is considered **evacuated** when they are unloaded at dock `1`.  
+You may visit docks in any order and may board or unload any subset of eligible people, as long as the ferry capacity constraints are never violated.
+
+Your task is to output **any feasible evacuation plan** that minimizes the total weighted arrival time.
+
+---
+
+## Input
+
+The input describes one test instance.
+
+- First line: `m n K C`
+- Next `m` lines: two integers `x_j y_j` — coordinates of dock `j`
+- Next `n` lines: three integers `s_i w_i u_i` — initial dock, weight, and urgency of person `i`
+
+People are indexed in the order they appear in the input, from `1` to `n`.
+
+---
+
+## Output
+
+Output a sequence of actions.
+
+- First line: integer `q` — number of actions
+- Next `q` lines: each action must be one of the following:
+
+### Move
+`MOVE v`
+
+Move the ferry from its current dock to dock `v` (`1 <= v <= m`, `v` must differ from the current dock).
+
+### Board
+`BOARD t id_1 id_2 ... id_t`
+
+At the current dock, board exactly these `t` people onto the ferry.
+
+Requirements:
+
+- every listed person must currently be waiting at this dock,
+- no listed person may have been boarded before,
+- after boarding, the ferry must still satisfy both capacity constraints.
+
+### Unload
+`UNLOAD t id_1 id_2 ... id_t`
+
+At dock `1`, unload exactly these `t` people from the ferry.
+
+For each unloaded person, their evacuation time is the current time.
+
+---
+
+### Feasibility requirements
+
+Your output is **feasible** iff all of the following hold:
+
+1. The action sequence is syntactically valid.
+2. The ferry starts at dock `1` at time `0`, empty.
+3. Every `MOVE` updates time by the correct Manhattan distance.
+4. Every `BOARD` and `UNLOAD` action is valid at the current dock.
+5. At all times, the ferry carries at most `C` people and total onboard weight at most `K`.
+6. Every person is boarded exactly once.
+7. Every person is unloaded exactly once at dock `1`.
+8. After the last action, all people have been evacuated and the ferry is empty.
+9. `q <= 300000`.
+
+If any condition is violated, the solution is infeasible.
+
+---
+
+## Objective
+
+For each person `i`, let `T_i` be the time when that person is unloaded at dock `1`.
+
+Minimize
+
+`F = sum(u_i * T_i)` over all people `i = 1..n`.
+
+If the output is infeasible, it has no valid objective value and receives score `0`.
+
+---
+
+## Scoring
+
+Each test file is scored independently.
+
+Let:
+
+- `Y` = your objective value on that test,
+- `B` = the objective value of the **baseline algorithm** defined below on the same test.
+
+If your output is infeasible, the score for that test is `0`.
+
+Otherwise,
+
+`score = min(200, 100 * B / Y)`
+
+So:
+
+- matching the baseline gives score `100`,
+- improving on the baseline gives more than `100`,
+- doing worse than the baseline gives less than `100`.
+
+The final score is the arithmetic mean of per-test scores over all official test files.
+
+### Baseline algorithm
+
+The baseline is deterministic.
+
+Maintain, for each dock `j >= 2`, the list of people still waiting there, sorted by:
+
+1. larger urgency `u_i` first,
+2. smaller person index first.
+
+A baseline trip always visits exactly one non-shelter dock and then returns immediately to dock `1`.
+
+At the start of each trip:
+
+1. For every non-empty dock `j`:
+   - Scan its sorted waiting list from the front.
+   - Build a prefix `P_j` by taking people one by one until taking the next person would violate either:
+     - total weight `<= K`, or
+     - passenger count `<= C`.
+   - Let `value_j = sum(u_i)` over people in `P_j`.
+   - Let `cost_j = 2 * dist(1, j)`.
+   - Let `ratio_j = value_j / cost_j`.
+
+2. Choose the dock `j` with maximum `ratio_j`.
+   - Compare ratios exactly by cross multiplication.
+   - Break ties by smaller dock index.
+
+3. Sail from dock `1` to dock `j`, board all people in `P_j`, return directly to dock `1`, and unload them.
+
+Repeat until everyone is evacuated.
+
+---
+
+## Constraints
+
+- `2 <= m <= 80`
+- `1 <= n <= 500`
+- `1 <= C <= 25`
+- `1 <= K <= 5000`
+- `0 <= x_j, y_j <= 10000`
+- `2 <= s_i <= m`
+- `1 <= w_i <= K`
+- `1 <= u_i <= 1000000`
+
+All input values are integers.
+
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+---
+
+## Example
+
+### Input
+```text
+4 3 150 2
+0 0
+2 0
+2 2
+5 0
+2 50 10
+3 50 8
+4 100 7
+```
+
+### Output
+```text
+10
+MOVE 2
+BOARD 1 1
+MOVE 3
+BOARD 1 2
+MOVE 1
+UNLOAD 2 1 2
+MOVE 4
+BOARD 1 3
+MOVE 1
+UNLOAD 1 3
+```
+
+### Explanation
+
+The ferry first picks up person `1` at dock `2`, then person `2` at dock `3`, and returns to the shelter.
+
+- `dist(1,2)=2`
+- `dist(2,3)=2`
+- `dist(3,1)=4`
+
+So persons `1` and `2` arrive at time `8`.
+
+Then it serves dock `4`:
+
+- `dist(1,4)=5`
+- `dist(4,1)=5`
+
+So person `3` arrives at time `18`.
+
+Objective:
+
+`F = 10*8 + 8*8 + 7*18 = 270`
+
+For this instance, the baseline makes one-dock round trips and gets objective `290`, so this output would score
+
+`100 * 290 / 270 = 107.407...`
+```

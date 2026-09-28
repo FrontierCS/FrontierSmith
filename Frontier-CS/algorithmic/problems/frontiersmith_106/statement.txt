@@ -1,0 +1,205 @@
+```markdown
+# Profitable Grid Cutting
+
+## Problem
+A factory has one rectangular sheet of material with integer width `W` and integer height `H`.
+
+The sheet may be cut only by **full-length cuts parallel to its sides**, so the final result is always a rectangular grid:
+- choose `kx` vertical strips with positive integer widths `x1, x2, ..., xkx` such that `x1 + ... + xkx = W`,
+- choose `ky` horizontal strips with positive integer heights `y1, y2, ..., yky` such that `y1 + ... + yky = H`.
+
+This creates exactly `kx * ky` small rectangles.  
+The rectangle in strip `(a, b)` has size `xa × yb`.
+
+There are `n` order types. For order type `i`:
+- required width is `wi`,
+- required height is `hi`,
+- at most `di` rectangles of this type can be sold,
+- each sold rectangle earns `ri` coins.
+
+Rectangles cannot be rotated: `a × b` and `b × a` are different if `a != b`.
+
+Let:
+- `cntW[t]` be the number of vertical strips whose width equals `t`,
+- `cntH[t]` be the number of horizontal strips whose height equals `t`.
+
+Then the number of produced rectangles of type `wi × hi` is:
+`produced_i = cntW[wi] * cntH[hi]`.
+
+You may sell at most `di` of them:
+`sold_i = min(produced_i, di)`.
+
+Any produced area that is not sold is scrapped.  
+Scrap costs `S` coins per unit area.
+
+Also, each vertical cut costs `CV` coins, and each horizontal cut costs `CH` coins.
+
+Your task is to choose the strip widths and heights to maximize profit.
+
+---
+
+## Input
+The first line contains 8 integers:
+
+`n W H Vmax Hmax S CV CH`
+
+- `n` — number of order types
+- `W`, `H` — sheet dimensions
+- `Vmax` — maximum number of vertical cuts allowed
+- `Hmax` — maximum number of horizontal cuts allowed
+- `S` — scrap cost per unit area
+- `CV` — cost of one vertical cut
+- `CH` — cost of one horizontal cut
+
+Each of the next `n` lines contains 4 integers:
+
+`wi hi di ri`
+
+meaning one order type with required size `wi × hi`, demand limit `di`, and revenue `ri`.
+
+All order types are pairwise different as ordered pairs `(wi, hi)`.
+
+---
+
+## Output
+Output a feasible cutting plan in the following format:
+
+- First line: two integers `kx ky`
+- Second line: `kx` positive integers `x1 x2 ... xkx`
+- Third line: `ky` positive integers `y1 y2 ... yky`
+
+A plan is **feasible** iff:
+- `1 <= kx <= Vmax + 1`
+- `1 <= ky <= Hmax + 1`
+- all `xa` are positive integers and sum to `W`
+- all `yb` are positive integers and sum to `H`
+
+If the output is infeasible, it is assigned score 0 on that test.
+
+The order of strips matters only through their lengths; the judge evaluates only the multiset of widths and heights.
+
+---
+
+## Objective
+For a feasible solution, define:
+
+- `sold_i = min(cntW[wi] * cntH[hi], di)`
+- `SoldArea = sum over i of sold_i * wi * hi`
+- `Revenue = sum over i of sold_i * ri`
+- `ScrapArea = W * H - SoldArea`
+- `CutsCost = (kx - 1) * CV + (ky - 1) * CH`
+
+Your objective value is:
+
+`OBJ = Revenue - S * ScrapArea - CutsCost`
+
+This value is computed exactly with integer arithmetic.
+
+For an infeasible output, define:
+
+`OBJ = -(S*W*H + CV*Vmax + CH*Hmax) - 1`
+
+---
+
+## Scoring
+Let
+
+`L = S*W*H + CV*Vmax + CH*Hmax`
+
+so every feasible solution satisfies `OBJ >= -L`.
+
+### Baseline
+For each order type `i` with `wi <= W` and `hi <= H`, consider the following simple pattern:
+
+- use as many full strips of width `wi` as possible:
+  - `ax = floor(W / wi)`
+  - `rx = W - ax * wi`
+  - number of width strips is `sx = ax + (rx > 0 ? 1 : 0)`
+- use as many full strips of height `hi` as possible:
+  - `ay = floor(H / hi)`
+  - `ry = H - ay * hi`
+  - number of height strips is `sy = ay + (ry > 0 ? 1 : 0)`
+
+If `sx - 1 <= Vmax` and `sy - 1 <= Hmax`, this pattern is feasible and has:
+
+- `sold = min(di, ax * ay)`
+- `OBJ_i = sold * ri - S * (W*H - sold*wi*hi) - (sx - 1) * CV - (sy - 1) * CH`
+
+Also consider the “do nothing useful” pattern:
+- `kx = 1`, `ky = 1`
+- no sales
+- `OBJ_0 = -S * W * H`
+
+Let
+
+`BASE = max(OBJ_0, all feasible OBJ_i)`.
+
+### Test score
+For each test file, your score is:
+
+`score = floor(1,000,000 * min(2, (OBJ + L + 1) / (BASE + L + 1)))`
+
+Thus:
+- matching the baseline gives about `1,000,000` points,
+- doing better than baseline gives more,
+- doing worse gives less,
+- infeasible output gets `0`.
+
+### Final score
+Your final score is the sum of `score` over all test files.
+
+---
+
+## Constraints
+- `1 <= n <= 2 * 10^5`
+- `1 <= W, H <= 10^12`
+- `0 <= Vmax, Hmax <= 4000`
+- `1 <= S, CV, CH <= 10^6`
+- `1 <= wi <= W`
+- `1 <= hi <= H`
+- `1 <= di, ri <= 10^12`
+
+The judge uses exact integer arithmetic; intermediate values may require 128-bit signed integers.
+
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+---
+
+## Example
+### Input
+```text
+3 9 6 3 1 1 1 1
+3 3 4 12
+6 3 2 25
+3 6 2 20
+```
+
+### Output
+```text
+2 2
+3 6
+3 3
+```
+
+### Explanation
+This creates four rectangles:
+
+- two of size `3 × 3`
+- two of size `6 × 3`
+
+Sales:
+- `3 × 3`: demand is 4, produced 2, so sold 2
+- `6 × 3`: demand is 2, produced 2, so sold 2
+- `3 × 6`: produced 0
+
+So:
+- `Revenue = 2*12 + 2*25 = 74`
+- `SoldArea = 2*9 + 2*18 = 54 = W*H`
+- `ScrapArea = 0`
+- `CutsCost = 1*1 + 1*1 = 2`
+
+Hence `OBJ = 74 - 0 - 2 = 72`.
+
+The baseline here is lower, so this solution scores above `1,000,000` on this test.
+```

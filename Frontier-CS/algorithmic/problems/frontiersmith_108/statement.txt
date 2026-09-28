@@ -1,0 +1,174 @@
+```markdown
+# Correlated Binary Addressing
+
+## Problem
+You are designing a binary routing tree for an archive.
+
+There are `M` items. Each item must be assigned to a distinct leaf of a binary tree whose depth is at most `N`.
+
+Instead of outputting the tree explicitly, you will assign each item a **binary address**:
+- an address is a binary string over `{0,1}`,
+- the empty string is also allowed and is written as `.` in the output,
+- the set of addresses must be **prefix-free**.
+
+A prefix-free set of addresses uniquely represents a binary tree:
+- each address corresponds to one leaf,
+- its length is the depth of that leaf,
+- two items with a long common prefix share more of the tree.
+
+Access statistics are given:
+- `A_i`: the number of times item `i` is fetched alone,
+- `B_{i,j}`: the number of times items `i` and `j` are fetched together in one combined trip.
+
+If item `i` has address `s_i`, let:
+- `len(i)` = length of `s_i`,
+- `lcp(i,j)` = length of the longest common prefix of `s_i` and `s_j`.
+
+Then:
+- fetching item `i` alone costs `len(i)`,
+- fetching items `i` and `j` together costs  
+  `len(i) + len(j) - 2 * lcp(i,j)`.
+
+Your task is to output any feasible prefix-free address assignment minimizing the total weighted access cost.
+
+This is an optimization problem: all feasible outputs are accepted and scored.
+
+## Input
+The input is given in the following format:
+
+```text
+M N
+A_1 A_2 ... A_M
+B_1,1 B_1,2 ... B_1,M
+B_2,1 B_2,2 ... B_2,M
+...
+B_M,1 B_M,2 ... B_M,M
+```
+
+### Notes
+- `B` is symmetric.
+- `B_i,i = 0`.
+
+## Output
+Output exactly `M` lines.
+
+On the `i`-th line, output the address assigned to item `i`:
+- either a binary string of length between `1` and `N`,
+- or `.` to denote the empty string of length `0`.
+
+### Feasibility requirements
+Your output is **feasible** iff all of the following hold:
+1. Exactly `M` addresses are printed.
+2. Every address is either `.` or a string consisting only of `0` and `1`.
+3. Every address length is at most `N`.
+4. All addresses are distinct.
+5. The set of addresses is prefix-free:
+   for any two different items `i` and `j`, neither address may be a prefix of the other.
+
+If the output is infeasible, the submission receives score `0` for that test case.
+
+## Objective
+For a feasible output, define the total cost
+
+```text
+C = sum_i A_i * len(i)
+  + sum_{1 <= i < j <= M} B_i,j * ( len(i) + len(j) - 2 * lcp(i,j) )
+```
+
+Your goal is to **minimize** `C`.
+
+All computations are done exactly with integer arithmetic.
+
+## Scoring
+For each test case, let:
+
+- `C_you` = your cost,
+- `C_base` = the baseline cost defined below.
+
+The per-test score is
+
+```text
+score = floor(10^9 * C_base / C_you)
+```
+
+If your output is infeasible, the score is `0`.
+
+### Baseline
+The baseline assignment is defined deterministically:
+- Let `L = ceil(log2 M)`.
+- If `M = 1`, the only baseline address is `.`.
+- Otherwise, item `i` gets the `L`-bit binary representation of `i-1`.
+
+This is feasible because the test data satisfies `2^N >= M`, hence `L <= N`.
+
+### Total score
+The final score is the **sum** of per-test scores over all test cases.
+
+A lower cost always gives a higher score.
+
+## Constraints
+- `1 <= M <= 400`
+- `0 <= N <= 60`
+- `2^N >= M`
+- `1 <= A_i <= 10^4`
+- `0 <= B_i,j <= 10^4`
+- `B_i,j = B_j,i`
+- `B_i,i = 0`
+
+The total cost for every official test fits in signed 64-bit integer range.
+
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample Input
+```text
+3 3
+10 1 1
+0 8 0
+8 0 8
+0 8 0
+```
+
+### Sample Output
+```text
+0
+10
+11
+```
+
+### Explanation
+The addresses are prefix-free and all lengths are at most `3`.
+
+Their lengths are:
+- item 1: `1`
+- item 2: `2`
+- item 3: `2`
+
+Longest common prefix lengths:
+- items 1 and 2: `0`
+- items 1 and 3: `0`
+- items 2 and 3: `1`
+
+So the total cost is:
+
+```text
+10*1 + 1*2 + 1*2
++ 8*(1+2-0)
++ 0*(1+2-0)
++ 8*(2+2-2)
+= 14 + 24 + 0 + 16
+= 54
+```
+
+The baseline uses fixed-length 2-bit addresses:
+`00, 01, 10`, whose cost is `72`.
+
+Therefore this output would receive
+
+```text
+floor(10^9 * 72 / 54) = 1333333333
+```
+
+for this test case.
+```

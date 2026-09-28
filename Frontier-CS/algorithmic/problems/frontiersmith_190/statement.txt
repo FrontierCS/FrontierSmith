@@ -1,0 +1,183 @@
+```markdown
+# Coprime Frequency Planning
+
+## Problem
+
+You are designing a shared radio plan for a region with many receivers.
+
+There are `n` receivers. Receiver `i` is described by four integers:
+
+- `x_i` — its minimum acceptable frequency is strictly greater than `x_i`
+- `s_i` — its frequency window length
+- `p_i` — its interference code
+- `w_i` — the profit earned if this receiver is served
+
+A receiver `i` can use an activated frequency `y` if and only if all of the following hold:
+
+1. `x_i < y ≤ x_i + s_i`
+2. `gcd(y, p_i) = 1`
+
+You may activate at most `B` **distinct** integer frequencies `y`, each in the range `1..U`.
+
+Each activated frequency `y` has a capacity
+
+`cap(y) = 1 + ω(y)`
+
+where `ω(y)` is the number of **distinct prime divisors** of `y`.
+
+A served receiver must be assigned to exactly one activated frequency that it can use, and each activated frequency `y` may serve at most `cap(y)` receivers.
+
+Your task is to choose the activated frequencies so that the total profit of served receivers is as large as possible.
+
+The judge will compute the **best possible assignment** of receivers to your chosen frequencies, so your output only needs to specify the frequencies.
+
+---
+
+## Input
+
+The input contains a single test instance.
+
+- The first line contains three integers `n`, `U`, `B`.
+- The next `n` lines each contain four integers `x_i`, `s_i`, `p_i`, `w_i`.
+
+---
+
+## Output
+
+Output a valid plan:
+
+- First line: one integer `m` — the number of activated frequencies.
+- Second line: `m` distinct integers `y_1, y_2, ..., y_m`.
+
+A submission is **feasible** if:
+
+- `0 ≤ m ≤ B`
+- all `y_j` are distinct
+- `1 ≤ y_j ≤ U`
+
+If the output is infeasible, the objective value for the test is `0`.
+
+If `m = 0`, the second line may be empty.
+
+---
+
+## Objective
+
+Let `S = {y_1, ..., y_m}` be your chosen frequencies.
+
+Construct a bipartite graph:
+
+- left side: the `n` receivers
+- right side: one node for each activated frequency `y ∈ S`, with capacity `cap(y)`
+
+Receiver `i` is adjacent to frequency `y` iff:
+
+- `x_i < y ≤ x_i + s_i`, and
+- `gcd(y, p_i) = 1`
+
+The judge computes a maximum-profit assignment: each receiver is assigned to at most one adjacent frequency, and each frequency `y` is used by at most `cap(y)` receivers.
+
+Your objective value is
+
+`V = sum of w_i over all assigned receivers`.
+
+You must **maximize `V`**.
+
+---
+
+## Scoring
+
+Let:
+
+- `V` be your objective value on a test file
+- `W = Σ w_i` be the sum of all receiver profits in that file
+- `V_base` be the objective value of the following deterministic baseline
+
+### Baseline
+
+For each receiver `i`, define `f_i` as the **smallest** integer `y` such that:
+
+- `x_i < y ≤ x_i + s_i`
+- `gcd(y, p_i) = 1`
+
+If no such `y` exists, receiver `i` contributes nothing to the baseline selection.
+
+For every frequency `y`, compute
+
+`bucket(y) = Σ w_i` over all receivers with `f_i = y`.
+
+The baseline activates up to `B` frequencies with largest `bucket(y)` values.
+Ties are broken by smaller `y`.
+
+After choosing those frequencies, `V_base` is computed using the **same matching-based objective** as above.
+
+### Per-file score
+
+For each test file, your score is
+
+`score_file = 100 * max(0, V - V_base) / max(1, W - V_base)`
+
+clamped to the range `[0, 100]`.
+
+### Total score
+
+The final score is the arithmetic mean of `score_file` over all official test files.
+
+---
+
+## Constraints
+
+- `1 ≤ n ≤ 40000`
+- `1 ≤ U ≤ 10^6`
+- `1 ≤ B ≤ 200`
+- `0 ≤ x_i < U`
+- `1 ≤ s_i ≤ U - x_i`
+- `1 ≤ p_i ≤ 10^6`
+- `1 ≤ w_i ≤ 10^6`
+
+- Time limit: 10 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+5 20 2
+4 6 6 10
+6 5 10 8
+8 4 9 7
+10 6 14 9
+12 4 15 6
+```
+
+### Output
+```text
+2
+11 13
+```
+
+### Explanation
+
+- `cap(11) = 1 + ω(11) = 2`
+- `cap(13) = 1 + ω(13) = 2`
+
+Compatibility:
+- Receiver 2 can use `11`
+- Receiver 3 can use `11`
+- Receiver 4 can use `11` or `13`
+- Receiver 5 can use `13`
+
+The judge can assign receivers `2, 3, 4, 5`, giving
+
+`V = 8 + 7 + 9 + 6 = 30`.
+
+The total profit is `W = 40`.
+
+For this instance, the baseline chooses frequencies `5` and `11`, whose evaluated profit is `V_base = 27`.
+
+So the score for this file would be
+
+`100 * (30 - 27) / (40 - 27) ≈ 23.08`.
+```

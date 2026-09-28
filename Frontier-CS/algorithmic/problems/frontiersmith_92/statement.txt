@@ -1,0 +1,147 @@
+```markdown
+# Patchwork Reserve Fencing
+
+## Problem
+A nature reserve contains `n` survey markers on a 2D plane. Marker `i` is at integer coordinates `(x_i, y_i)` and has an integer ecological value `w_i`, which may be positive or negative.
+
+You may build **zero or more** closed fences. Each fence must be a **simple polygon** whose vertices are chosen from the given markers.
+
+A marker is considered **protected** if it lies strictly inside at least one fence or is used as a vertex of a fence. Because no three input points are collinear, no other boundary cases can occur.
+
+Your goal is to choose fences that maximize the total protected value minus the construction cost.
+
+### Fence rules
+- Each fence must use at least 3 distinct markers.
+- The listed vertices of a fence must be in cyclic order (clockwise or counterclockwise).
+- Edges are straight segments between consecutive listed vertices, with the last vertex connected back to the first.
+- Each fence must be a simple polygon: its boundary may not self-intersect.
+- Different fences may not intersect, touch, share a vertex, or overlap in area.
+- A marker may be used as a vertex in **at most one** fence.
+- A protected marker contributes its value only once, even if multiple fences would contain it (though valid fences are disjoint, so this cannot happen in a feasible solution).
+
+The construction cost of one edge from marker `a` to marker `b` is
+
+`C * ((x_a - x_b)^2 + (y_a - y_b)^2)`
+
+where `C` is given in the input.
+
+## Input
+The input describes one instance.
+
+- First line: two integers `n` and `C`
+- Next `n` lines: three integers `x_i y_i w_i`
+
+### Guarantees
+- All points are distinct.
+- No three points are collinear.
+
+## Output
+Output your fence plan in the following format:
+
+- First line: one integer `k` — the number of fences
+- Next `k` lines:  
+  `m_j v_{j,1} v_{j,2} ... v_{j,m_j}`  
+  describing fence `j` with `m_j` vertices, using 1-based marker indices in cyclic order
+
+### Feasibility requirements
+Your output is valid if and only if all of the following hold:
+- `k >= 0`
+- For every fence, `m_j >= 3`
+- Every listed index is between `1` and `n`
+- No marker index appears more than once in the entire output
+- Every fence is a simple polygon
+- No two fences intersect, touch, or overlap
+
+If the output is invalid, the submission receives objective value `-∞` for that test and score `0`.
+
+There is no need to repeat the first vertex at the end.
+
+## Objective
+Let `P` be the set of protected markers: markers that are strictly inside at least one fence or are vertices of a fence.
+
+Let `E` be the set of all fence edges in your output.
+
+Your objective value is
+
+`OBJ = sum_{i in P} w_i - C * sum_{(a,b) in E} ((x_a - x_b)^2 + (y_a - y_b)^2)`
+
+Maximize `OBJ`.
+
+The judge computes `OBJ` exactly using integer arithmetic.
+
+## Scoring
+For each test file:
+
+- **Baseline solution:** build no fences. Its objective is `B = 0`.
+- **Upper bound:**  
+  `U = sum_{i=1..n} max(w_i, 0)`
+
+Since edge costs are nonnegative and negative markers never help by themselves, every feasible solution satisfies `OBJ <= U`.
+
+The per-test score is:
+
+- If `U = 0`:
+  - score = `1,000,000` if `OBJ = 0`
+  - score = `0` otherwise
+- Otherwise:
+  - `score = 1,000,000 * clamp((OBJ - B) / (U - B), 0, 1)`
+  - equivalently, since `B = 0`:
+    `score = 1,000,000 * clamp(OBJ / U, 0, 1)`
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+The final contest score is the arithmetic mean of per-test scores over all test files.
+
+A trivial submission that outputs `0` fences on every test gets score `0`.
+
+## Constraints
+- `3 <= n <= 600`
+- `1 <= C <= 1000`
+- `-100000 <= x_i, y_i <= 100000`
+- `-10^9 <= w_i <= 10^9`
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample Input
+```text
+5 1
+0 0 30
+2 0 30
+3 2 30
+0 3 30
+1 1 -25
+```
+
+### Sample Output
+```text
+1
+4 1 2 3 4
+```
+
+### Explanation
+The output builds one quadrilateral using markers `1,2,3,4`.
+
+- Protected markers: all 5 markers  
+  so protected value = `30 + 30 + 30 + 30 - 25 = 95`
+- Edge costs:
+  - `1->2`: `2^2 + 0^2 = 4`
+  - `2->3`: `1^2 + 2^2 = 5`
+  - `3->4`: `3^2 + 1^2 = 10`
+  - `4->1`: `0^2 + 3^2 = 9`
+
+Total construction cost = `1 * (4 + 5 + 10 + 9) = 28`
+
+So the objective is:
+
+`OBJ = 95 - 28 = 67`
+
+The upper bound is:
+
+`U = 30 + 30 + 30 + 30 + 0 = 120`
+
+Therefore the score on this test file is:
+
+`1,000,000 * 67 / 120 ≈ 558333.33`
+```

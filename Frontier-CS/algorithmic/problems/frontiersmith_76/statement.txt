@@ -1,0 +1,175 @@
+```markdown
+# Budgeted Fractal Stamps
+
+## Problem
+
+A workshop has a large white board divided into `n × m` unit cells.  
+You are given a target black/white picture on this board.
+
+To reproduce it, you may place **fractal stamps**. Each stamp paints one axis-aligned square whose side length is a power of two.
+
+A stamp is described by:
+
+- its top-left corner `(r, c)`,
+- an integer depth `d ≥ 2`, so its square has side length `2^d`,
+- a 2 × 2 binary pattern `p` written as a 4-character string in row-major order:
+  - `p[0]` = upper-left,
+  - `p[1]` = upper-right,
+  - `p[2]` = lower-left,
+  - `p[3]` = lower-right.
+
+The pattern generates a bitmap `F(p, d)` recursively:
+
+- `F(p, 1)` is exactly the 2 × 2 bitmap given by `p`.
+- For `d > 1`, split the square into 4 equal quadrants of side `2^(d-1)`.
+  - If the corresponding bit of `p` is `1`, that whole quadrant becomes black.
+  - If the corresponding bit is `0`, that quadrant contains `F(p, d-1)`.
+
+So black quadrants stay completely black forever, while white quadrants recurse.
+
+Your canvas is initially all white.  
+Each chosen stamp paints black cells according to its generated bitmap inside its square.
+
+### Important feasibility rule
+The **square footprints** of all stamps must be pairwise disjoint: no unit cell may belong to two different stamp squares, even if both would paint it the same color.
+
+Each stamp has cost `d`.  
+The sum of costs of all chosen stamps must not exceed the budget `B`.
+
+Your goal is to make the final painted canvas as close as possible to the target picture.
+
+---
+
+## Input
+
+The first line contains three integers:
+
+- `n`, `m` — board dimensions,
+- `B` — total budget.
+
+Then follow `n` lines of length `m` each:
+
+- `'.'` = white target cell,
+- `'*'` = black target cell.
+
+---
+
+## Output
+
+On the first line print one integer `k` — the number of stamps you place.
+
+Then print `k` lines, one per stamp:
+
+`r c d p`
+
+where:
+
+- `1 ≤ r ≤ n`
+- `1 ≤ c ≤ m`
+- `d ≥ 2`
+- `p` is a binary string of length 4 (`0` or `1`)
+- the square `[r, r + 2^d - 1] × [c, c + 2^d - 1]` must lie fully inside the board.
+
+### Feasibility requirements
+
+A submission is **feasible** iff all of the following hold:
+
+1. All stamp descriptions are syntactically valid.
+2. Every stamp square lies fully inside the board.
+3. Stamp squares are pairwise cell-disjoint.
+4. The total cost `Σ d` over all stamps is at most `B`.
+
+If any condition is violated, the submission is invalid and receives score `0`.
+
+---
+
+## Objective
+
+Let `A` be the final canvas produced by your stamps, with black and white cells.
+
+Minimize the **Hamming distance** to the target picture:
+
+`H = number of cells where A differs from the target`.
+
+Equivalently, lower `H` is better.
+
+For scoring, define the penalty
+
+`P = 1 + H`.
+
+---
+
+## Scoring
+
+The official baseline is the **empty solution**: place `0` stamps.  
+Its penalty on a test is
+
+`P_base = 1 + (# of black cells in the input)`,
+
+because the empty canvas is all white.
+
+For a feasible submission on one test:
+
+- if `P_base = 1` (the target is completely white), then
+  - score is `1,000,000` if `P = 1`,
+  - otherwise score is `0`.
+- else the test score is
+
+`score = round(1,000,000 × (P_base - P) / (P_base - 1))`
+
+clamped to the range `[0, 1,000,000]`.
+
+So:
+
+- matching the baseline gets `0`,
+- a perfect reconstruction gets `1,000,000`,
+- worse-than-baseline solutions also get `0`.
+
+The final score is the arithmetic mean of test scores over all tests.
+
+---
+
+## Constraints
+
+- `2 ≤ n, m ≤ 500`
+- `0 ≤ B ≤ 4000`
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+4 4 2
+***.
+**.*
+*.**
+.***
+```
+
+### Output
+```text
+1
+1 1 2 1001
+```
+
+### Explanation
+The single stamp has:
+
+- top-left corner `(1, 1)`
+- depth `2`, so side length `4`
+- pattern
+  ```text
+  1 0
+  0 1
+  ```
+
+It exactly generates the shown `4 × 4` target, so `H = 0`.
+
+- Submission penalty: `P = 1`
+- Baseline penalty: `P_base = 1 + 12 = 13`
+
+Therefore the score for this test is `1,000,000`.
+```

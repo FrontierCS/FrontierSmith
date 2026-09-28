@@ -1,0 +1,184 @@
+```markdown
+# Spotlight Gallery Packing
+
+## Problem
+A curator is preparing a large rectangular wall for a temporary exhibition.
+
+There are `N` available square artworks. Artwork `i` has side length `s_i` and base popularity `p_i`.  
+The wall has height `H` and width `W`.
+
+Visitors tend to gather near `K` viewing hotspots. Hotspot `j` is located at point `(u_j, v_j)`, has strength `q_j`, and influence radius `r_j`.
+
+You may place any subset of the artworks on the wall, at integer coordinates, subject to the rules below.
+
+For a placed artwork `i` with lower-left corner `(x_i, y_i)`, its center is
+
+- `c_x = x_i + s_i / 2`
+- `c_y = y_i + s_i / 2`
+
+Let `d(i, j)` be the Euclidean distance from the center of artwork `i` to hotspot `j`.
+
+The attention multiplier contributed by hotspot `j` to artwork `i` is
+
+`bonus(i, j) = q_j * r_j / (r_j + d(i, j))`
+
+The engagement of artwork `i` is
+
+`engagement(i) = p_i * (1 + sum over all hotspots j of bonus(i, j))`
+
+Your goal is to place artworks to maximize the total engagement.
+
+This is an optimization problem: better placements receive higher scores.
+
+## Input
+The input contains a single test instance.
+
+- The first line contains four integers: `N H W K`
+- The next `N` lines each contain two integers: `s_i p_i`
+- The next `K` lines each contain four integers: `u_j v_j q_j r_j`
+
+### Coordinate system
+- The wall is the rectangle `[0, W] × [0, H]`
+- The origin `(0, 0)` is the lower-left corner of the wall
+
+## Output
+On the first line, print an integer `T` — the number of artworks you place.
+
+Then print `T` lines. Each line must contain three integers:
+
+`id x y`
+
+meaning that artwork `id` is placed with its lower-left corner at integer coordinates `(x, y)`.
+
+### Feasibility requirements
+A submission is **feasible** if all of the following hold:
+
+1. `0 <= T <= N`
+2. Every `id` is distinct and satisfies `1 <= id <= N`
+3. For each placed artwork `id`:
+   - `0 <= x <= W - s_id`
+   - `0 <= y <= H - s_id`
+4. All artworks are axis-aligned
+5. The interiors of any two placed artworks are disjoint  
+   - Touching by edges or corners is allowed
+
+If the output is infeasible, the score for that test is `0`.
+
+## Objective
+For a feasible output, let `P` be the set of placed artworks.
+
+For each placed artwork `i`:
+- its center is `(x_i + s_i/2, y_i + s_i/2)`
+- for each hotspot `j`, compute
+  - `d(i, j) = sqrt((c_x - u_j)^2 + (c_y - v_j)^2)`
+  - `bonus(i, j) = q_j * r_j / (r_j + d(i, j))`
+- then
+  - `engagement(i) = p_i * (1 + sum_j bonus(i, j))`
+
+Your objective value is
+
+`OBJ = sum over i in P of engagement(i)`
+
+Higher is better.
+
+The judge computes `OBJ` using floating-point arithmetic with sufficient precision.
+
+## Scoring
+For each test file, your output is compared against an official deterministic baseline.
+
+Let:
+- `U` = your objective value on that test
+- `B` = baseline objective value on that test
+
+The per-test score is:
+
+- if your output is infeasible: `0`
+- else if `B > 0`:  
+  `score = 100 * clamp(U / B, 0, 2)`
+- else (`B = 0`):  
+  `score = 100` if `U = 0`, otherwise `0`
+
+where
+
+`clamp(z, 0, 2) = max(0, min(2, z))`
+
+So:
+- matching the baseline gives `100`
+- doing worse gives a score in `(0, 100)`
+- beating the baseline can give up to `200`
+
+The final score is the arithmetic mean of per-test scores over all test files.
+
+### Official baseline
+The baseline is computed as follows.
+
+1. Discard every artwork with `s_i > H` or `s_i > W`.
+2. Sort the remaining artworks by:
+   - decreasing `s_i`
+   - if tied, decreasing `p_i`
+   - if tied, increasing `id`
+3. Pack them using **First-Fit Decreasing Height** shelves:
+   - Shelves are created from bottom to top
+   - Each shelf has:
+     - bottom coordinate `y`
+     - height `h_shelf`
+     - current used width `x_used`
+   - For each artwork in sorted order:
+     - scan shelves from bottom to top
+     - place the artwork on the first shelf with
+       - `h_shelf >= s_i`
+       - `x_used + s_i <= W`
+     - if found, place it at `(x_used, y)` and increase `x_used` by `s_i`
+     - otherwise, create a new shelf on top of all existing shelves if the total used height plus `s_i` does not exceed `H`
+       - the new shelf has height `s_i`
+       - the artwork is placed at `(0, current_total_height)`
+     - otherwise skip the artwork
+4. Evaluate the baseline placement with the same objective formula.
+
+## Constraints
+- `1 <= N <= 2000`
+- `1 <= K <= 30`
+- `1 <= H, W <= 10^9`
+- `1 <= s_i <= 10^9`
+- `1 <= p_i <= 10^6`
+- `0 <= u_j <= W`
+- `0 <= v_j <= H`
+- `1 <= q_j <= 10^4`
+- `1 <= r_j <= 10^9`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+**Sample input**
+```text
+4 8 10 2
+4 20
+3 13
+3 12
+2 7
+2 6 5 3
+8 2 4 2
+```
+
+**Sample output**
+```text
+3
+1 0 4
+2 5 0
+4 8 6
+```
+
+**Explanation**
+
+This output places artworks `1`, `2`, and `4` without overlap:
+
+- artwork `1`: square `[0,4) × [4,8)`
+- artwork `2`: square `[5,8) × [0,3)`
+- artwork `4`: square `[8,10) × [6,8)`
+
+All are inside the wall.
+
+The center of each artwork determines its hotspot bonuses, and the total engagement is the sum of the three resulting values. This sample output is only one feasible solution; it is not guaranteed to be optimal.
+```

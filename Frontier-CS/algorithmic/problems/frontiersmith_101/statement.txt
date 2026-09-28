@@ -1,0 +1,195 @@
+```markdown
+# Badge Pack Catalog Design
+
+## Problem
+Metropolis hosts many evening board-game sessions.  
+Every participant must receive exactly one badge:
+
+- **blue** for a boy,
+- **red** for a girl.
+
+To speed up registration, the organizers do **not** want to prepare badges one by one. Instead, they want a small catalog of **standardized sealed packs**. Each pack type is described by two nonnegative integers:
+
+- `x` = number of blue badges in the pack,
+- `y` = number of red badges in the pack.
+
+A pack type is valid if:
+
+- `x + y >= 1`,
+- `x + y <= C`.
+
+If a pack type is chosen for the catalog, the organizers may produce **any number of copies** of that type.
+
+There are `M` historical session patterns. Pattern `i` occurs `w_i` times and requires exactly:
+
+- `b_i` blue badges,
+- `g_i` red badges.
+
+For one occurrence of a pattern, the organizers may open any multiset of chosen pack types. Let the opened packs contain a total of:
+
+- `B` blue badges,
+- `G` red badges.
+
+This occurrence is feasible if `B >= b_i` and `G >= g_i`. Any extra badges are wasted.
+
+The cost of serving one occurrence is:
+
+- `A * (number of opened packs)`
+- `+ W * ((B - b_i) + (G - g_i))`
+
+In addition, every distinct chosen pack type incurs a one-time **setup cost** `F`.
+
+Your task is to choose **at most `K` distinct pack types** to minimize the total season cost.
+
+---
+
+Formally, if `P` is your chosen set of pack types, then the total cost is:
+
+`F * |P| + sum over i=1..M of [ w_i * bestCost(i, P) ]`
+
+where `bestCost(i, P)` is the minimum possible serving cost for one occurrence of pattern `i` using any multiset of pack types from `P`.
+
+If some pattern cannot be served at all using your chosen types, your solution is **infeasible**.
+
+## Input
+The first line contains 6 integers:
+
+`M K C F A W`
+
+- `M` — number of historical patterns
+- `K` — maximum number of distinct pack types you may choose
+- `C` — maximum number of badges in one pack
+- `F` — setup cost per chosen pack type
+- `A` — cost per opened pack
+- `W` — cost per wasted badge
+
+Each of the next `M` lines contains 3 integers:
+
+`b_i g_i w_i`
+
+meaning that pattern `i` requires `b_i` blue and `g_i` red badges, and occurs `w_i` times.
+
+## Output
+On the first line, output one integer `T` — the number of chosen pack types.
+
+Then output `T` lines, each containing two integers:
+
+`x_j y_j`
+
+describing a chosen pack type.
+
+### Feasibility requirements
+Your output is feasible iff all of the following hold:
+
+- `1 <= T <= K`
+- all `T` pack types are pairwise distinct
+- for every type `j`:
+  - `x_j >= 0`
+  - `y_j >= 0`
+  - `1 <= x_j + y_j <= C`
+- every input pattern can be served by opening some multiset of your chosen pack types
+
+If any requirement is violated, the solution is infeasible.
+
+## Objective
+Minimize the total season cost:
+
+`Objective = F * T + sum_{i=1..M} w_i * bestCost(i)`
+
+where `bestCost(i)` is the minimum value of
+
+`A * sum_j c_j + W * ((sum_j c_j*x_j - b_i) + (sum_j c_j*y_j - g_i))`
+
+over all nonnegative integers `c_j` such that
+
+- `sum_j c_j*x_j >= b_i`
+- `sum_j c_j*y_j >= g_i`
+
+Here `c_j` is the number of opened packs of type `j` for one occurrence of pattern `i`.
+
+All computations use exact integer arithmetic.
+
+## Scoring
+This is an optimization problem. Lower objective values are better.
+
+For each test file, the judge also computes the **baseline objective** `B` using the fixed catalog:
+
+- `(1, 0)`
+- `(0, 1)`
+
+This baseline is always feasible under the given constraints.
+
+Let your objective be `O`.
+
+- If your output is infeasible, your score for that test file is `0`.
+- Otherwise, your score is
+
+`100 * clamp(B / O, 0, 3)`
+
+where
+
+`clamp(z, 0, 3) = min(3, max(0, z))`.
+
+So:
+
+- matching the baseline gives **100** points on that test,
+- doing better than the baseline gives **more than 100**,
+- doing worse gives **less than 100**,
+- the per-test score is capped at **300**.
+
+Your final score is the arithmetic mean of per-test scores over all test files.
+
+## Constraints
+- `1 <= M <= 1000`
+- `2 <= K <= 25`
+- `1 <= C <= 30`
+- `1 <= F, A, W <= 10^6`
+- `0 <= b_i, g_i <= 300`
+- `b_i + g_i >= 1`
+- `1 <= w_i <= 10^6`
+
+## Example
+### Sample input
+```text
+3 3 4 10 2 1
+2 1 5
+3 0 2
+0 3 1
+```
+
+### Sample output
+```text
+3
+1 0
+0 1
+2 1
+```
+
+### Explanation
+The chosen catalog has 3 pack types, so setup cost is:
+
+- `3 * 10 = 30`
+
+For pattern `(2,1)`:
+- open one pack `(2,1)`
+- cost = `2 * 1 + 1 * 0 = 2`
+- weighted contribution = `5 * 2 = 10`
+
+For pattern `(3,0)`:
+- best is `(2,1) + (1,0)`
+- 2 opened packs, 1 wasted red badge
+- cost = `2*2 + 1 = 5`
+- weighted contribution = `2 * 5 = 10`
+
+For pattern `(0,3)`:
+- best is three packs `(0,1)`
+- cost = `2*3 = 6`
+- weighted contribution = `1 * 6 = 6`
+
+Total objective:
+- `30 + 10 + 10 + 6 = 56`
+
+Baseline catalog `{(1,0), (0,1)}` has objective `68`, so this output gets per-test score:
+
+`100 * (68 / 56) = 121.428571...`
+```

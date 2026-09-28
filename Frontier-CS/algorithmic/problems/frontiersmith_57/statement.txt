@@ -1,0 +1,141 @@
+```markdown
+# Robust Anagram Tour
+
+## Problem
+You are designing a circular schedule of access codes for a vault.
+
+For one test case you are given:
+
+- a base string `A` of length `n`, consisting of lowercase English letters,
+- an integer `M`.
+
+A **code** is any string that can be obtained by permuting the characters of `A`.
+
+You must output `M` **distinct** codes `P1, P2, ..., PM`, each a permutation of `A`.  
+These codes are used in a cycle, so after `PM` the system returns to `P1`.
+
+---
+
+For two strings `X` and `Y` of length `n`, define one allowed edit as:
+
+- choose any positions `i, j` (`1 <= i <= j <= n`), and
+- swap `X[i]` with `X[j]`  
+  (`i = j` means “do nothing”).
+
+Let `swap(X, i, j)` be the result.
+
+Define the **robust gap** between `X` and `Y` as
+
+\[
+\rho(X, Y) = \min_{1 \le i \le j \le n,\; 1 \le p \le q \le n}
+\text{Ham}(swap(X,i,j), swap(Y,p,q)),
+\]
+
+where `Ham(U, V)` is the Hamming distance between strings `U` and `V`
+(the number of positions where they differ).
+
+Intuitively, `rho(X, Y)` is how different the two codes remain even after an attacker is allowed to apply at most one swap to each of them.
+
+Note that `rho(X, Y) = 0` exactly when `X` and `Y` are “similar” under the rule from the original story.
+
+Your goal is to choose and order the `M` codes to maximize the total robust gap around the cycle.
+
+## Input
+The first line contains an integer `T` — the number of test cases.
+
+Each of the next `T` lines contains:
+
+- a string `A`
+- an integer `M`
+
+for one test case.
+
+The judge guarantees that the number of distinct permutations of `A` is at least `M`.
+
+## Output
+For each test case, output **one line** containing exactly `M` space-separated strings:
+
+`P1 P2 ... PM`
+
+Feasibility requirements for each test case:
+
+1. Each `Pk` must have length `n`.
+2. Each `Pk` must be a permutation of `A`.
+3. All `Pk` must be pairwise distinct.
+
+If any of these conditions is violated for a test case, the objective value for that test case is `0`.
+
+## Objective
+For a feasible output, define
+
+\[
+\text{Obj} = \sum_{k=1}^{M} \rho(P_k, P_{k+1}),
+\]
+
+where `P_{M+1} = P1`.
+
+You must **maximize** `Obj`.
+
+## Scoring
+For each test case, the judge also computes a baseline solution:
+
+1. Sort `A` in nondecreasing order.
+2. Enumerate distinct permutations of `A` in lexicographic order.
+3. Take the first `M` permutations in that order:
+   `B1, B2, ..., BM`.
+4. Compute
+
+\[
+\text{Base} = \sum_{k=1}^{M} \rho(B_k, B_{k+1}),
+\]
+
+with `B_{M+1} = B1`.
+
+The score for that test case is
+
+\[
+\text{Score} = \left\lfloor 10^6 \cdot \min\left(2,\; \frac{1+\text{Obj}}{1+\text{Base}}\right) \right\rfloor.
+\]
+
+The score for an input file is the arithmetic mean of the per-test-case scores, rounded down.
+
+This creates a continuous scale:
+
+- matching the baseline gives about `1,000,000`,
+- doing worse gives less,
+- doing better gives more,
+- improvement is capped at `2,000,000` per test case.
+
+## Constraints
+- `1 <= T <= 20`
+- `1 <= n = |A| <= 14`
+- `1 <= M <= min(200, number of distinct permutations of A)`
+- `A` contains only lowercase English letters
+
+Official tests are designed so that exhaustive optimization is infeasible.
+
+- Time limit: 2 seconds
+- Memory limit: 512 MB
+
+## Example
+Input
+```text
+1
+abcd 4
+```
+
+Sample output
+```text
+abcd bcda cdab dabc
+```
+
+Brief explanation:
+
+- All four strings are distinct permutations of `abcd`, so the output is feasible.
+- The cycle is  
+  `abcd -> bcda -> cdab -> dabc -> abcd`.
+- For each adjacent pair here, even after one swap in each string, at least `2` positions still differ, so each edge contributes `2`.
+- Therefore the sample objective is `8`.
+
+Its final score is then computed by comparing `8` against the lexicographic baseline for the same test case using the scoring formula above.
+```

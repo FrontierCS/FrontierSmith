@@ -1,0 +1,156 @@
+```markdown
+# Daylong Silence Plan
+
+## Problem
+
+Vitalya now owns a collection of `D` smart devices (phone, watch, tablet, speakers, etc.).  
+Device `j` has an inconvenience cost `c_j`: if he turns that device off for the whole day, he misses all reminders produced by that device and pays cost `c_j`.
+
+Tomorrow's day lasts `H` minutes, numbered from `1` to `H`.  
+Each device has several scheduled alarm starts during the day. When a device starts an alarm at minute `t`, it counts as **one alarm start at minute `t`**.
+
+Vitalya will wake up if there exists **any** block of `m` consecutive minutes containing at least `k` alarm starts from devices that remain on.
+
+Important:
+
+- Only alarm **starts** inside the block matter.
+- If several devices start at the same minute, they all count.
+- Turning off a device removes **all** of its alarm starts.
+- You may turn off any subset of devices.
+
+Your task is to output any feasible on/off plan. Better plans turn off devices with smaller total inconvenience cost.
+
+This is an optimization challenge: exact optimum is not required, and large instances are designed so that heuristics are necessary.
+
+## Input
+
+The first line contains five integers:
+
+`D E H m k`
+
+- `D` — number of devices
+- `E` — total number of alarm starts over all devices
+- `H` — number of minutes in the day
+- `m` — wake-up window length
+- `k` — wake-up threshold
+
+The second line contains `D` integers:
+
+`c_1 c_2 ... c_D`
+
+Then follow `D` lines.  
+Line `j` describes device `j`:
+
+`q_j t_{j,1} t_{j,2} ... t_{j,q_j}`
+
+where:
+
+- `q_j` is the number of alarm starts for device `j`
+- `t_{j,p}` are the minutes when device `j` starts an alarm
+
+The following conditions hold:
+
+- `sum(q_j) = E`
+- For each device, its times are distinct
+- Times may be given in arbitrary order
+- Different devices may have alarm starts at the same minute
+
+## Output
+
+Output exactly `D` integers `x_1, x_2, ..., x_D`, where:
+
+- `x_j = 1` means device `j` remains **on**
+- `x_j = 0` means device `j` is turned **off**
+
+A submission is **feasible** iff:
+
+1. Exactly `D` integers are printed
+2. Each printed value is `0` or `1`
+3. For every integer start minute `s` with `1 <= s <= H - m + 1`, the number of alarm starts `t` from devices with `x_j = 1` satisfying
+
+   `s <= t <= s + m - 1`
+
+   is at most `k - 1`
+
+If the output is malformed or infeasible, the score for that test is `0`.
+
+## Objective
+
+Minimize the total inconvenience cost of devices turned off:
+
+`C = sum over j of c_j * (1 - x_j)`
+
+Lower is better.
+
+## Scoring
+
+For each test case, the judge also computes a deterministic **baseline** solution.
+
+### Baseline algorithm
+
+Start with all devices on.
+
+While the current plan is infeasible:
+
+1. Among all violating windows `[s, s + m - 1]` containing at least `k` currently active alarm starts, choose the one with the **smallest** `s`.
+2. For each currently active device `j`, let `r_j` be the number of its currently active alarm starts inside that chosen window.
+3. Among devices with `r_j > 0`, choose the device minimizing the ratio `c_j / r_j`.
+   - Ties are broken by smaller `c_j`
+   - Remaining ties are broken by smaller device index
+4. Turn that device off and continue.
+
+Let `B` be the baseline cost produced by this procedure, and let `C` be your feasible solution cost.
+
+The score for one test case is:
+
+`score = 100 * 2^(-C / max(1, B))`
+
+- If your cost equals the baseline cost (`C = B` and `B > 0`), the score is `50`
+- Better-than-baseline solutions score above `50`
+- Worse-than-baseline solutions score below `50`
+- If `B = 0`, then a zero-cost feasible output gets `100`
+
+The final contest score is the arithmetic mean of test-case scores.
+
+## Constraints
+
+- `1 <= D <= 40000`
+- `1 <= E <= 200000`
+- `1 <= m <= H <= 1000000`
+- `1 <= k <= E`
+- `1 <= c_j <= 10^9`
+- `1 <= q_j`
+- `1 <= t_{j,p} <= H`
+- Time limit: 3 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+3 6 15 4 3
+5 4 7
+2 2 5
+2 3 6
+2 4 7
+```
+
+### Output
+```text
+0 0 1
+```
+
+### Explanation
+Devices 1 and 2 are turned off, so the remaining alarm starts are at minutes `4` and `7`.
+
+Every block of 4 consecutive minutes contains at most 2 active alarm starts, so the plan is feasible.
+
+The objective value is:
+
+`C = 5 + 4 = 9`
+
+For this instance, the baseline also turns off devices 1 and 2, so `B = 9`.  
+Therefore the test-case score is:
+
+`100 * 2^(-9 / 9) = 50`
+```

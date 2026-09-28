@@ -1,0 +1,233 @@
+```markdown
+# Reusable Subsequence Toolkit
+
+## Problem
+
+You are given a **reference string** `s` over lowercase Latin letters and a set of customer orders.  
+Each order requests a target string `t_i` and has a penalty `w_i` that you must pay if you do **not** fulfill it.
+
+You may design a reusable toolkit of at most `K` **templates**.  
+Each template must be a **non-empty subsequence** of `s`.
+
+After creating the toolkit, you may fulfill any subset of the orders.  
+To fulfill order `i`, you must represent `t_i` as a concatenation of your chosen templates, in the given order.  
+Templates may be reused any number of times across different orders and multiple times within the same order.
+
+Using templates is not free:
+
+- Creating one template `q` costs  
+  `P + Q * |q|`.
+- Every time a template is used in an order decomposition, it costs `A`.
+
+If you skip order `i`, you pay penalty `w_i`.
+
+Your task is to output a toolkit and a decomposition plan that **minimizes total cost**.
+
+This is an optimization problem: many valid outputs may exist, and better outputs receive higher scores.
+
+---
+
+## Input
+
+The first line contains an integer `T` — the number of test cases.
+
+For each test case:
+
+- The first line contains five integers  
+  `N K P Q A`
+  - `N` — number of orders
+  - `K` — maximum number of templates you may create
+  - `P` — fixed cost per template
+  - `Q` — cost per character of a template
+  - `A` — cost per template use in an order
+- The second line contains the reference string `s`.
+- Then follow `N` lines, each containing:
+  - an integer `w_i`
+  - a string `t_i`
+
+All strings consist only of lowercase Latin letters.
+
+---
+
+## Output
+
+For each test case, output a solution in the following format:
+
+- The first line contains one integer `M` (`0 <= M <= K`) — the number of templates you create.
+- The next `M` lines contain the template strings `q_1, q_2, ..., q_M`.
+- Then output exactly `N` lines, one per order.
+
+For order `i`, output either:
+
+- `0`  
+  meaning the order is skipped, or
+- `r idx_1 idx_2 ... idx_r`
+  where:
+  - `r >= 1`
+  - each `idx_j` is an integer in `[1, M]`
+  - `q_{idx_1} + q_{idx_2} + ... + q_{idx_r} = t_i`
+
+### Feasibility requirements
+
+A solution is feasible iff all of the following hold:
+
+1. `M <= K`
+2. Every template is non-empty.
+3. Every template is a subsequence of `s`.
+4. For every fulfilled order, the listed template indices are valid and their concatenation equals the target string exactly.
+
+If any condition is violated, the solution is infeasible for that test case.
+
+---
+
+## Objective
+
+For one test case, define:
+
+- **Template creation cost**  
+  `sum over templates q of (P + Q * |q|)`
+- **Assembly cost**  
+  `A * (total number of template uses across all fulfilled orders)`
+- **Skip cost**  
+  `sum of w_i over all skipped orders`
+
+Your objective value is the **total cost**:
+
+\[
+\text{Cost} =
+\sum_{q \in \text{templates}} (P + Q|q|)
++ A \cdot \sum_{i \in \text{fulfilled}} r_i
++ \sum_{i \in \text{skipped}} w_i
+\]
+
+where `r_i` is the number of templates used to fulfill order `i`.
+
+Lower is better.
+
+---
+
+## Scoring
+
+For each test case, let:
+
+- `C_sub` = your cost
+- `C_base` = the baseline cost defined below
+
+If your output is infeasible, your score for that test case is `0`.
+
+Otherwise:
+
+\[
+\text{score}_{case} = 10^6 \cdot \min\left(2,\; \frac{C_{base}}{C_{sub}}\right)
+\]
+
+The overall score is the arithmetic mean of `score_case` over all test cases.
+
+### Baseline solution
+
+For each test case, the baseline does the following:
+
+1. Create one template for each distinct character that appears in `s`.
+2. For each order `t_i`:
+   - if `t_i` contains a character not appearing in `s`, skip it;
+   - otherwise, either
+     - fulfill it using one single-character template per character of `t_i`, costing `A * |t_i|`, or
+     - skip it and pay `w_i`,
+     whichever is cheaper.
+
+Thus,
+
+\[
+C_{base}
+=
+d \cdot (P + Q)
++
+\sum_{i=1}^{N}
+\begin{cases}
+\min(w_i, A|t_i|), & \text{if every character of } t_i \text{ appears in } s \\
+w_i, & \text{otherwise}
+\end{cases}
+\]
+
+where `d` is the number of distinct characters in `s`.
+
+---
+
+## Constraints
+
+- `1 <= T <= 20`
+- `1 <= N <= 3000`
+- `26 <= K <= 80`
+- `1 <= P, Q, A <= 10^6`
+- `1 <= w_i <= 10^9`
+- `1 <= |s| <= 5000`
+- `1 <= |t_i| <= 5000`
+- Total length of all `s` across the input does not exceed `5 * 10^4`
+- Total length of all `t_i` across the input does not exceed `2 * 10^5`
+
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+1
+3 26 2 1 2
+abacaba
+7 aba
+9 caba
+4 cc
+```
+
+### Output
+```text
+2
+aba
+c
+1 1
+2 2 1
+2 2 2
+```
+
+### Explanation
+
+Templates:
+
+- `q_1 = "aba"`, creation cost `2 + 1*3 = 5`
+- `q_2 = "c"`, creation cost `2 + 1*1 = 3`
+
+Both are subsequences of `abacaba`.
+
+Orders:
+
+1. `aba` fulfilled as `[1]` → assembly cost `2`
+2. `caba` fulfilled as `[2, 1]` → assembly cost `4`
+3. `cc` fulfilled as `[2, 2]` → assembly cost `4`
+
+Total cost:
+
+- creation: `5 + 3 = 8`
+- assembly: `2 + 4 + 4 = 10`
+- skipped penalties: `0`
+
+So the objective value is `18`.
+
+Baseline:
+
+- distinct chars in `s`: `{a, b, c}` → creation cost `3 * (2 + 1) = 9`
+- order costs with single-character templates:
+  - `aba`: `min(7, 2*3) = 6`
+  - `caba`: `min(9, 2*4) = 8`
+  - `cc`: `min(4, 2*2) = 4`
+
+So `C_base = 9 + 6 + 8 + 4 = 27`.
+
+Score for this test case:
+
+\[
+10^6 \cdot \min(2, 27/18) = 1{,}500{,}000
+\]
+```

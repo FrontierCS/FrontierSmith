@@ -1,0 +1,219 @@
+```markdown
+# Greedy-Proof Token Design
+
+## Problem
+
+A transit authority is redesigning the denominations of its reusable payment tokens.
+
+When a passenger overpays, the ticket machine returns change using a **greedy rule** for speed:
+
+- repeatedly take the **largest selected denomination** not exceeding the remaining amount.
+
+However, greedy change is not always coin-optimal. Bad denomination choices can cause the machine to return many more tokens than necessary.
+
+You are given:
+
+- `N` candidate token denominations,
+- a limit `K` on how many denominations may be manufactured,
+- a fixed yearly manufacturing cost for each candidate denomination,
+- a list of change amounts that occur during the year, each with a frequency,
+- two coefficients `A` and `B`.
+
+Your task is to choose a subset of at most `K` denominations to minimize the total yearly cost.
+
+For a selected set `S` and a change amount `x`:
+
+- `G_S(x)` = number of tokens used by the **greedy** algorithm,
+- `O_S(x)` = **minimum possible** number of tokens that can make `x` using denominations in `S`.
+
+Because denomination `1` is always available among the candidates and must be selected, every amount is representable.
+
+The yearly cost of a selected set `S` is
+
+\[
+C(S)=\sum_{i \in S} c_i \;+\; \sum_{j=1}^{Q} w_j \cdot \Big(A \cdot G_S(x_j) + B \cdot (G_S(x_j)-O_S(x_j))\Big)
+\]
+
+where:
+
+- `c_i` is the manufacturing cost of denomination `i`,
+- `(x_j, w_j)` is a yearly demand: change amount `x_j` occurs `w_j` times.
+
+You must output any feasible subset. Lower cost is better.
+
+---
+
+## Input
+
+The input contains one test instance.
+
+- The first line contains four integers  
+  `N K A B`
+- The second line contains `N` integers  
+  `v_1 v_2 ... v_N`  
+  — candidate denomination values, strictly increasing.
+- The third line contains `N` integers  
+  `c_1 c_2 ... c_N`  
+  — yearly manufacturing costs.
+- The fourth line contains one integer  
+  `Q`
+- Each of the next `Q` lines contains two integers  
+  `x_j w_j`  
+  — a change amount and its yearly frequency.
+
+### Guarantees
+
+- `v_1 = 1`
+- `1 = v_1 < v_2 < ... < v_N`
+
+---
+
+## Output
+
+Output a feasible selected subset of candidate denominations.
+
+- The first line must contain one integer `m` — the number of selected denominations.
+- The second line must contain `m` distinct integers  
+  `i_1 i_2 ... i_m`  
+  — the **indices** of the selected denominations.
+
+### Feasibility requirements
+
+Your output is feasible iff all of the following hold:
+
+- `1 <= m <= K`
+- all selected indices are distinct
+- every selected index is between `1` and `N`
+- index `1` is selected
+
+If the output is infeasible or malformed, the score for that test is `0`.
+
+---
+
+## Objective
+
+Minimize the total yearly cost
+
+\[
+C(S)=\sum_{i \in S} c_i \;+\; \sum_{j=1}^{Q} w_j \cdot \Big(A \cdot G_S(x_j) + B \cdot (G_S(x_j)-O_S(x_j))\Big).
+\]
+
+### Precise definitions
+
+For each demand amount `x`:
+
+- `G_S(x)` is computed by repeatedly taking the largest selected denomination not exceeding the remaining amount, until the remainder becomes `0`.
+- `O_S(x)` is the minimum number of selected denominations whose sum is exactly `x`.
+
+All computations are done in exact integer arithmetic.
+
+---
+
+## Scoring
+
+This is an optimization problem with continuous scoring.
+
+Let:
+
+- `C_you` = the cost of your feasible output,
+- `C_base` = the cost of the **baseline** solution defined below.
+
+Your score for the test is
+
+\[
+\text{score} = 100 \times \min\left(2,\; \frac{C_{base}}{C_{you}}\right).
+\]
+
+So:
+
+- matching the baseline gives `100`,
+- doing better than the baseline gives a score above `100`,
+- doing much better is capped at `200`.
+
+If your output is infeasible, the score is `0`.
+
+If the contest contains multiple test files, the overall score is the arithmetic mean of per-test scores.
+
+### Baseline solution
+
+The baseline subset is built deterministically as follows.
+
+1. Start with `S = {1}`.
+2. While `|S| < K`:
+   - For each unselected denomination index `d`, compute
+
+     \[
+     \text{benefit}(d)=\sum_{j=1}^{Q} w_j \cdot \max(0,\; G_S(x_j)-G_{S \cup \{d\}}(x_j)).
+     \]
+
+   - Define its efficiency as the fraction
+
+     \[
+     \frac{\text{benefit}(d)}{1+c_d}.
+     \]
+
+   - Choose the index `d` with maximum efficiency.
+     - Fractions are compared exactly by cross-multiplication.
+     - If tied, choose smaller `c_d`.
+     - If still tied, choose smaller index.
+   - If `benefit(d) = 0`, stop.
+   - Otherwise add `d` to `S`.
+3. After this process ends, `C_base` is the objective value `C(S)` of the obtained set.
+
+The baseline uses only greedy-count improvements during construction; its final score is still computed with the full objective.
+
+---
+
+## Constraints
+
+- `1 <= N <= 120`
+- `1 <= K <= 25`
+- `1 <= A, B <= 100`
+- `1 = v_1 < v_2 < ... < v_N <= 100000`
+- `0 <= c_i <= 10^6`
+- `1 <= Q <= 6000`
+- `1 <= x_j <= 100000`
+- `1 <= w_j <= 10^6`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+6 3 1 4
+1 3 4 7 10 25
+0 2 2 3 5 12
+5
+6 10
+8 8
+14 6
+20 4
+30 1
+```
+
+### Output
+```text
+3
+1 3 5
+```
+
+### Explanation
+
+The output selects denominations with indices `1, 3, 5`, i.e. values `{1, 4, 10}`.
+
+For example:
+
+- For change `6`, greedy gives `4+1+1`, so `G=3`; this is also optimal, so `O=3`.
+- For change `14`, greedy gives `10+4`, so `G=2`; this is also optimal, so `O=2`.
+
+The total objective is:
+
+- manufacturing cost of selected denominations, plus
+- for each demand line, its frequency times  
+  `A * greedy_tokens + B * greedy_regret`.
+
+The sample output is only one feasible solution; it is not guaranteed to be optimal.
+```

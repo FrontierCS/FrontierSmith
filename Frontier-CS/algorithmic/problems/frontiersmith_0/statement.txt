@@ -1,0 +1,200 @@
+```markdown
+# Concat Factory Compression Challenge
+
+## Problem
+
+Polycarp's toy language has only two commands:
+
+1. **Literal creation**  
+   `L s`  
+   Creates a new variable whose value is the lowercase string `s`.
+
+2. **Concatenation**  
+   `C a b`  
+   Creates a new variable whose value is the concatenation of the values of previously created variables `a` and `b`.
+
+Variables are numbered automatically in creation order, starting from `1`.
+
+For each test case, you are given a list of target strings. Your task is to output a valid program that constructs **every** target string in some variable, while keeping the program as small as possible.
+
+This is an optimization problem: many valid programs may exist, and shorter programs score better.
+
+### Important rules
+
+- In a literal command `L s`, the string `s` must consist only of lowercase English letters and have length between `1` and `8`, inclusive.
+- In a concatenation command `C a b`, both `a` and `b` must refer to already created variables.
+- Let `value[v]` be the string stored in variable `v`.
+- For a test case with targets `t_1, t_2, ..., t_q`, every created variable must satisfy  
+  `|value[v]| <= max_i |t_i|`.
+  (Creating longer strings is forbidden.)
+- After all commands, you must specify, for each target in order, which variable equals that target.
+- The same variable may be used for multiple targets if the target strings are equal.
+
+Your goal is to minimize the **program cost**.
+
+## Input
+
+The first line contains an integer `T` — the number of test cases.
+
+For each test case:
+
+- The first line contains an integer `q` — the number of target strings.
+- The next `q` lines each contain one target string.
+
+## Output
+
+For each test case, output:
+
+1. A line containing one integer `m` — the number of commands in your program.
+2. `m` lines, each being one of:
+   - `L s`
+   - `C a b`
+3. One final line containing `q` integers `r_1, r_2, ..., r_q`, where `r_i` is the index of a variable whose value is exactly the `i`-th target string.
+
+### Feasibility requirements
+
+A solution for a test case is **feasible** if all of the following hold:
+
+- `1 <= m <= 5000`
+- Every command has valid syntax.
+- Every literal string has length `1..8` and contains only lowercase English letters.
+- Every `C a b` uses indices of previously created variables.
+- Every created variable has length at most the maximum target length of that test case.
+- For every `i`, variable `r_i` exists and `value[r_i] = t_i`.
+
+If any requirement fails, the solution for that test case is infeasible.
+
+## Objective
+
+For a feasible solution, its cost is
+
+\[
+C = m + \sum_{\text{literal commands } L\,s} |s|
+\]
+
+That is:
+
+- each command costs `1`
+- each literal additionally costs its string length
+- concatenation commands do not add any extra cost beyond the `1` command cost
+
+Your objective is to **minimize** `C`.
+
+For an infeasible solution, the score for that test case is `0`.
+
+## Scoring
+
+For each test case, define the **baseline cost** `B` as follows:
+
+For each target string of length `n`:
+
+- split it into consecutive blocks of length at most `8`
+- create each block as a fresh literal variable
+- concatenate those blocks left-to-right using fresh concatenation commands
+- do **not** reuse any variables between different targets, even if substrings repeat
+
+If `k = ceil(n / 8)`, then this baseline uses cost
+
+\[
+n + k + (k-1) = n + 2k - 1
+\]
+
+for that target.
+
+Thus, for the whole test case,
+
+\[
+B = \sum_{\text{targets } t} \left(|t| + 2\left\lceil \frac{|t|}{8} \right\rceil - 1\right)
+\]
+
+For a feasible submission with cost `C`, the test-case score is
+
+\[
+S = 10^6 \cdot \min\left(2,\ \frac{B}{C}\right)
+\]
+
+For an infeasible submission, `S = 0`.
+
+The final score is the arithmetic mean of `S` over all test cases.
+
+### Notes
+
+- The baseline always achieves a score of `10^6`.
+- Better compression gives a score greater than `10^6`.
+- Scores are capped at `2 \cdot 10^6` per test case.
+
+## Constraints
+
+- `1 <= T <= 20`
+- `1 <= q <= 200`
+- Each target string contains only lowercase English letters
+- `1 <= |t_i| <= 400`
+- The sum of target lengths over one test case is at most `40000`
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+1
+3
+haha
+ahaha
+hahahaha
+```
+
+### Output
+```text
+5
+L ha
+L a
+C 1 1
+C 2 3
+C 3 3
+3 4 5
+```
+
+### Explanation
+
+The variables are:
+
+1. `ha`
+2. `a`
+3. `haha` = `1 + 1`
+4. `ahaha` = `2 + 3`
+5. `hahahaha` = `3 + 3`
+
+So the targets are matched by variables `3, 4, 5`.
+
+The program cost is:
+
+- `m = 5`
+- literal lengths: `2 + 1 = 3`
+
+So
+
+\[
+C = 5 + 3 = 8
+\]
+
+Baseline cost:
+
+- `haha`: `4 + 2*1 - 1 = 5`
+- `ahaha`: `5 + 2*1 - 1 = 6`
+- `hahahaha`: `8 + 2*1 - 1 = 9`
+
+Hence
+
+\[
+B = 5 + 6 + 9 = 20
+\]
+
+Score for this test case:
+
+\[
+S = 10^6 \cdot \min(2, 20/8) = 2 \cdot 10^6
+\]
+
+This example reaches the per-test cap.
+```

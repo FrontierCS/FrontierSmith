@@ -1,0 +1,224 @@
+```markdown
+# Noisy Replay Library
+
+## Problem
+A streaming platform stores recordings of a generalized tic-tac-toe game, but most recordings are damaged.  
+Each damaged recording is a **snapshot**: some cells are known, while others are unreadable.
+
+To save storage, you may submit a small **library of full game scripts**. A snapshot is considered explained if it could have appeared at some time during at least one stored game.
+
+Your task is to choose the library that maximizes explained snapshot value minus storage cost.
+
+### Generalized Tic-Tac-Toe Rules
+A game is played on an `R x C` board.
+
+- The board starts empty.
+- Players alternate turns, starting with `X`, then `O`, then `X`, ...
+- A move places the current player's mark in an empty cell.
+- A player wins immediately when, after a move, there exists a contiguous segment of length at least `L` consisting only of that player's marks in:
+  - a row,
+  - a column,
+  - a main diagonal,
+  - or an anti-diagonal.
+- The game also ends when the board becomes full.
+- No moves may be played after the game has ended.
+
+A **script** is a complete legal game from the empty board to a terminal position.
+
+### Snapshots
+Each snapshot is an `R x C` grid over the characters:
+
+- `X` = this cell must contain `X`
+- `O` = this cell must contain `O`
+- `.` = this cell must be empty
+- `?` = unreadable, any content is allowed
+
+A snapshot is **explained** by a script if it matches at least one prefix position of that script (including the board after the first move, second move, ..., final move).  
+A cell with `?` matches anything.
+
+If a snapshot is explained by multiple scripts or multiple times in the same script, its value is counted only once.
+
+## Input
+The input describes one instance.
+
+```text
+R C L
+M Gmax A B
+w1
+snapshot_1_row_1
+snapshot_1_row_2
+...
+snapshot_1_row_R
+w2
+snapshot_2_row_1
+...
+snapshot_M_row_R
+```
+
+- `R, C` — board dimensions
+- `L` — winning line length
+- `M` — number of snapshots
+- `Gmax` — maximum number of scripts you may output
+- `A` — fixed storage cost per script
+- `B` — storage cost per move
+- `wi` — value of snapshot `i`
+
+### Constraints on the snapshot rows
+Each snapshot row has length exactly `C` and contains only `X`, `O`, `.`, `?`.
+
+## Output
+Output any feasible library.
+
+```text
+K
+t1
+r11 c11
+r12 c12
+...
+r1t1 c1t1
+t2
+...
+tK
+...
+```
+
+- `K` must satisfy `0 <= K <= Gmax`
+- Script `s` has length `ts`
+- Each move is given by 1-indexed coordinates `(r, c)`
+
+### Feasibility requirements
+Each submitted script must satisfy all of the following:
+
+1. Starts from the empty board.
+2. Moves alternate `X, O, X, O, ...`, starting with `X`.
+3. Every move is inside the board and placed on an empty cell.
+4. For every prefix before the last move, the game is **not** already over:
+   - no player has a winning line of length at least `L`,
+   - and the board is not full.
+5. After the last move, the game **is** over:
+   - either some player has a winning line of length at least `L`,
+   - or the board is full.
+
+If any script is infeasible, the whole submission is infeasible.
+
+## Objective
+Let:
+
+- `covered_value` = sum of `wi` over all snapshots explained by at least one submitted script
+- `total_moves` = total number of moves across all submitted scripts
+- `K` = number of submitted scripts
+
+Your objective is to maximize:
+
+```text
+objective = covered_value - A * K - B * total_moves
+```
+
+## Scoring
+Let
+
+```text
+W = sum of all snapshot values wi
+```
+
+The baseline library is the empty library (`K = 0`), with objective
+
+```text
+B0 = 0
+```
+
+For a feasible submission with objective `O`, the test score is:
+
+```text
+score = 100 * clamp((O - B0) / (W - B0), 0, 1)
+      = 100 * clamp(O / W, 0, 1)
+```
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+- Infeasible submission: score `0`
+- Negative objective: score `0`
+- Since `covered_value <= W` and costs are nonnegative, `O <= W`
+
+If the contest uses multiple test files, the final score is the arithmetic mean of test scores.
+
+### Baseline
+The baseline is trivial and always feasible:
+
+- Output `K = 0`
+- Objective `0`
+- Score `0`
+
+Any positive objective improves over baseline.
+
+## Constraints
+- `1 <= M <= 5000`
+- `1 <= Gmax <= 40`
+- `3 <= L <= max(R, C)`
+- `1 <= R, C <= 8`
+- `1 <= wi <= 10^6`
+- `0 <= A, B <= 10^6`
+
+## Constraints
+- Time limit: 5 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample input
+```text
+3 3 3
+4 2 2 1
+8
+X..
+...
+...
+6
+X??
+?O?
+???
+9
+XX.
+.O.
+...
+7
+XXX
+.O.
+..O
+```
+
+### Sample output
+```text
+1
+5
+1 1
+2 2
+1 2
+3 3
+1 3
+```
+
+### Explanation
+The script is:
+
+1. `X` at `(1,1)`
+2. `O` at `(2,2)`
+3. `X` at `(1,2)`
+4. `O` at `(3,3)`
+5. `X` at `(1,3)`
+
+This is a legal game, ending with `X` winning on the top row.
+
+It explains all 4 snapshots, so:
+
+- `covered_value = 8 + 6 + 9 + 7 = 30`
+- `K = 1`
+- `total_moves = 5`
+- storage cost `= A*K + B*total_moves = 2*1 + 1*5 = 7`
+
+Therefore:
+
+```text
+objective = 30 - 7 = 23
+score = 100 * 23 / 30 = 76.666...
+```
+```

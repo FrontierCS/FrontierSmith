@@ -3,5 +3,5 @@ memory: 512m
 subtasks:
 - n_cases: 10
   score: 100
-time: 8s
+time: 3s
 type: default

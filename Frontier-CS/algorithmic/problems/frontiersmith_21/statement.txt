@@ -1,0 +1,199 @@
+```markdown
+# Evacuation Hub Deployment
+
+## Problem
+
+A city is planning a one-time evacuation drill on a rectangular street grid.
+
+There are `n` neighborhood groups. Group `i` is located at grid point `(x_i, y_i)`, contains `p_i` people, and cannot leave before minute `t_i` (they need that much preparation time).
+
+The city may open temporary evacuation hubs at some of `m` candidate sites. Hub `j` is located at `(u_j, v_j)`, becomes operational only after minute `s_j`, can board people at speed `r_j` people per minute, and costs `c_j` to open.
+
+You must choose which hubs to open, subject to:
+- at most `K` hubs may be opened;
+- total opening cost must not exceed `B`.
+
+Each group must be assigned to exactly one opened hub. A group walks to its assigned hub using Manhattan distance, so the travel time from group `i` to hub `j` is
+
+`|x_i - u_j| + |y_i - v_j|`.
+
+At each opened hub, assigned groups are boarded **one group at a time** in the exact order you output for that hub. Splitting a group is not allowed.
+
+If group `i` is assigned to hub `j`, then:
+- it arrives at time `a_i = t_i + |x_i - u_j| + |y_i - v_j|`;
+- its boarding duration is `p_i / r_j`;
+- its boarding starts when both the hub is free and the group has arrived;
+- its evacuation completion time is when its boarding ends.
+
+Your task is to produce any feasible deployment-and-schedule plan that minimizes the **latest completion time** among all groups.
+
+This is an optimization challenge: every feasible solution receives a score based on how good its objective value is.
+
+---
+
+## Input
+
+The first line contains a single integer `T` — the number of test cases.
+
+Each test case begins with one line containing four integers:
+
+`n m K B`
+
+- `1 <= n <= 400`
+- `1 <= m <= 120`
+- `1 <= K <= m`
+- `1 <= B <= 10^9`
+
+The next `n` lines describe the groups.  
+Line `i` contains four integers:
+
+`x_i y_i t_i p_i`
+
+- `0 <= x_i, y_i <= 10^6`
+- `0 <= t_i <= 10^6`
+- `1 <= p_i <= 10^4`
+
+The next `m` lines describe the candidate hubs.  
+Line `j` contains five integers:
+
+`u_j v_j s_j r_j c_j`
+
+- `0 <= u_j, v_j <= 10^6`
+- `0 <= s_j <= 10^6`
+- `1 <= r_j <= 10^4`
+- `1 <= c_j <= 10^9`
+
+Additional guarantees:
+- For every test case, at least one hub satisfies `c_j <= B`.
+- The sum of `n` over all test cases does not exceed `4000`.
+- The sum of `m` over all test cases does not exceed `1500`.
+
+---
+
+## Output
+
+For each test case, output a feasible plan in the following format.
+
+First print one integer `q` — the number of opened hubs.
+
+Then print `q` lines. Each line describes one opened hub:
+
+`j cnt g_1 g_2 ... g_cnt`
+
+where:
+- `j` is the 1-based index of the opened hub;
+- `cnt >= 1` is the number of groups assigned to this hub;
+- `g_1, g_2, ..., g_cnt` are distinct group indices listed in the exact boarding order at this hub.
+
+### Feasibility requirements
+
+For each test case, your output is feasible iff all of the following hold:
+
+1. `1 <= q <= K`
+2. All listed hub indices are distinct and between `1` and `m`
+3. The total opening cost of listed hubs is at most `B`
+4. Every group index from `1` to `n` appears **exactly once** across all hub lines
+5. No extra group indices appear
+6. Each `cnt` matches the number of listed groups on that line
+
+If any requirement is violated, the solution for that test case is considered infeasible.
+
+---
+
+## Objective
+
+For each opened hub `j`, let its assigned groups in output order be `g_1, g_2, ..., g_cnt`.
+
+Define:
+- `cur = s_j` initially
+- for each assigned group `g_k` in order:
+  - `arrival = t_{g_k} + |x_{g_k} - u_j| + |y_{g_k} - v_j|`
+  - `start = max(cur, arrival)`
+  - `finish = start + p_{g_k} / r_j`
+  - set `cur = finish`
+
+The completion time of group `g_k` is `finish`.
+
+The objective value of your solution on a test case is
+
+`F = max(completion time of every group)`.
+
+Lower is better.
+
+For an infeasible output, `F = +infinity`.
+
+---
+
+## Scoring
+
+For each test case, the judge also computes a deterministic **baseline** value `F_base` as follows:
+
+1. Consider every hub `j` with `c_j <= B`
+2. Create the single-hub plan that:
+   - opens only hub `j`
+   - assigns all groups to hub `j`
+   - orders them by nondecreasing arrival time  
+     `t_i + |x_i - u_j| + |y_i - v_j|`, breaking ties by smaller group index
+3. Simulate that plan and compute its objective value
+4. Let `F_base` be the minimum such value over all affordable hubs, breaking ties by smaller hub index
+
+Your score on one test case is:
+
+`score_case = 100 * min(2, F_base / F)`
+
+with the convention that infeasible outputs receive `score_case = 0`.
+
+So:
+- matching the baseline gives `100`
+- improving on the baseline gives more than `100`
+- being twice as good or better is capped at `200`
+- worse solutions receive proportionally less than `100`
+
+The final score is the arithmetic mean of `score_case` over all test cases.
+
+---
+
+## Constraints
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+1
+4 3 2 10
+0 0 0 4
+5 0 2 3
+2 3 1 2
+8 2 0 5
+0 1 0 2 4
+6 0 1 3 5
+8 3 0 2 6
+```
+
+### Sample output
+```text
+2
+1 2 1 3
+2 2 2 4
+```
+
+### Explanation
+
+The plan opens hubs `1` and `2`.
+
+- Hub `1` processes groups `1, 3`
+- Hub `2` processes groups `2, 4`
+
+For example:
+- Group `1` reaches hub `1` after `|0-0|+|0-1| = 1` minute, so it arrives at time `1`
+- Hub `1` is open at time `0`, so group `1` boards from `1` to `3` because `4 / 2 = 2`
+- Group `3` reaches hub `1` at time `1 + |2-0| + |3-1| = 5`, so it boards from `5` to `6`
+
+Simulating all groups gives a latest completion time of `6`.
+
+The baseline is computed automatically by the judge using the single-hub rule described above, and the sample solution's score is then obtained from `100 * min(2, F_base / 6)`.
+```

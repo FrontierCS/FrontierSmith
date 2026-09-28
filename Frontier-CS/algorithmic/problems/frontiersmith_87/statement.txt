@@ -1,0 +1,207 @@
+```markdown
+# Ant-Man's Heist Route
+
+## Problem
+
+Scott Lang is infiltrating Darren Cross's laboratory. There are `n` special chairs in the building, and each chair contains a stash of Pym-tech data worth some number of points. Scott starts on chair `s` and must eventually meet Cross on chair `e`.
+
+Scott can jump directly between any two chairs. Before each jump, he may instantly switch between **small** and **large** size while standing on a chair.
+
+- If Scott jumps to a chair whose `x`-coordinate is **smaller** than his current chair's `x`-coordinate, he must jump while **small**.
+- If he jumps to a chair whose `x`-coordinate is **larger**, he must jump while **large**.
+
+The travel time for a jump also depends on takeoff and landing overheads:
+
+- Let chair `i` be the current chair and chair `j` be the destination.
+- The jump time is
+
+\[
+|x_i-x_j| + |y_i-y_j| +
+\begin{cases}
+c_i + b_j, & \text{if } x_j < x_i \\
+d_i + a_j, & \text{if } x_j > x_i
+\end{cases}
+\]
+
+All `x`-coordinates are distinct, so every jump is either strictly left or strictly right.
+
+Scott has a total time budget `T`. He may visit **any subset** of chairs, but:
+- he must start at `s`,
+- he must end at `e`,
+- each chair may be visited **at most once**.
+
+Whenever Scott visits chair `i`, he collects its data worth `p_i` points.
+
+Your task is to output any feasible route maximizing the total collected value.
+
+---
+
+## Input
+
+The input consists of:
+
+- The first line: four integers `n`, `s`, `e`, `T`
+- The second line: `n` integers `x_1, x_2, ..., x_n`
+- The third line: `n` integers `y_1, y_2, ..., y_n`
+- The fourth line: `n` integers `p_1, p_2, ..., p_n`
+- The fifth line: `n` integers `a_1, a_2, ..., a_n`
+- The sixth line: `n` integers `b_1, b_2, ..., b_n`
+- The seventh line: `n` integers `c_1, c_2, ..., c_n`
+- The eighth line: `n` integers `d_1, d_2, ..., d_n`
+
+All values are integers.
+
+---
+
+## Output
+
+Output a route as:
+
+- The first line: one integer `m` — the number of visited chairs in your route
+- The second line: `m` distinct integers `v_1, v_2, ..., v_m`
+
+The route must satisfy:
+
+- `v_1 = s`
+- `v_m = e`
+- all `v_i` are distinct
+- `2 <= m <= n`
+
+If your output is invalid or the total route time exceeds `T`, your route is treated as having objective value `0`.
+
+---
+
+## Objective
+
+For a feasible route `v_1, v_2, ..., v_m`:
+
+- Its **travel time** is
+
+\[
+\sum_{k=1}^{m-1} \text{cost}(v_k, v_{k+1})
+\]
+
+where `cost(i, j)` is defined in the statement.
+
+- Its **objective value** is
+
+\[
+O = \sum_{k=1}^{m} p_{v_k}
+\]
+
+That is, you maximize the total value of visited chairs, including chairs `s` and `e`.
+
+---
+
+## Scoring
+
+For each test case, let:
+
+- `O` = your objective value
+- `U = p_1 + p_2 + ... + p_n` (a trivial upper bound)
+
+Let `B` be the value of the following deterministic **baseline route**:
+
+1. Start at chair `s`, with used time `0`.
+2. Repeatedly choose an unvisited chair `v != e` maximizing
+
+\[
+\frac{p_v}{\text{cost}(\text{current}, v)}
+\]
+
+   among all chairs satisfying
+
+\[
+\text{used time} + \text{cost}(\text{current}, v) + \text{cost}(v, e) \le T
+\]
+
+3. Break ties by:
+   - larger `p_v`
+   - then smaller chair index
+4. Move to that chair and continue.
+5. When no such chair exists, jump directly to `e`.
+
+The baseline is guaranteed feasible because the input guarantees that a direct jump from `s` to `e` fits in the budget.
+
+The per-test score is:
+
+- If `U = B`:
+
+\[
+\text{score} = \operatorname{round}\left(10^6 \cdot \frac{O}{U}\right)
+\]
+
+- Otherwise, if `O \le B`:
+
+\[
+\text{score} = \operatorname{round}\left(500000 \cdot \frac{O}{B}\right)
+\]
+
+- Otherwise:
+
+\[
+\text{score} = \operatorname{round}\left(500000 + 500000 \cdot \frac{O-B}{U-B}\right)
+\]
+
+Scores are clamped to the range `[0, 1000000]`.
+
+The final score is the arithmetic mean of per-test scores.
+
+---
+
+## Constraints
+
+- `2 <= n <= 4000`
+- `1 <= s, e <= n`
+- `s != e`
+- `1 <= T <= 10^15`
+- `-10^9 <= x_i, y_i <= 10^9`
+- All `x_i` are distinct
+- `1 <= p_i <= 10^9`
+- `1 <= a_i, b_i, c_i, d_i <= 10^9`
+- The direct route `s -> e` always satisfies the time budget
+
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+6 1 6 30
+0 3 5 8 10 13
+0 4 1 5 2 0
+4 7 6 9 5 3
+2 3 1 4 2 1
+1 2 3 1 2 2
+3 2 2 3 1 2
+1 2 2 1 3 2
+```
+
+### Output
+```text
+4
+1 3 5 6
+```
+
+### Explanation
+The route is `1 -> 3 -> 5 -> 6`.
+
+Its time is:
+
+- `1 -> 3`: `|0-5| + |0-1| + d_1 + a_3 = 5 + 1 + 1 + 1 = 8`
+- `3 -> 5`: `|5-10| + |1-2| + d_3 + a_5 = 5 + 1 + 2 + 2 = 10`
+- `5 -> 6`: `|10-13| + |2-0| + d_5 + a_6 = 3 + 2 + 3 + 1 = 9`
+
+Total time = `27 <= 30`, so the route is feasible.
+
+The collected value is:
+
+\[
+p_1 + p_3 + p_5 + p_6 = 4 + 6 + 5 + 3 = 18
+\]
+
+The judge then compares `18` against the baseline value `B` and the upper bound `U = \sum p_i` to compute the score.
+```

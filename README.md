@@ -13,7 +13,7 @@ Synthetic Open-ended Problem Generation
   <a href="https://frontier-cs.org/blog/frontiersmith"><img src="https://img.shields.io/badge/Blog-frontier--cs.org-1f6feb" alt="Blog"></a>
   <a href="https://huggingface.co/runyuanhe/qwen35-9b-frontiersmith"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Model-yellow" alt="HuggingFace Model"></a>
   <a href="https://github.com/FrontierCS/Frontier-CS"><img src="https://img.shields.io/badge/Frontier--CS-Official_Repo-blue?logo=github" alt="Frontier-CS"></a>
-  <img src="https://img.shields.io/badge/Synthetic_Problems-10-green" alt="Synthetic Problems">
+  <img src="https://img.shields.io/badge/Synthetic_Problems-200-green" alt="Synthetic Problems">
   <img src="https://img.shields.io/badge/Python-3.11+-yellow?logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/Docker-24+-2496ED?logo=docker&logoColor=white" alt="Docker">
 </p>
@@ -23,7 +23,7 @@ https://github.com/user-attachments/assets/b91ee8fb-d5e0-40b3-8a6c-cd1b3b915ac2
 
 ## Overview
 
-**FrontierSmith** is the synthetic open-ended problem-generation pipeline. This repository contains training code, evaluation code, and **10 synthetic algorithmic problems** used in the paper's parity experiment.
+**FrontierSmith** is the synthetic open-ended problem-generation pipeline. This repository contains training code, evaluation code, and **200 synthetic training problems**, including the **10 problems** used in the paper's parity experiment. The problem release includes only statements, test inputs and answers, checkers, and judge configurations.
 
 > The orchestrator and LLM-driven test/checker generators are intentionally withheld.
 
@@ -40,8 +40,8 @@ FrontierSmith/
 ├── ALE-Bench/                            # ALE-Bench validator (third-party)
 ├── Frontier-CS/
 │   ├── algorithmic/
-│   │   ├── problems/                     # 10 synthetic problems
-│   │   │   └── frontiersmith_{1..10}/
+│   │   ├── problems/                     # 200 problems, including the parity subset
+│   │   │   └── frontiersmith_{0..199}/
 │   │   ├── Dockerfile / server.js / judge/ / scripts/
 │   │   └── ...
 │   ├── src/ pyproject.toml
@@ -50,6 +50,7 @@ FrontierSmith/
 │   └── adapters/frontier-cs-algorithm/   # Harbor adapter
 ├── scripts/                              # training / evaluation / data-prep
 └── data/
+    ├── frontiercs/train_synthetic_200.parquet # ready-to-use training data
     └── sample_lists/                     # reproducibility manifests
 ```
 
@@ -57,27 +58,39 @@ FrontierSmith/
 
 ## Synthetic Problems
 
-10 problems in `Frontier-CS/algorithmic/problems/`. These correspond to problems **306–315** in the [Frontier-CS main repository](https://github.com/FrontierCS/Frontier-CS):
+### Training set (200 problems)
+
+The complete 200-problem training set is in
+`Frontier-CS/algorithmic/problems/frontiersmith_{0..199}/`, with **1,998
+input/answer pairs**. The problem IDs and training row order are recorded in
+[`frontiersmith_train_200.json`](data/sample_lists/frontiersmith_train_200.json).
+
+### Parity subset (10 of the 200 problems)
+
+All 10 previously released examples are included in the training set with
+the same statements, test data, and scoring behavior. The duplicate example directories
+have been removed. The [parity manifest](data/sample_lists/frontiersmith_parity_10.json)
+records their canonical IDs below. They correspond to problems **306–315** in
+the [Frontier-CS main repository](https://github.com/FrontierCS/Frontier-CS):
 
 | ID | Frontier-CS ID | Name |
 |:---|:---------------|:-----|
-| `frontiersmith_1` | 306 | Scorched Bridges Campaign |
-| `frontiersmith_2` | 307 | Farmwide Teleport Pad Deployment |
-| `frontiersmith_3` | 308 | Metallic Pink Resonator Layout |
-| `frontiersmith_4` | 309 | Park Ranger Shift Balancing |
-| `frontiersmith_5` | 310 | Prime Resonance Retuning |
-| `frontiersmith_6` | 311 | Mobile Relay Layout |
-| `frontiersmith_7` | 312 | Archipelago Relay Network Design |
-| `frontiersmith_8` | 313 | Resonant Bay Layout |
-| `frontiersmith_9` | 314 | Duff's Defensive Lineup |
-| `frontiersmith_10` | 315 | Quadratic Witness Packing |
+| `frontiersmith_180` | 306 | Scorched Bridges Campaign |
+| `frontiersmith_167` | 307 | Farmwide Teleport Pad Deployment |
+| `frontiersmith_56` | 308 | Metallic Pink Resonator Layout |
+| `frontiersmith_151` | 309 | Park Ranger Shift Balancing |
+| `frontiersmith_114` | 310 | Prime Resonance Retuning |
+| `frontiersmith_143` | 311 | Mobile Relay Layout |
+| `frontiersmith_139` | 312 | Archipelago Relay Network Design |
+| `frontiersmith_107` | 313 | Resonant Bay Layout |
+| `frontiersmith_184` | 314 | Duff's Defensive Lineup |
+| `frontiersmith_50` | 315 | Quadratic Witness Packing |
 
-Each directory contains:
+Each problem directory contains:
 
 ```
 chk.cc           # custom checker
 config.yaml      # judge configuration
-gen.cpp          # testlib-style test-case generator
 statement.txt    # problem statement
 testdata/        # *.in / *.ans pairs
 ```
@@ -129,13 +142,23 @@ python scripts/sample_hardtest_problems.py --n 200 --seed 42 \
 
 The exact 200-problem manifest is at `data/sample_lists/hardtest_hard_sampled_200.json`.
 
-### Synthetic Problems (10, this repo)
+### Synthetic Problems (200 training, including 10 parity examples)
+
+The ready-to-use [200-problem training Parquet](data/frontiercs/train_synthetic_200.parquet)
+is included in this repository. To rebuild it from the statements and manifest:
+
+```bash
+python scripts/prepare_synthetic_parquet.py --subset train
+```
+
+This writes `data/frontiercs/train_synthetic_200.parquet` with judge IDs matching
+the released `frontiersmith_0` through `frontiersmith_199` directories.
 
 The 30-problem mixed sample list (10 from each of HardTest, Frontier-CS, synthetic) is at `data/sample_lists/harbor_sample_30.jsonl`.
 
 ### Harbor + Claude Code Reproduction
 
-The 10 FrontierSmith problems can be loaded into a local Harbor dataset with
+The 10 FrontierSmith parity problems can be loaded into a local Harbor dataset with
 the bundled Frontier-CS algorithm adapter, then run with Harbor's standard
 `claude-code` agent.
 
@@ -160,8 +183,8 @@ uv run frontier-cs-algorithm \
   --output-dir "$FRONTIERSMITH_ROOT/datasets/frontiersmith-sample" \
   --include-non-numeric \
   --task-ids \
-    frontiersmith_1 frontiersmith_2 frontiersmith_3 frontiersmith_4 frontiersmith_5 \
-    frontiersmith_6 frontiersmith_7 frontiersmith_8 frontiersmith_9 frontiersmith_10 \
+    frontiersmith_180 frontiersmith_167 frontiersmith_56 frontiersmith_151 frontiersmith_114 \
+    frontiersmith_143 frontiersmith_139 frontiersmith_107 frontiersmith_184 frontiersmith_50 \
   --overwrite
 cd "$FRONTIERSMITH_ROOT"
 ```
@@ -231,7 +254,8 @@ bash scripts/docker_build_202301.sh $(id -u) $(id -g)
 ```bash
 python scripts/prepare_frontiercs_parquet.py             # Frontier-CS 172 → parquet
 python scripts/prepare_hardtest_hard_sample_parquet.py    # HardTest 200 → parquet
-python scripts/prepare_synthetic_parquet.py               # 10 synthetic → parquet
+python scripts/prepare_synthetic_parquet.py --subset train # 200 training → parquet
+python scripts/prepare_synthetic_parquet.py                # 10 parity → parquet
 python scripts/prepare_alebench_parquet.py                # ALE-Bench validation
 python scripts/prepare_random_reward_train_parquet.py     # Random-reward
 ```

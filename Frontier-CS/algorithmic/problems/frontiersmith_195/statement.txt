@@ -1,0 +1,202 @@
+```markdown
+# ChronoLab Procurement
+
+## Problem
+
+Charlie is building a time-dilated research lab over the next `m` months.
+
+Each month, the lab receives a grant of `x` pounds. However, due to accounting rules, the grant earned in month `t` becomes available only from month `t+1` onward. Charlie starts with `0` pounds.
+
+There are `n` equipment lots that may be purchased. Lot `i` has:
+
+- an availability window `[l_i, r_i]` (inclusive),
+- a purchase cost `c_i`,
+- a scientific value `h_i` if bought at the start of month `l_i`,
+- a monthly decay `d_i`.
+
+If lot `i` is bought in month `p_i` with `l_i <= p_i <= r_i`, then its base contribution is
+
+`h_i - d_i * (p_i - l_i)`.
+
+A lot may also interact with other lots. There are `e` undirected interaction edges.  
+Each edge `(u, v, w)` contributes `w` to the objective if **both** lots `u` and `v` are purchased, regardless of purchase months. `w` may be positive or negative.
+
+Due to paperwork limits, at most `k` lots can be purchased in any single month.
+
+Your task is to output any feasible procurement plan that maximizes the total scientific value.
+
+## Input
+
+The first line contains a single integer `T` — the number of test cases.
+
+For each test case:
+
+- The first line contains five integers  
+  `m n e x k`  
+  — number of months, number of lots, number of interaction edges, monthly grant, and monthly purchase capacity.
+
+- The next `n` lines each contain five integers  
+  `l_i r_i c_i h_i d_i`.
+
+- The next `e` lines each contain three integers  
+  `u_j v_j w_j`  
+  describing an undirected interaction edge between lots `u_j` and `v_j`.
+
+Lots are numbered from `1` to `n`.
+
+## Output
+
+For each test case, output one line with `n` integers:
+
+`p_1 p_2 ... p_n`
+
+where:
+
+- `p_i = 0` means lot `i` is not purchased,
+- otherwise `p_i` must be an integer month with `l_i <= p_i <= r_i`.
+
+A submission is **feasible** for a test case if all of the following hold:
+
+1. For every purchased lot `i`, `l_i <= p_i <= r_i`.
+2. For every month `t`, at most `k` lots satisfy `p_i = t`.
+3. For every month `t`, the total cost of all lots purchased in months `1..t` is at most `(t-1) * x`.
+
+That last rule means money earned in month `t` cannot be spent during month `t`.
+
+If the output for a test case is malformed or infeasible, that test case receives score `0`.
+
+## Objective
+
+For a feasible solution, define:
+
+- Base value:
+  `Base = sum over purchased lots i of (h_i - d_i * (p_i - l_i))`
+- Interaction value:
+  `Interact = sum over all edges (u, v, w) of w, if both u and v are purchased`
+
+The objective value is:
+
+`Obj = Base + Interact`
+
+Higher is better.
+
+## Scoring
+
+Each test case is scored independently, then the final score is the average over all test cases.
+
+### Baseline solution
+
+For each test case, the judge computes a deterministic baseline schedule:
+
+For months `t = 1..m`:
+
+1. Let `cash = (t-1) * x -` (total cost already spent in earlier baseline purchases).
+2. Consider all currently available and not-yet-purchased lots with `l_i <= t <= r_i`.
+3. Repeat up to `k` times:
+   - Among lots with positive current base value  
+     `cur_i = h_i - d_i * (t - l_i) > 0`
+     and `c_i <= cash`,
+     choose the lot maximizing `cur_i / c_i`.
+   - Break ties by:
+     1. larger `cur_i`,
+     2. smaller `c_i`,
+     3. smaller index `i`.
+   - Purchase it in month `t`, subtract `c_i` from `cash`, and continue.
+4. If no selectable lot remains, move to the next month.
+
+Let `B` be the full objective value of this baseline schedule, including interaction edges.
+
+### Upper bound used for normalization
+
+For each test case, define
+
+`U = sum_i max(0, h_i) + sum_{edges (u,v,w)} max(0, w)`
+
+This is only a normalization bound; it need not be tight.
+
+### Per-test score
+
+If the submission is infeasible, the test score is `0`.
+
+Otherwise:
+
+- If `U = B`:
+  - score is `100` if `Obj = U`,
+  - otherwise score is `0`.
+- If `U > B`:
+  - `score = 100 * clamp((Obj - B) / (U - B), 0, 1)`
+
+where `clamp(z, 0, 1) = max(0, min(1, z))`.
+
+### Final score
+
+The final score is the arithmetic mean of per-test scores.
+
+## Constraints
+
+- `1 <= T <= 30`
+- `1 <= m <= 2 * 10^5`
+- `1 <= n <= 2 * 10^5`
+- `0 <= e <= 4 * 10^5`
+- `1 <= x <= 10^6`
+- `1 <= k <= 5`
+- `1 <= l_i <= r_i <= m`
+- `1 <= c_i <= 10^6`
+- `0 <= h_i <= 10^6`
+- `0 <= d_i <= 10^6`
+- `1 <= u_j, v_j <= n`, `u_j != v_j`
+- `-10^6 <= w_j <= 10^6`
+
+Across all test cases:
+
+- sum of `m` does not exceed `2 * 10^5`
+- sum of `n` does not exceed `2 * 10^5`
+- sum of `e` does not exceed `4 * 10^5`
+
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+1
+4 5 4 5 2
+1 2 4 8 1
+1 4 6 9 0
+2 3 5 7 2
+3 4 4 6 1
+2 4 3 4 0
+1 3 5
+2 4 -2
+1 5 2
+4 5 3
+```
+
+### Output
+```text
+2 0 3 4 0
+```
+
+### Explanation
+
+The plan buys:
+
+- lot `1` in month `2`, base value `8 - 1 * (2-1) = 7`
+- lot `3` in month `3`, base value `7 - 2 * (3-2) = 5`
+- lot `4` in month `4`, base value `6 - 1 * (4-3) = 5`
+
+Total cost by each month:
+
+- month 2: `4 <= 5`
+- month 3: `4 + 5 = 9 <= 10`
+- month 4: `4 + 5 + 4 = 13 <= 15`
+
+and at most `2` purchases occur in any month.
+
+Base value = `7 + 5 + 5 = 17`.
+
+Only one interaction edge has both endpoints purchased: `(1,3,5)`, contributing `+5`.
+
+So the objective is `17 + 5 = 22`.
+```

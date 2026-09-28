@@ -1,0 +1,197 @@
+```markdown
+# Wildcard Billboard
+
+## Problem
+
+A company wants to print **one** lowercase slogan on a billboard.  
+There are `N` client requests. Request `i` consists of:
+
+- a pattern `p_i` over lowercase English letters, `-`, and `*`,
+- a positive reward `w_i`.
+
+Your task is to output a single lowercase string `x` of length at most `L`.
+
+A request is considered **covered** if **some contiguous substring** of `x` matches its pattern.
+
+Pattern matching rules:
+
+- a lowercase letter matches itself,
+- `-` matches exactly one lowercase letter,
+- `*` matches any lowercase string, possibly empty.
+
+Different occurrences of `-` and `*` may be replaced independently, even inside the same pattern.
+
+You collect reward `w_i` once if request `i` is covered, regardless of how many substrings match it.
+
+However, printing a longer billboard is expensive: each printed character costs `P`.
+
+So you must balance reward against slogan length.
+
+---
+
+A substring may be empty. Therefore, a pattern like `*` matches every billboard.
+
+## Input
+
+The input contains a single test case.
+
+- The first line contains three integers `N`, `L`, and `P`.
+- The next `N` lines each contain a pattern `p_i` and an integer `w_i`.
+
+### Format
+
+```text
+N L P
+p_1 w_1
+p_2 w_2
+...
+p_N w_N
+```
+
+## Output
+
+Output exactly two lines:
+
+- The first line: an integer `len` — the length of your billboard string.
+- The second line: a lowercase English string `x` of length exactly `len`.
+
+### Feasibility requirements
+
+Your output is feasible iff:
+
+- `0 <= len <= L`
+- `x` consists only of lowercase English letters
+- `|x| = len`
+
+If your output is infeasible, your objective value for the test case is treated as negative infinity, and your score for that test case is `0`.
+
+If `len = 0`, the second line must be empty.
+
+## Objective
+
+For a feasible output string `x`, define:
+
+- `covered_i(x) = 1` if pattern `p_i` matches at least one contiguous substring of `x`,
+- `covered_i(x) = 0` otherwise.
+
+Your objective value is
+
+```text
+Value(x) = sum(w_i * covered_i(x)) - P * |x|
+```
+
+You must **maximize** `Value(x)`.
+
+## Scoring
+
+Let
+
+```text
+U = sum(w_i)
+```
+
+This is a valid upper bound on the objective value of any feasible output.
+
+### Official baseline
+
+The baseline candidate set consists of:
+
+1. the empty string `""`,
+2. for every pattern `p_i`, its **canonical witness** `c_i`, obtained by:
+   - replacing every `-` with `'a'`,
+   - replacing every `*` with the empty string.
+
+Only canonical witnesses with length at most `L` are kept.
+
+The baseline value is
+
+```text
+B = max(Value(s)) over all baseline candidates s
+```
+
+### Test-case score
+
+For your output `x`, let `V = Value(x)`.
+
+The score for the test case is:
+
+```text
+Score = 100 * clamp((V - B) / (U - B), 0, 1)
+```
+
+where
+
+```text
+clamp(z, 0, 1) = max(0, min(1, z))
+```
+
+Special case:
+
+- if `U = B`, then the score is `100` iff `V = U`, otherwise `0`.
+
+### Overall score
+
+If multiple hidden test cases are used, your final score is the arithmetic mean of the per-test-case scores.
+
+## Constraints
+
+- `1 <= N <= 2500`
+- `0 <= L <= 4000`
+- `1 <= P <= 10^6`
+- `1 <= w_i <= 10^6`
+- each `p_i` is nonempty
+- each `p_i` consists only of lowercase English letters, `-`, and `*`
+- the total length of all patterns is at most `150000`
+
+## Constraints
+- Time limit: 6 seconds
+- Memory limit: 1024 MB
+
+## Example
+
+### Input
+```text
+5 8 2
+ab* 10
+-bc 8
+c*a 7
+aaaa 6
+* 1
+```
+
+### Output
+```text
+4
+abca
+```
+
+### Explanation
+
+For `x = "abca"`:
+
+- `ab*` is covered, for example by substring `"abca"`
+- `-bc` is covered by substring `"abc"`
+- `c*a` is covered by substring `"ca"`
+- `aaaa` is not covered
+- `*` is covered
+
+So the collected reward is:
+
+```text
+10 + 8 + 7 + 1 = 26
+```
+
+The printing cost is:
+
+```text
+P * |x| = 2 * 4 = 8
+```
+
+Therefore:
+
+```text
+Value(x) = 26 - 8 = 18
+```
+
+For this instance, the official baseline tries the empty string and all canonical witnesses such as `"ab"`, `"abc"`, `"ca"`, and `"aaaa"`, then takes the best objective among them. Your score is computed from your value relative to that baseline and the upper bound `U = 32`.
+```

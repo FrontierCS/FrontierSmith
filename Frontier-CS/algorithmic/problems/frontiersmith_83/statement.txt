@@ -1,0 +1,206 @@
+```markdown
+# Arithmetic Repair Planner
+
+## Problem
+
+You are given an array `a` of length `n` whose values are between `1` and `V`.
+
+Then a fixed sequence of `m` **mandatory events** will happen. There are two kinds of mandatory events:
+
+- `U l r x`  
+  Overwrite the subarray `a[l..r]` with the arithmetic progression  
+  `x, x+1, x+2, ..., x+(r-l)`.
+
+- `Q w`  
+  This event contributes  
+  `w × Inv(a)`  
+  to your total penalty, where `Inv(a)` is the number of inversions in the **current** array:
+  \[
+  Inv(a)=|\{(i,j)\mid 1\le i<j\le n,\ a_i>a_j\}|
+  \]
+
+Before any mandatory event `t` (`1 <= t <= m`), you may perform some **repair operations** of your own. A repair operation has the same form as an update:
+
+- choose `l, r, x`
+- overwrite `a[l..r]` with `x, x+1, ..., x+(r-l)`
+
+You may use at most `K` repair operations in total.
+
+Your task is to output any feasible repair plan that minimizes the total penalty accumulated over all `Q` events.
+
+This is an **optimization challenge**: you are not required to find the exact optimum.
+
+---
+
+## Input
+
+The input consists of a single test case.
+
+- The first line contains four integers:  
+  `n m K V`
+
+- The second line contains `n` integers:  
+  `a_1 a_2 ... a_n`
+
+- The next `m` lines each describe one mandatory event in chronological order, in one of the following formats:
+
+  - `U l r x`
+  - `Q w`
+
+### Meaning of bounds
+
+For every mandatory update `U l r x`, it is guaranteed that:
+- `1 <= l <= r <= n`
+- `1 <= x <= V-(r-l)`
+
+So every written value stays within `[1, V]`.
+
+---
+
+## Output
+
+On the first line, output a single integer `k` — the number of repair operations you will use.
+
+You must have `0 <= k <= K`.
+
+Then output `k` lines. Each line must contain four integers:
+
+`t l r x`
+
+meaning:
+
+- this repair is executed **immediately before** mandatory event `t`
+- it overwrites `a[l..r]` with  
+  `x, x+1, ..., x+(r-l)`
+
+### Feasibility requirements
+
+For every repair operation:
+
+- `1 <= t <= m`
+- `1 <= l <= r <= n`
+- `1 <= x <= V-(r-l)`
+
+If multiple repairs are assigned to the same time `t`, they are executed in the same order as they appear in your output.
+
+If your output is malformed or violates any rule above, your submission receives score `0` on this test case.
+
+---
+
+## Objective
+
+Let the array evolve as follows:
+
+For `t = 1..m`:
+
+1. execute all your repairs scheduled before event `t`, in output order
+2. execute the mandatory event `t`
+
+If event `t` is `Q w`, add
+\[
+w \times Inv(a)
+\]
+to the total penalty.
+
+Your objective is to **minimize** the total penalty over all query events.
+
+---
+
+## Scoring
+
+Let:
+
+- `B` = penalty of the **baseline plan**
+- `P` = penalty of your output
+
+The **baseline plan** is: output `0` and perform no repairs.
+
+Your normalized score on this test case is:
+
+- if `B = 0`:
+  - score = `1` if `P = 0`
+  - score = `0` otherwise
+- if `B > 0`:
+  \[
+  s=\max\left(0,\ \min\left(1,\ \frac{B-P}{B}\right)\right)
+  \]
+
+So:
+
+- matching the baseline gives score `0`
+- improving on the baseline gives a score in `(0,1]`
+- reaching penalty `0` gives score `1`
+
+If there are multiple hidden test cases, the final score is:
+
+\[
+\text{FinalScore}=\operatorname{round}\left(10^6 \times \frac{1}{T}\sum_{c=1}^{T} s_c\right)
+\]
+
+where `T` is the number of test cases.
+
+---
+
+## Constraints
+
+- `1 <= n,m,V <= 3 * 10^4`
+- `1 <= K <= 200`
+- `1 <= a_i <= V`
+- for every mandatory query: `1 <= w <= 10^6`
+
+Additional notes:
+
+- There is at least one `Q` event.
+- Values always remain within `[1, V]` for all mandatory events.
+- Your repairs must also preserve this bound.
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+3 3 1 5
+3 2 1
+Q 1
+U 1 3 1
+Q 1
+```
+
+### Output
+```text
+1
+1 1 3 1
+```
+
+### Explanation
+
+The single repair is executed before event `1`, so the array becomes:
+
+`1 2 3`
+
+- Event 1 is `Q 1`, so the penalty added is `0`.
+- Event 2 overwrites the whole array with `1 2 3` again.
+- Event 3 is `Q 1`, so the penalty added is still `0`.
+
+Thus your total penalty is `0`.
+
+The baseline uses no repairs:
+
+- before event 1, the array is `3 2 1`, which has `3` inversions
+- after event 2, the array becomes `1 2 3`
+- before event 3, the inversion count is `0`
+
+So the baseline penalty is `3`.
+
+Your normalized score on this test case is:
+
+\[
+(B-P)/B=(3-0)/3=1
+\]
+
+which is the maximum possible score.
+```

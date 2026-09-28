@@ -1,0 +1,182 @@
+```markdown
+# Channel Beacons on a Tree
+
+## Problem
+
+A country-wide emergency network is built on a tree of `n` stations. You must place exactly `k` radio beacons on distinct stations.
+
+Each beacon is assigned one of `C` channels. A beacon on channel `c` can detect only incidents that require channel `c`.
+
+There are `m` possible incident scenarios. Scenario `i` is described by:
+- two stations `a_i, b_i`,
+- a required channel `t_i`,
+- a reward `w_i`.
+
+The incident travels along the unique simple path from `a_i` to `b_i`.  
+Scenario `i` is **covered** if at least one chosen beacon of channel `t_i` lies on that path. If covered, you earn reward `w_i`; otherwise, you earn nothing for that scenario.
+
+However, beacons using the same channel must stay synchronized. This creates a communication cost:
+
+- For every unordered pair of chosen beacons with the same channel, you pay the tree distance between their stations.
+- The total synchronization cost is the sum of these pairwise distances over all channels.
+
+Your task is to choose exactly `k` beacon locations and their channels to maximize:
+
+**total covered reward - total synchronization cost**
+
+This is an optimization challenge: all feasible outputs are judged, and better objective values receive higher scores.
+
+## Input
+
+The first line contains four integers:
+
+`n m k C`
+
+- `1 <= k <= n`
+- `1 <= C <= 8`
+
+The next `n-1` lines describe the tree. Each line contains:
+
+`u v d`
+
+meaning there is an undirected edge between stations `u` and `v` with length `d`.
+
+The next `m` lines describe the incident scenarios. Each line contains:
+
+`a_i b_i t_i w_i`
+
+meaning scenario `i` uses the path from `a_i` to `b_i`, requires channel `t_i`, and gives reward `w_i` if covered.
+
+All node indices are 1-based.
+
+## Output
+
+Output exactly `k` lines.  
+Each line must contain two integers:
+
+`x_j c_j`
+
+meaning you place one beacon at station `x_j` using channel `c_j`.
+
+### Feasibility requirements
+- The `k` stations `x_j` must be pairwise distinct.
+- `1 <= x_j <= n`
+- `1 <= c_j <= C`
+
+If the output is infeasible, the submission receives score `0` on that test.
+
+## Objective
+
+Let `B_c` be the set of chosen stations whose beacon channel is `c`.
+
+### Covered reward
+For each scenario `i`, let `P_i` be the set of nodes on the unique path from `a_i` to `b_i` (including endpoints).  
+Scenario `i` is covered iff `P_i` contains at least one chosen station from `B_{t_i}`.
+
+The total covered reward is
+
+`R = sum of w_i over all covered scenarios`.
+
+### Synchronization cost
+For two chosen stations `x` and `y`, let `dist(x,y)` be their weighted tree distance.
+
+The synchronization cost is
+
+`S = sum over channels c of sum over unordered pairs {x,y} subset of B_c of dist(x,y)`.
+
+### Objective value
+Your objective is to maximize
+
+`Obj = R - S`.
+
+The judge computes `Obj` exactly as defined above.
+
+## Scoring
+
+For each test file, let:
+
+- `Obj` = your objective value,
+- `U = sum_i w_i` (an upper bound on any feasible objective),
+- `Base` = the objective value of the following deterministic baseline solution.
+
+### Baseline solution
+For every node `x` and channel `c`, define
+
+`gain(x,c) = sum of w_i over all scenarios i such that t_i = c and x lies on the path from a_i to b_i`.
+
+For each node `x`, let `best(x)` be the smallest channel `c` maximizing `gain(x,c)`.
+
+The baseline:
+1. computes `score_x = gain(x, best(x))` for every node `x`,
+2. sorts all nodes by:
+   - larger `score_x` first,
+   - then smaller node index first,
+3. selects the first `k` nodes,
+4. places a beacon on each selected node `x` with channel `best(x)`.
+
+Its objective value is `Base`.
+
+### Per-test score
+If `U = Base`:
+- score is `100` if `Obj >= U`,
+- otherwise score is `0`.
+
+Else the score is
+
+`Score_test = 100 * clamp((Obj - Base) / (U - Base), 0, 1)`,
+
+where `clamp(z,0,1) = max(0, min(1, z))`.
+
+### Final score
+The final score is the arithmetic mean of `Score_test` over all test files.
+
+## Constraints
+- `1 <= n <= 200000`
+- `1 <= m <= 300000`
+- `1 <= k <= n`
+- `1 <= C <= 8`
+- `1 <= d <= 10^6`
+- `1 <= w_i <= 10^9`
+- Time limit: 4 seconds
+- Memory limit: 1024 MB
+
+## Example
+
+### Sample input
+```text
+5 4 2 2
+1 2 3
+2 3 2
+2 4 4
+4 5 1
+1 3 1 10
+3 5 2 8
+1 5 1 7
+4 5 2 3
+```
+
+### Sample output
+```text
+2 1
+4 2
+```
+
+### Explanation
+Two beacons are placed:
+- station `2`, channel `1`
+- station `4`, channel `2`
+
+Covered scenarios:
+- path `1-2-3` with channel `1`: covered by station `2` → reward `10`
+- path `3-2-4-5` with channel `2`: covered by station `4` → reward `8`
+- path `1-2-4-5` with channel `1`: covered by station `2` → reward `7`
+- path `4-5` with channel `2`: covered by station `4` → reward `3`
+
+So `R = 28`.
+
+There is only one beacon on each channel, so no same-channel pair exists, hence `S = 0`.
+
+Therefore the objective value is:
+
+`Obj = 28 - 0 = 28`.
+```

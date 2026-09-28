@@ -1,0 +1,207 @@
+```markdown
+# Arithmetic Window Calibration
+
+## Problem
+
+A laboratory recorded a sequence of non-negative integer readings `a[1..n]`.  
+Before the data is published, you may **recalibrate** some readings.
+
+There are `m` weighted contracts. Each contract refers to a window `[l, r]` and asks for one of the following to be true **after recalibration**:
+
+- **Type 1**: there exist two positions `i, j` in `[l, r]` such that  
+  `|b_i - b_j| = x`
+- **Type 2**: there exist two positions `i, j` in `[l, r]` such that  
+  `b_i + b_j = x`
+- **Type 3**: there exist two positions `i, j` in `[l, r]` such that  
+  `b_i * b_j = x`
+
+Here `b` is your final recalibrated sequence.
+
+The two chosen positions **may be the same** (`i = j` is allowed).
+
+Each contract also has a positive weight `w`. If the contract is satisfied by your final sequence, you earn `w`.
+
+You may change `a_i` to any integer `b_i` in `[0, C]`.  
+Changing position `i` costs `|a_i - b_i|` units of calibration energy.  
+The total energy used must not exceed `H`.
+
+Your goal is to choose the final sequence `b` to maximize the total earned weight.
+
+---
+
+## Input
+
+The first line contains four integers:
+
+`n m C H`
+
+- `n` — length of the sequence
+- `m` — number of contracts
+- `C` — maximum allowed value after recalibration
+- `H` — total calibration energy budget
+
+The second line contains `n` integers:
+
+`a_1 a_2 ... a_n`
+
+The next `m` lines each contain one contract:
+
+`opt l r x w`
+
+- `opt ∈ {1, 2, 3}` — contract type
+- `1 ≤ l ≤ r ≤ n`
+- `x` — target value for the contract
+- `w` — weight earned if the contract is satisfied
+
+Interpretation of `x`:
+- if `opt = 1`, the contract asks for a pair with absolute difference `x`
+- if `opt = 2`, the contract asks for a pair with sum `x`
+- if `opt = 3`, the contract asks for a pair with product `x`
+
+All arithmetic is over integers.
+
+---
+
+## Output
+
+Output a recalibration plan in the following format.
+
+The first line contains a single integer:
+
+`k`
+
+— the number of positions you change.
+
+Then output `k` lines, each containing:
+
+`idx val`
+
+meaning that in the final sequence, `b_idx = val`.
+
+All unspecified positions keep their original value:
+`b_i = a_i`.
+
+### Feasibility requirements
+
+Your output is **feasible** if all of the following hold:
+
+- `0 ≤ k ≤ n`
+- all `idx` values are distinct
+- `1 ≤ idx ≤ n`
+- `0 ≤ val ≤ C`
+- the total energy
+  \[
+  \sum_{i=1}^{n} |a_i - b_i|
+  \]
+  is at most `H`
+
+If the output is infeasible, the score for that test is `0`.
+
+---
+
+## Objective
+
+For a feasible output, let `b` be the resulting final sequence.
+
+For each contract `(opt, l, r, x, w)`:
+
+- it contributes `w` to your objective if it is satisfied in `b`
+- otherwise it contributes `0`
+
+Your objective value is
+
+\[
+W_{\text{sub}} = \sum \text{weights of satisfied contracts}
+\]
+
+You must **maximize** `W_sub`.
+
+---
+
+## Scoring
+
+For each test file:
+
+- `W_sub` = objective value of your submission
+- `W_base` = objective value of the **baseline solution** that makes no changes at all (`b = a`)
+- `W_all` = sum of weights of all contracts in the file
+
+The per-file score is
+
+\[
+\text{score} = 100 \cdot \frac{\max(0,\, W_{\text{sub}} - W_{\text{base}})}{W_{\text{all}} - W_{\text{base}}}
+\]
+
+The official test data guarantees that `W_all > W_base`.
+
+So:
+
+- the baseline solution always gets score `0`
+- a solution satisfying all contracts gets score `100`
+- partial improvements receive proportionally intermediate scores
+
+Your final contest score is the arithmetic mean of per-file scores.
+
+---
+
+## Constraints
+
+- `1 ≤ n ≤ 100000`
+- `1 ≤ m ≤ 100000`
+- `0 ≤ a_i ≤ C ≤ 100000`
+- `0 ≤ H ≤ 200000`
+- `1 ≤ w ≤ 10^6`
+- if `opt = 1`, then `0 ≤ x ≤ C`
+- if `opt = 2`, then `0 ≤ x ≤ 2C`
+- if `opt = 3`, then `0 ≤ x ≤ C^2`
+
+Use 64-bit integers for sums of weights and for product targets.
+
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample Input
+```text
+5 6 10 3
+1 1 4 6 8
+1 1 3 3 5
+2 2 5 9 7
+3 1 4 16 4
+2 1 2 2 6
+1 4 5 1 3
+3 5 5 64 10
+```
+
+### Sample Output
+```text
+1
+4 7
+```
+
+### Explanation
+
+The original sequence is:
+
+`[1, 1, 4, 6, 8]`
+
+We change position `4` from `6` to `7`, using energy `|6-7| = 1 ≤ 3`.
+
+The final sequence becomes:
+
+`[1, 1, 4, 7, 8]`
+
+Now all six contracts are satisfied:
+
+- `[1,3]`, difference `3`: `1` and `4`
+- `[2,5]`, sum `9`: `1` and `8`
+- `[1,4]`, product `16`: `4 * 4` using the same position twice
+- `[1,2]`, sum `2`: `1 + 1`
+- `[4,5]`, difference `1`: `7` and `8`
+- `[5,5]`, product `64`: `8 * 8` using the same position twice
+
+So this submission achieves the maximum possible objective on this example.
+```
