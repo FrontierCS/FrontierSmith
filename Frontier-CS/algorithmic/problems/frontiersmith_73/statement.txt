@@ -1,0 +1,210 @@
+```markdown
+# Han Solo's Outpost Sweep
+
+## Problem
+
+Han Solo can no longer rely on a single fixed gun position.  
+Instead, he has access to a network of **candidate firing outposts** on a 2D plane.
+
+There are `n` stormtrooper squads, each located at a point `(xi, yi)`.  
+Han starts at his **base** `(x0, y0)`, which is also an allowed firing position.
+
+A mission consists of a sequence of operations:
+
+- **Move** to one of the candidate outposts or back to base.
+- **Shoot** from the current position.
+
+A single shot fired from point `C` chooses any line passing through `C`, and destroys **all** stormtrooper squads lying on that line.
+
+Han must destroy **every** squad and return to base.
+
+Your task is to output **any feasible mission plan** with low total cost.
+
+---
+
+### Mission cost
+
+Let:
+
+- `D` = total Euclidean distance traveled during all move operations
+- `S` = total number of shots fired
+- `T` = fixed time cost per shot (given in input)
+
+Then the total mission cost is:
+
+`cost = D + T * S`
+
+You must minimize this value.
+
+Because the problem is open-ended, solutions are scored continuously against a baseline.
+
+---
+
+## Input
+
+The input contains a single test case.
+
+- The first line contains three integers `n`, `m`, `T`  
+  - `n` = number of stormtrooper squads
+  - `m` = number of candidate outposts (excluding the base)
+  - `T` = fixed cost of one shot
+- The second line contains two integers `x0`, `y0` — the base coordinates.
+- The next `m` lines contain two integers each: the coordinates of outposts `1..m`.
+- The next `n` lines contain two integers each: the coordinates of stormtrooper squads `1..n`.
+
+Outpost `0` is the base `(x0, y0)`.
+
+Multiple squads may occupy the same point.  
+No squad is located exactly at the base or at any outpost.
+
+---
+
+## Output
+
+On the first line, output a single integer `q` — the number of operations.
+
+Then output `q` lines, each in one of the following formats:
+
+- `M j`  
+  Move to outpost `j`, where `0 <= j <= m`.  
+  (`j = 0` means move to base.)
+
+- `S u v`  
+  Fire one shot from the **current** location along the line through the current point with direction vector `(u, v)`.
+
+### Feasibility requirements
+
+Your output is feasible if all of the following hold:
+
+1. `1 <= q <= 200000`
+2. Every move target satisfies `0 <= j <= m`
+3. Every shot satisfies:
+   - `|u| <= 10^9`
+   - `|v| <= 10^9`
+   - `(u, v) != (0, 0)`
+4. Han starts at outpost `0` (the base)
+5. After all `q` operations, Han is again at outpost `0`
+6. Every stormtrooper squad is destroyed by at least one shot
+
+### How a shot destroys squads
+
+Suppose Han is currently at point `C = (cx, cy)` and fires `S u v`.
+
+A squad at point `P = (x, y)` is destroyed iff `P` lies on the line through `C` with direction `(u, v)`, i.e.
+
+`(x - cx) * v = (y - cy) * u`
+
+The shot affects the **entire line**, not a ray.
+
+### Cost computation
+
+- A move from point `A` to point `B` adds  
+  `sqrt((Ax - Bx)^2 + (Ay - By)^2)` to the travel cost.
+- Each shot adds exactly `T` to the cost.
+
+The judge computes the total mission cost as:
+
+`cost = total_travel_distance + T * number_of_shots`
+
+---
+
+## Objective
+
+Minimize the total mission cost.
+
+---
+
+## Scoring
+
+For each test case, let:
+
+- `C` = your mission cost
+- `B` = baseline mission cost
+
+The **baseline** is:
+
+- Han never moves from base
+- He fires one shot for each distinct line through the base that contains at least one squad
+
+In other words, for each squad at `(xi, yi)`, form the vector `(dx, dy) = (xi - x0, yi - y0)`, reduce it by `g = gcd(|dx|, |dy|)`, and normalize sign so that opposite directions represent the same line.  
+The number of distinct normalized lines is `L`, and:
+
+`B = T * L`
+
+Your score on the test is:
+
+`score = 1,000,000 * clamp(B / C, 0, 2)`
+
+where `clamp(z, 0, 2) = max(0, min(2, z))`.
+
+- Invalid output gets score `0`
+- Matching the baseline gets score `1,000,000`
+- Doing better than the baseline gives more than `1,000,000`, up to a cap of `2,000,000`
+
+If there are multiple test files, the final score is the arithmetic mean of per-test scores, rounded down.
+
+---
+
+## Constraints
+
+- `1 <= n <= 2000`
+- `0 <= m <= 300`
+- `1 <= T <= 10^5`
+- `-10^6 <= x, y <= 10^6` for all coordinates
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+4 1 5
+0 0
+1 1
+2 0
+0 2
+2 2
+3 1
+```
+
+### Output
+```text
+5
+M 1
+S 1 -1
+S 1 0
+S 1 1
+M 0
+```
+
+### Explanation
+
+Han moves from base `(0,0)` to outpost `1` at `(1,1)`.
+
+From `(1,1)`:
+- `S 1 -1` fires along the line `y = -x + 2`, destroying squads at `(2,0)` and `(0,2)`
+- `S 1 0` fires along the horizontal line `y = 1`, destroying `(3,1)`
+- `S 1 1` fires along the line `y = x`, destroying `(2,2)`
+
+Then Han returns to base.
+
+Total cost:
+- travel = distance from `(0,0)` to `(1,1)` and back = `2 * sqrt(2)`
+- shots = `3`, so shot cost = `15`
+
+Hence:
+
+`C = 2 * sqrt(2) + 15 ≈ 17.828`
+
+Baseline:
+- From base, all 4 squads lie on 4 distinct lines through `(0,0)`
+- so `B = 4 * 5 = 20`
+
+Score:
+
+`1,000,000 * min(2, 20 / 17.828...) ≈ 1,121,832`
+
+This is better than the baseline because visiting one outpost allows several squads to be grouped into fewer shots.
+```

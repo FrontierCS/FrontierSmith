@@ -1,0 +1,203 @@
+```markdown
+# Arcane Marshalling Yard
+
+## Problem
+
+A long inbound train arrives at a magical marshalling yard. Its cars stand on a single main track in a fixed front-to-back order. Each car has:
+
+- a unique **serial number**,
+- a required **destination train**,
+- a **value** earned if that car is successfully shipped.
+
+The yard also has several one-ended sidings. A siding behaves like a **stack**: cars may only be taken from or added to its exposed end.
+
+Outbound destination trains must depart in the fixed order `1, 2, ..., T`. At any moment exactly one destination train is **current**. You may only ship cars onto the current destination train, and within each destination train the shipped cars must appear in **strictly increasing serial number** order.
+
+You may manipulate cars using the following operations:
+
+- move the accessible car from the inbound track or from the top of one siding to the top of another siding,
+- ship the accessible car from the inbound track or from the top of one siding to the current destination train,
+- discard the accessible car from the inbound track or from the top of one siding,
+- close the current destination train and advance to the next one.
+
+Your task is to produce any feasible sequence of operations with a high objective value.
+
+This is an optimization problem: better plans earn higher scores.
+
+## Input
+
+The first line contains three integers:
+
+`n S T` — number of cars, number of sidings, number of destination trains.
+
+The second line contains `S` integers:
+
+`c1 c2 ... cS` — capacities of the sidings.
+
+The next `n` lines describe the inbound cars in **front-to-back** order.  
+Line `i` contains three integers:
+
+`serial_i dest_i value_i`
+
+where:
+
+- `serial_i` is the unique serial number of the car,
+- `dest_i` is its required destination train,
+- `value_i` is the value earned if the car is shipped.
+
+## Output
+
+On the first line print an integer `q` — the number of operations.
+
+Then print `q` lines, each describing one operation in one of the following formats:
+
+- `H a b`  
+  Take the accessible car from source `a` and push it onto the top of siding `b`.
+
+- `D a`  
+  Take the accessible car from source `a` and ship it to the current destination train.
+
+- `X a`  
+  Take the accessible car from source `a` and discard it.
+
+- `N`  
+  Close the current destination train and advance to the next one.
+
+### Sources
+
+- `0` means the inbound track; its accessible car is its current front car.
+- `1..S` mean sidings; their accessible car is the top car of that siding.
+
+### Feasibility rules
+
+A submission is feasible iff all of the following hold:
+
+1. Every operation is valid when executed in order.
+2. For `H a b`:
+   - `a` must be a non-empty source,
+   - `b` must be a siding index in `1..S`,
+   - `a != b`,
+   - siding `b` must not be full.
+3. For `D a`:
+   - `a` must be a non-empty source,
+   - there must still be a current destination train (`current <= T`),
+   - the moved car must have `dest = current`,
+   - its serial number must be strictly larger than the serial number of the last car already shipped to the current destination train.
+4. For `X a`:
+   - `a` must be a non-empty source.
+5. For `N`:
+   - there must still be a current destination train (`current <= T`).
+6. After all `q` operations, the inbound track and every siding must be empty.
+7. `q` must not exceed `2,000,000`.
+
+Empty destination trains are allowed.
+
+## Objective
+
+Let:
+
+- `V` = sum of `value_i` over all cars shipped using `D`,
+- `M` = number of operations of types `H` and `D`.
+
+The objective value of a feasible submission is:
+
+`OBJ = V - M`
+
+Discard operations `X` and train-advance operations `N` do **not** directly cost anything.
+
+If the output is infeasible, the submission receives score `0`.
+
+## Scoring
+
+For each test case, define:
+
+- `U = sum(value_i)` over all cars in the input,
+- `B` = the objective value of the following deterministic baseline algorithm.
+
+### Baseline algorithm
+
+The baseline uses **no sidings**.
+
+- Start with current destination train `cur = 1`.
+- Let `last = 0`, meaning the last serial shipped to train `cur`.
+- Scan the inbound cars from front to back.
+- For each car `(serial, dest, value)`:
+  - if `dest < cur`, discard it;
+  - if `dest > cur`, repeatedly close trains until `cur = dest`, then set `last = 0`;
+  - now `dest = cur`:
+    - if `serial > last`, ship it directly and add `value - 1` to the baseline objective; set `last = serial`;
+    - otherwise discard it.
+
+The per-test score is
+
+`score = 1,000,000 * clamp((OBJ - B) / (U - B), 0, 1)`
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+If `U = B`, every feasible submission for that test receives `1,000,000`.
+
+The final score is the arithmetic mean of the per-test scores over all test cases.
+
+## Constraints
+
+- `1 <= n <= 100000`
+- `1 <= S <= 30`
+- `1 <= T <= 100000`
+- `1 <= c_j <= n`
+- `serial_i` are distinct and form a permutation of `1..n`
+- `1 <= dest_i <= T`
+- `1 <= value_i <= 10^9`
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+6 2 3
+2 3
+4 2 8
+1 1 7
+2 1 6
+6 3 5
+3 2 9
+5 2 4
+```
+
+### Output
+```text
+10
+H 0 1
+D 0
+D 0
+N
+D 1
+H 0 2
+X 0
+D 0
+N
+D 2
+```
+
+### Explanation
+
+A high-level view of the plan:
+
+- Store car `(4,2,8)` in siding 1.
+- Ship cars `1` and `2` to destination train 1.
+- Advance to destination train 2.
+- Recover and ship car `4`.
+- Store car `6` for destination train 3 in siding 2.
+- Discard car `3` because serial `3` cannot follow already shipped serial `4` on destination train 2.
+- Ship car `5` to destination train 2.
+- Advance to destination train 3.
+- Ship car `6`.
+
+Delivered value: `7 + 6 + 8 + 4 + 5 = 30`  
+Counted moves (`H` and `D`): `7`  
+So `OBJ = 30 - 7 = 23`.
+
+For this instance, the baseline objective is `11`, and `U = 39`, so this output scores
+
+`1,000,000 * (23 - 11) / (39 - 11) = 428571.428...`
+```

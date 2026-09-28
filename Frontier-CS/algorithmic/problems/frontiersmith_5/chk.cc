@@ -2,199 +2,242 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+// ── Graph for shortest‑path computation ──────────────────────────────────────
+static const long long LINF = 4e18;
+static const int MAXV = 3001;
+
+struct SpEdge { int to; long long w; };
+static vector<SpEdge> spg[MAXV];
+static long long spd[MAXV];
+
+void dijkstra(int src, int V) {
+    fill(spd + 1, spd + V + 1, LINF);
+    spd[src] = 0;
+    priority_queue<pair<long long,int>, vector<pair<long long,int>>, greater<pair<long long,int>>> pq;
+    pq.push({0LL, src});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top(); pq.pop();
+        if (d > spd[u]) continue;
+        for (auto& e : spg[u]) {
+            if (spd[u] + e.w < spd[e.to]) {
+                spd[e.to] = spd[u] + e.w;
+                pq.push({spd[e.to], e.to});
+            }
+        }
+    }
+}
+
+// ── Dinic max‑flow ───────────────────────────────────────────────────────────
+static const int MAXFN = 1700;  // source + C + S + sink ≤ 1602
+
+struct FEdge { int to, rev; long long cap; };
+static vector<FEdge> fg[MAXFN];
+static int flevel[MAXFN], fiter[MAXFN];
+static int fnodes;
+
+void fadd(int u, int v, long long cap) {
+    fg[u].push_back({v, (int)fg[v].size(), cap});
+    fg[v].push_back({u, (int)fg[u].size()-1, 0LL});
+}
+
+bool fbfs(int s, int t) {
+    fill(flevel, flevel + fnodes, -1);
+    queue<int> q;
+    flevel[s] = 0; q.push(s);
+    while (!q.empty()) {
+        int v = q.front(); q.pop();
+        for (auto& e : fg[v])
+            if (e.cap > 0 && flevel[e.to] < 0) { flevel[e.to] = flevel[v]+1; q.push(e.to); }
+    }
+    return flevel[t] >= 0;
+}
+
+long long fdfs(int v, int t, long long f) {
+    if (v == t) return f;
+    for (int& i = fiter[v]; i < (int)fg[v].size(); i++) {
+        FEdge& e = fg[v][i];
+        if (e.cap > 0 && flevel[v] < flevel[e.to]) {
+            long long d = fdfs(e.to, t, min(f, e.cap));
+            if (d > 0) { e.cap -= d; fg[e.to][e.rev].cap += d; return d; }
+        }
+    }
+    return 0;
+}
+
+long long computeFlow(int s, int t) {
+    long long flow = 0;
+    while (fbfs(s, t)) {
+        fill(fiter, fiter + fnodes, 0);
+        long long d;
+        while ((d = fdfs(s, t, LINF)) > 0) flow += d;
+    }
+    return flow;
+}
+
+// ── Helper: compute objective given a set of active tube indices ─────────────
+// Returns max-flow value M for the given tube subset.
+// All problem data passed as parameters.
+long long evaluate(
+    int V, int C, int S, long long L,
+    // existing edges stored separately (already in spg[] baseline)
+    vector<pair<int,int>>& colV, vector<long long>& colA,
+    vector<pair<int,int>>& sugV, vector<long long>& sugH,
+    // tube endpoints/lengths for activated tubes
+    vector<tuple<int,int,long long>>& activeTubes,
+    // base edges (u,v,d) — needed to rebuild graph
+    vector<tuple<int,int,long long>>& baseEdges
+) {
+    // Rebuild graph
+    for (int i = 1; i <= V; i++) spg[i].clear();
+    for (auto& [u, v, d] : baseEdges) {
+        spg[u].push_back({v, d});
+        spg[v].push_back({u, d});
+    }
+    for (auto& [a, b, t] : activeTubes) {
+        spg[a].push_back({b, t});
+        spg[b].push_back({a, t});
+    }
+
+    // Collect unique vertices to run Dijkstra from
+    // We need dist from each colony vertex to each sugar vertex.
+    // Run Dijkstra from each unique colony vertex and store distances.
+    // C,S ≤ 800 each.
+
+    // dist_col[i][j] = shortest dist from colony i's vertex to sugar j's vertex
+    vector<vector<long long>> distCS(C, vector<long long>(S));
+
+    // group colonies by vertex to avoid redundant Dijkstras
+    map<int, vector<int>> colByVtx;
+    for (int i = 0; i < C; i++) colByVtx[colV[i].first].push_back(i);
+
+    for (auto& [vtx, ids] : colByVtx) {
+        dijkstra(vtx, V);
+        for (int i : ids)
+            for (int j = 0; j < S; j++)
+                distCS[i][j] = spd[sugV[j].first];
+    }
+
+    // Build flow network
+    // node 0 = source, 1..C = colonies, C+1..C+S = sugar, C+S+1 = sink
+    int SRC = 0, SNK = C + S + 1;
+    fnodes = C + S + 2;
+    for (int i = 0; i < fnodes; i++) fg[i].clear();
+
+    for (int i = 0; i < C; i++) fadd(SRC, i+1, colA[i]);
+    for (int j = 0; j < S; j++) fadd(C+1+j, SNK, sugH[j]);
+    for (int i = 0; i < C; i++)
+        for (int j = 0; j < S; j++)
+            if (distCS[i][j] <= L)
+                fadd(i+1, C+1+j, LINF);
+
+    return computeFlow(SRC, SNK);
+}
+
 int main(int argc, char* argv[]) {
     registerTestlibCmd(argc, argv);
 
-    // ---- Read input ----
-    int n = inf.readInt();
-    int m = inf.readInt();
-    int t = inf.readInt();
-    int k = inf.readInt();
+    // ── Read problem input ────────────────────────────────────────────────────
+    int V = inf.readInt();
+    int E = inf.readInt();
+    int P = inf.readInt();
+    int C = inf.readInt();
+    int S = inf.readInt();
+    long long B = inf.readLong();
+    long long L = inf.readLong();
 
-    vector<long long> a(n + 1);
-    for (int i = 1; i <= n; i++) a[i] = (long long)inf.readLong() % m;
-
-    vector<long long> c(n + 1);
-    for (int i = 1; i <= n; i++) c[i] = inf.readLong();
-
-    vector<vector<int>> adj(n + 1);
-    for (int i = 0; i < n - 1; i++) {
+    vector<tuple<int,int,long long>> baseEdges(E);
+    for (int i = 0; i < E; i++) {
         int u = inf.readInt(), v = inf.readInt();
-        adj[u].push_back(v);
-        adj[v].push_back(u);
+        long long d = inf.readLong();
+        baseEdges[i] = {u, v, d};
     }
 
-    vector<int> sv(t);
-    vector<long long> wv(t);
-    for (int j = 0; j < t; j++) {
-        sv[j] = inf.readInt();
-        wv[j] = inf.readLong();
+    // tubes: a, b, t, c
+    vector<int> ta(P), tb(P);
+    vector<long long> tt(P), tc(P);
+    for (int i = 0; i < P; i++) {
+        ta[i] = inf.readInt();
+        tb[i] = inf.readInt();
+        tt[i] = inf.readLong();
+        tc[i] = inf.readLong();
     }
 
-    // ---- Root tree at 1 (BFS) ----
-    vector<int> par(n + 1, 0);
-    vector<int> bfs_order;
-    bfs_order.reserve(n);
-    vector<bool> visited(n + 1, false);
+    vector<pair<int,int>> colV(C);
+    vector<long long> colA(C);
+    for (int i = 0; i < C; i++) {
+        colV[i].first = inf.readInt();
+        colA[i] = inf.readLong();
+        colV[i].second = 0;
+    }
+
+    vector<pair<int,int>> sugV(S);
+    vector<long long> sugH(S);
+    for (int i = 0; i < S; i++) {
+        sugV[i].first = inf.readInt();
+        sugH[i] = inf.readLong();
+        sugV[i].second = 0;
+    }
+
+    // ── Compute U ─────────────────────────────────────────────────────────────
+    long long sumA = 0, sumH = 0;
+    for (int i = 0; i < C; i++) sumA += colA[i];
+    for (int j = 0; j < S; j++) sumH += sugH[j];
+    long long U = min(sumA, sumH);
+
+    // ── Compute M0 (no tubes) ─────────────────────────────────────────────────
+    vector<tuple<int,int,long long>> noTubes;
+    long long M0 = evaluate(V, C, S, L, colV, colA, sugV, sugH, noTubes, baseEdges);
+
+    // ── Read participant output ───────────────────────────────────────────────
+    int R = ouf.readInt(0, P, "R must be in [0,P]");
+
+    vector<int> chosenIds(R);
+    for (int k = 0; k < R; k++) {
+        chosenIds[k] = ouf.readInt(1, P, "tube id must be in [1,P]");
+    }
+    ouf.readEof();
+
+    // Check for duplicate IDs
     {
-        queue<int> q;
-        q.push(1);
-        visited[1] = true;
-        par[1] = 0;
-        while (!q.empty()) {
-            int u = q.front(); q.pop();
-            bfs_order.push_back(u);
-            for (int v : adj[u]) {
-                if (!visited[v]) {
-                    visited[v] = true;
-                    par[v] = u;
-                    q.push(v);
-                }
-            }
-        }
+        vector<int> sorted_ids = chosenIds;
+        sort(sorted_ids.begin(), sorted_ids.end());
+        for (int k = 1; k < R; k++)
+            if (sorted_ids[k] == sorted_ids[k-1])
+                quitf(_wa, "Duplicate tube ID: %d", sorted_ids[k]);
     }
 
-    // Build children list
-    vector<vector<int>> children(n + 1);
-    for (int i = 2; i <= n; i++)
-        children[par[i]].push_back(i);
-
-    // Euler tour (tin/tout), 0-indexed positions
-    vector<int> tin(n + 1), tout(n + 1);
-    vector<int> euler_pos(n + 1); // euler_pos[pos] = node
-    {
-        int timer = 0;
-        stack<pair<int,bool>> stk;
-        stk.push({1, false});
-        while (!stk.empty()) {
-            auto [u, leaving] = stk.top(); stk.pop();
-            if (leaving) {
-                tout[u] = timer - 1;
-            } else {
-                tin[u] = timer;
-                euler_pos[timer] = u;
-                timer++;
-                stk.push({u, true});
-                for (int i = (int)children[u].size() - 1; i >= 0; i--)
-                    stk.push({children[u][i], false});
-            }
-        }
+    // Check total cost
+    long long totalCost = 0;
+    for (int id : chosenIds) {
+        totalCost += tc[id-1];
+        if (totalCost > B) // early overflow guard
+            quitf(_wa, "Total activation cost %lld exceeds budget %lld", totalCost, B);
     }
 
-    // ---- Precompute primes in [2, m) ----
-    vector<int> primes;
-    {
-        vector<bool> sieve(m, true);
-        for (int p = 2; p < m; p++) {
-            if (!sieve[p]) continue;
-            primes.push_back(p);
-            for (int q = 2*p; q < m; q += p) sieve[q] = false;
-        }
-    }
-    int P_size = (int)primes.size();
-    // Map residue -> prime index (-1 if not prime)
-    vector<int> prime_idx(m, -1);
-    for (int i = 0; i < P_size; i++) prime_idx[primes[i]] = i;
+    // ── Compute M ─────────────────────────────────────────────────────────────
+    vector<tuple<int,int,long long>> activeTubes;
+    for (int id : chosenIds)
+        activeTubes.push_back({ta[id-1], tb[id-1], tt[id-1]});
 
-    // ---- Helper: given cumulative shifts, compute F ----
-    // cumshift[v] = total shift added to node v (sum of x on path from root to v)
-    auto compute_objective = [&](const vector<long long>& cumshift, long long retuner_cost) -> long long {
-        // Final residues in euler order
-        // Build prefix count for each prime over euler positions [0..n-1]
-        // prefix[p][pos] = number of nodes with residue primes[p] in euler positions [0..pos)
-        vector<vector<int>> prefix(P_size, vector<int>(n + 1, 0));
-        for (int pos = 0; pos < n; pos++) {
-            int u = euler_pos[pos];
-            int r = (int)((a[u] + cumshift[u]) % m);
-            for (int pi = 0; pi < P_size; pi++) prefix[pi][pos + 1] = prefix[pi][pos];
-            if (prime_idx[r] >= 0) {
-                int pi = prime_idx[r];
-                prefix[pi][pos + 1]++;
-            }
-        }
+    long long M = evaluate(V, C, S, L, colV, colA, sugV, sugH, activeTubes, baseEdges);
 
-        long long total_penalty = 0;
-        for (int j = 0; j < t; j++) {
-            int sj = sv[j];
-            int lo = tin[sj], hi = tout[sj]; // inclusive positions
-            int covered = 0;
-            for (int pi = 0; pi < P_size; pi++) {
-                int cnt = prefix[pi][hi + 1] - prefix[pi][lo];
-                if (cnt > 0) covered++;
-            }
-            total_penalty += wv[j] * (long long)(P_size - covered);
-        }
-        return total_penalty + retuner_cost;
-    };
+    // ── Sanity: M >= M0 ───────────────────────────────────────────────────────
+    if (M < M0)
+        quitf(_wa, "M=%lld < M0=%lld (internal error, activating tubes cannot reduce flow)", M, M0);
 
-    // ---- Compute F_base (no retuners) ----
-    vector<long long> zero_shift(n + 1, 0LL);
-    long long F_base = compute_objective(zero_shift, 0LL);
-
-    // ---- Read participant output ----
-    int q = ouf.readInt(0, n, "number of retuners q");
-    if (q > k) {
-        quitf(_wa, "q=%d exceeds k=%d", q, k);
-    }
-
-    vector<pair<int,int>> retuners(q);
-    set<int> used_nodes;
-    long long retuner_cost = 0;
-
-    for (int i = 0; i < q; i++) {
-        int v = ouf.readInt(1, n, "retuner node v");
-        int d = ouf.readInt(1, m - 1, "retuner shift d");
-        if (used_nodes.count(v)) {
-            quitf(_wa, "node %d appears more than once in retuner list", v);
-        }
-        used_nodes.insert(v);
-        retuners[i] = {v, d};
-        retuner_cost += c[v];
-    }
-
-    // Check EOF
-    if (!ouf.seekEof()) {
-        quitf(_wa, "extra data after the last retuner");
-    }
-
-    // ---- Build cumulative shifts ----
-    // x[v] = shift placed at v (0 if none)
-    vector<long long> x(n + 1, 0LL);
-    for (auto [v, d] : retuners) x[v] = d;
-
-    // Propagate: cumshift[u] = cumshift[par[u]] + x[u], in BFS order
-    vector<long long> cumshift(n + 1, 0LL);
-    for (int u : bfs_order) {
-        if (par[u] == 0)
-            cumshift[u] = x[u] % m;
-        else
-            cumshift[u] = (cumshift[par[u]] + x[u]) % m;
-    }
-
-    // ---- Compute F ----
-    long long F = compute_objective(cumshift, retuner_cost);
-
-    // ---- Score ----
-    double score_ratio;
-    if (F_base == 0) {
-        if (F == 0) {
-            score_ratio = 1.0;
-        } else {
-            // Feasible but F>0 when F_base=0 means participant made things worse somehow
-            // Actually per statement: if F_base=0 and F!=0, score=0
-            score_ratio = 0.0;
-        }
+    // ── Compute score ratio ───────────────────────────────────────────────────
+    double ratio;
+    if (U == M0) {
+        // Already optimal with no tubes; any feasible answer is full score
+        ratio = 1.0;
     } else {
-        double improvement = (double)(F_base - F) / (double)F_base;
-        score_ratio = max(0.0, improvement);
-        if (score_ratio > 1.0) score_ratio = 1.0;
+        ratio = (double)(M - M0) / (double)(U - M0);
+        if (ratio < 0.0) ratio = 0.0;
+        if (ratio > 1.0) ratio = 1.0;
     }
 
-    long long int_score = (long long)floor(1000000.0 * score_ratio);
-
-    quitp(score_ratio,
-          "F_base=%lld F=%lld retuner_cost=%lld q=%d score=%lld Ratio: %.6f",
-          F_base, F, retuner_cost, q, int_score, score_ratio);
-
-    return 0;
+    // Emit required tag "Ratio: <ratio>" so the judge can parse it
+    quitp(ratio,
+        "M=%lld M0=%lld U=%lld R=%d cost=%lld budget=%lld | Ratio: %.9f",
+        M, M0, U, R, totalCost, B, ratio);
 }

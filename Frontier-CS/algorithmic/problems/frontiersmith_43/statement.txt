@@ -1,0 +1,170 @@
+```markdown
+# Dual-Reverse Banner Assembly
+
+## Problem
+A printing workshop has a ribbon `S` of even length `N`.  
+You may cut the ribbon into **disjoint contiguous fragments**, each of **even length**.
+
+Each fragment is then processed by the workshop's machine:
+
+- if a fragment is `XY` where `|X| = |Y|`,
+- it becomes `reverse(X) + reverse(Y)`.
+
+After processing, you may arrange the processed fragments in **any order** to form the final banner.
+
+Your goal is to output a feasible cutting-and-ordering plan that maximizes the banner's beauty.
+
+### Character pair reward
+For some ordered pairs of lowercase letters `(a, b)`, a nonnegative reward `R[a][b]` is given.  
+Any unspecified pair has reward `0`.
+
+If the final banner is `T = t1 t2 ... tN`, its **flow score** is
+
+\[
+\sum_{i=1}^{N-1} R[t_i][t_{i+1}]
+\]
+
+### Seam overlap bonus
+Let the processed fragments in your chosen final order be `F1, F2, ..., Fk`.
+
+For every adjacent pair of fragments `Fi`, `Fi+1`, define
+
+- `ov(Fi, Fi+1)` = the largest integer `d` such that the suffix of `Fi` of length `d`
+  is exactly equal to the prefix of `Fi+1` of length `d`.
+
+(Length `0` always works.)
+
+The **seam score** is
+
+\[
+\sum_{i=1}^{k-1} ov(F_i, F_{i+1})^2
+\]
+
+Your total objective is:
+
+\[
+\text{beauty} = \text{flow score} + \text{seam score}
+\]
+
+You must maximize this beauty.
+
+## Input
+The input contains one test instance.
+
+- The first line contains two integers `N` and `P`:
+  - `N` — the length of the ribbon
+  - `P` — the number of specified rewarded ordered pairs
+- The second line contains the string `S` of length `N`, consisting of lowercase Latin letters.
+- Each of the next `P` lines contains a character `c1`, a character `c2`, and an integer `w`,
+  meaning `R[c1][c2] = w`.
+
+All specified ordered pairs are distinct.
+
+## Output
+Output any feasible solution.
+
+- The first line must contain an integer `k` — the number of fragments.
+- The next `k` lines must contain two integers `l_i` and `r_i` (`1`-indexed, inclusive),
+  describing the `i`-th fragment **in the final banner order**.
+
+### Feasibility requirements
+Your output is feasible iff all of the following hold:
+
+1. Each interval `[l_i, r_i]` is within `1..N`.
+2. Each interval length `r_i - l_i + 1` is even.
+3. The intervals are pairwise disjoint.
+4. Their union is exactly all positions `1..N`.
+
+For each interval `[l, r]` of length `2m`, the processed fragment is
+
+\[
+reverse(S[l..l+m-1]) + reverse(S[l+m..r])
+\]
+
+Concatenating the processed fragments in the output order yields the final banner.
+
+If your output is infeasible, the score for that test file is `0`.
+
+## Objective
+Maximize
+
+\[
+V = \sum_{i=1}^{N-1} R[t_i][t_{i+1}] \;+\; \sum_{j=1}^{k-1} ov(F_j, F_{j+1})^2
+\]
+
+where:
+
+- `T = t1...tN` is the final banner,
+- `F1...Fk` are the processed fragments in your output order.
+
+## Scoring
+For each test file, let:
+
+- `V` = your solution's beauty,
+- `B` = the beauty of the **baseline solution**.
+
+### Baseline solution
+The baseline cuts the ribbon into consecutive fragments of length `2`:
+
+- `[1,2], [3,4], [5,6], ... , [N-1,N]`
+
+and keeps this order.
+
+Since processing a fragment of length `2` does not change it, the baseline banner is exactly `S`.
+
+### Per-file score
+Your score for a test file is:
+
+\[
+100 \cdot \min\left(10,\ \frac{V+1}{B+1}\right)
+\]
+
+So:
+
+- matching the baseline gives exactly `100`,
+- doing better gives more than `100`,
+- doing worse gives less than `100`,
+- infeasible output gives `0`.
+
+### Final score
+The final score is the arithmetic mean of the per-file scores over all test files.
+
+## Constraints
+- `2 <= N <= 10000`
+- `N` is even
+- `0 <= P <= 676`
+- `0 <= w <= 1000`
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+## Example
+Input
+```text
+8 4
+abcaabca
+a b 2
+b c 2
+c a 2
+a a 5
+```
+
+Output
+```text
+2
+1 4
+5 8
+```
+
+Brief explanation:
+
+- Fragment `[1,4] = "abca"` becomes `"baac"`.
+- Fragment `[5,8] = "abca"` also becomes `"baac"`.
+
+So the final banner is `"baacbaac"`.
+
+The seam between the two processed fragments has overlap length `4`, so it contributes `4^2 = 16` seam bonus.
+
+The baseline uses fragments `[1,2],[3,4],[5,6],[7,8]`, so its banner is the original string `"abcaabca"`.
+
+This sample output scores higher than the baseline because it creates a large seam overlap while still collecting pair rewards inside the banner.
+```

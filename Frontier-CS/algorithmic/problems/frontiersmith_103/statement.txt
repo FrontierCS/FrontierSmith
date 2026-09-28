@@ -1,0 +1,161 @@
+```markdown
+# Dual-Channel Motif Routing
+
+## Problem
+A communication device receives two symbols at each time slot: one on the upper wire and one on the lower wire.  
+For each slot `i`, you must decide whether to keep them as they are or swap them.
+
+After all decisions, you obtain two output strings:
+
+- channel `A`
+- channel `B`
+
+There are `Q` clients. Client `j` specifies a motif string `R_j` and a reward `w_j`.
+
+A client is **satisfied** if `R_j` is a subsequence of **both** output strings `A` and `B`.  
+If satisfied, you earn `w_j` points from that client.
+
+Your task is to choose the swaps so that the total earned reward is as large as possible.
+
+A string `U` is a subsequence of a string `V` if `U` can be obtained by deleting zero or more characters from `V` without changing the order of the remaining characters.
+
+## Input
+The input is given in the following format:
+
+```text
+N Q C
+S
+T
+w_1 R_1
+w_2 R_2
+...
+w_Q R_Q
+```
+
+- `N`: length of the two input strings
+- `Q`: number of client requests
+- `C`: alphabet size
+
+`S` and `T` are strings of length `N`, consisting only of the first `C` uppercase English letters:
+`A, B, ...,` up to the `C`-th letter.
+
+For each client `j`:
+
+- `w_j` is a positive integer reward
+- `R_j` is a non-empty string over the same alphabet
+
+## Output
+Output a binary string `X` of length `N`.
+
+- `X_i = 0` means **do not swap** position `i`
+- `X_i = 1` means **swap** position `i`
+
+This determines the output strings `A` and `B` as follows:
+
+- if `X_i = 0`, then `A_i = S_i` and `B_i = T_i`
+- if `X_i = 1`, then `A_i = T_i` and `B_i = S_i`
+
+Your output is **feasible** if and only if it is a binary string of length exactly `N`.
+
+If the output is malformed, the submission receives score `0` on that test file.
+
+## Objective
+For each client `j`, let
+
+- `ok_j = 1` if `R_j` is a subsequence of `A` **and** a subsequence of `B`
+- `ok_j = 0` otherwise
+
+The objective value of your output is
+
+```text
+V = sum_{j=1..Q} w_j * ok_j
+```
+
+Your goal is to **maximize `V`**.
+
+## Scoring
+For each test file:
+
+- Let `V` be your objective value.
+- Let `B` be the baseline value obtained by the solution `X = 00...0`  
+  (that is, never swap any position).
+- Let `U = sum_{j=1..Q} w_j`, the maximum possible reward if every client were satisfied.
+
+The score for that file is:
+
+- if `U = B`, then `10^9`
+- otherwise
+
+```text
+score = floor(10^9 * clamp((V - B) / (U - B), 0, 1))
+```
+
+where
+
+```text
+clamp(x, 0, 1) = max(0, min(1, x))
+```
+
+The final score is the **sum** of the scores over all official test files.
+
+Remarks:
+
+- Matching the baseline gives score `0` on that file.
+- Reaching the theoretical upper bound `U` gives score `10^9` on that file.
+- Partial improvements receive proportionally partial scores.
+
+## Constraints
+- `1 <= N <= 5000`
+- `1 <= Q <= 3000`
+- `2 <= C <= 6`
+- `|S| = |T| = N`
+- `1 <= w_j <= 10^6`
+- `1 <= |R_j| <= 200`
+- `sum_{j=1..Q} |R_j| <= 200000`
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 1024 MB
+
+## Example
+Input
+```text
+3 4 2
+AAA
+BBB
+10 AB
+8 BA
+3 A
+3 B
+```
+
+Output
+```text
+010
+```
+
+A possible explanation:
+
+- At position 2, we swap; at positions 1 and 3, we do not.
+- Then
+
+  - `A = ABA`
+  - `B = BAB`
+
+Now:
+
+- `AB` is a subsequence of both `A` and `B`
+- `BA` is a subsequence of both `A` and `B`
+- `A` is a subsequence of both
+- `B` is a subsequence of both
+
+So the objective value is
+
+```text
+V = 10 + 8 + 3 + 3 = 24
+```
+
+The baseline `000` gives `A = AAA`, `B = BBB`, which satisfies none of the requests, so `B = 0`.
+
+Also `U = 24`, hence this output achieves the maximum possible score on this file.
+```

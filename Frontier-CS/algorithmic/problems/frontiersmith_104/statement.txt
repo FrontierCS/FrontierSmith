@@ -1,0 +1,240 @@
+# Finite-Field Program Fitting
+
+## Problem
+
+A programmable arithmetic device works over the field of integers modulo a prime \(p\).
+
+It has memory cells numbered \(1,2,\dots,5000\). For each data record:
+
+- cells \(1..q\) initially contain the given input values,
+- all cells \(q+1..5000\) initially contain **1**.
+
+You may output a single program, and that same program will be run independently on **every** data record.
+
+The device supports these instructions:
+
+1. `+ a b c`  
+   Write \((\text{cell}[a] + \text{cell}[b]) \bmod p\) into cell \(c\).
+
+2. `^ a c`  
+   Write \((\text{cell}[a])^d \bmod p\) into cell \(c\).
+
+3. `f c`  
+   Finish the program and return the value currently stored in cell \(c\).  
+   This must be the last instruction.
+
+Indices may coincide.
+
+Your goal is to synthesize a program that fits a weighted dataset as well as possible, while keeping the program short.
+
+For each record \(i\), you are given:
+
+- input values \(x_{i,1}, x_{i,2}, \dots, x_{i,q}\),
+- a target value \(t_i\),
+- a positive weight \(w_i\).
+
+When your program is run on record \(i\), it produces some output \(o_i\).  
+Record \(i\) is considered **correctly fitted** if \(o_i = t_i\).
+
+---
+
+## Input
+
+The input contains one test instance.
+
+- First line: two integers  
+  \(d\) and \(p\)
+
+- Second line: four integers  
+  \(q\), \(n\), \(L\), and \(\beta\)
+
+- Next \(n\) lines:  
+  \(w_i\ x_{i,1}\ x_{i,2}\ \dots\ x_{i,q}\ t_i\)
+
+### Meaning
+
+- \(d\): exponent used by the power instruction
+- \(p\): prime modulus
+- \(q\): number of input cells
+- \(n\): number of data records
+- \(L\): maximum allowed number of **computation** instructions (`+` and `^`)
+- \(\beta\): penalty per computation instruction
+- \(w_i\): weight of record \(i\)
+
+All arithmetic is modulo \(p\).
+
+---
+
+## Output
+
+Output a valid program, one instruction per line.
+
+Allowed instructions:
+
+- `+ a b c`
+- `^ a c`
+- `f c`
+
+### Feasibility requirements
+
+Your output is **feasible** if and only if all of the following hold:
+
+1. Every referenced cell index is between `1` and `5000`.
+2. There is exactly one `f` instruction.
+3. The `f` instruction is the last line.
+4. The number of computation instructions (`+` and `^`) is at most \(L\).
+
+If your output is infeasible, its score for this test is 0.
+
+---
+
+## Objective
+
+Let:
+
+- \(m\) = number of computation instructions in your program,
+- \(C\) = sum of weights of correctly fitted records:
+  \[
+  C = \sum_{i=1}^{n} w_i \cdot [o_i = t_i]
+  \]
+  where \([o_i = t_i]\) is 1 if true and 0 otherwise.
+
+Your objective value is
+
+\[
+O = C - \beta m
+\]
+
+Higher is better.
+
+---
+
+## Scoring
+
+Let
+
+\[
+W = \sum_{i=1}^{n} w_i
+\]
+
+be the total record weight.
+
+### Official baseline
+
+The baseline objective \(B\) is the best objective among all programs with at most **one** computation instruction.
+
+Equivalently, the baseline may return any value of one of these forms:
+
+- \(a\)
+- \(a^d\)
+- \(a+b\)
+
+where each of \(a,b\) is chosen from the initial values available before any computation:
+- any input cell \(1..q\), or
+- any non-input cell, which initially contains \(1\).
+
+For zero-computation programs, the penalty is 0.  
+For one-computation programs, the penalty is \(\beta\).
+
+### Per-test score
+
+If your program is infeasible, the per-test score is 0.
+
+Otherwise:
+
+- if \(W = B\):
+  - score = \(10^6\) if \(O = W\),
+  - score = 0 otherwise.
+
+- if \(W > B\):
+  \[
+  \text{score} =
+  10^6 \cdot
+  \max\!\left(0,\ \frac{O - B}{W - B}\right)
+  \]
+  rounded down to an integer.
+
+So:
+- matching the baseline gets score 0,
+- improving over the baseline gives a proportional positive score,
+- perfect weighted fitting with no computation penalty would get \(10^6\).
+
+### Overall contest score
+
+If the contest uses multiple test files, the final score is the arithmetic mean of per-test scores.
+
+---
+
+## Constraints
+
+- \(2 \le d \le 10\)
+- \(d < p \le 10^9 + 9\)
+- \(p\) is prime
+- \(2 \le q \le 12\)
+- \(1 \le n \le 3000\)
+- \(0 \le x_{i,j}, t_i \le p-1\)
+- \(1 \le w_i \le 10^6\)
+- \(1 \le L \le 5000\)
+- \(1 \le \beta \le 10^6\)
+
+- Time limit: 2 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+2 5
+2 4 6 1
+3 0 0 0
+3 0 1 1
+3 1 0 1
+5 2 4 3
+```
+
+### Sample output
+```text
+^ 1 3
++ 3 2 4
+f 4
+```
+
+### Explanation
+
+For each record, cells 1 and 2 start with the two inputs \((x,y)\), and all other cells start as 1.
+
+The program computes:
+
+- cell 3 = \(x^2 \bmod 5\)
+- cell 4 = \(x^2 + y \bmod 5\)
+
+and returns cell 4.
+
+For the four records, this matches all targets, so
+
+\[
+C = 3 + 3 + 3 + 5 = 14
+\]
+
+There are \(m=2\) computation instructions and \(\beta=1\), so
+
+\[
+O = 14 - 1\cdot 2 = 12
+\]
+
+The best one-step baseline here is `+ 1 2 c ; f c`, which matches the first three records only:
+
+\[
+B = 3+3+3-1 = 8
+\]
+
+Also \(W = 14\), so the score is
+
+\[
+10^6 \cdot \frac{12-8}{14-8}
+= 666666.66\ldots
+\]
+
+thus the per-test score is `666666` after rounding down.

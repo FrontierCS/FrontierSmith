@@ -1,0 +1,151 @@
+```markdown
+# Rolling XOR Separation
+
+## Problem
+
+A hardware lab has prepared `n` binary test patterns. Pattern `i` is represented by a non-negative integer `a_i`.
+
+You must choose the **execution order** of these patterns. Let the reordered sequence be
+
+`b_1, b_2, ..., b_n`
+
+which must be a permutation of the original patterns.
+
+For every contiguous block of the reordered sequence, the lab cares about how similar the two most similar patterns inside that block are.  
+For a block `b[l..r]` with length at least `2`, define its **separation** as
+
+`sep(l, r) = min (b_i xor b_j)` over all `l <= i < j <= r`.
+
+The lab uses several buffer sizes. For each length `d` from `2` to `L`, every contiguous block of length exactly `d` contributes its separation multiplied by a given weight `w_d`.
+
+Your task is to output an ordering of the patterns that maximizes the total weighted separation.
+
+This is an optimization problem: better orderings receive higher scores.
+
+## Input
+
+The first line contains an integer `t` — the number of test cases.
+
+Each test case has the following format:
+
+- The first line contains two integers `n` and `L`.
+- The second line contains `n` integers `a_1, a_2, ..., a_n`.
+- The third line contains `L-1` integers `w_2, w_3, ..., w_L`.
+
+## Output
+
+For each test case, output one line containing `n` integers `p_1, p_2, ..., p_n` — a permutation of `1..n`.
+
+This means the reordered sequence is
+
+`b_j = a_{p_j}` for `1 <= j <= n`.
+
+### Feasibility requirements
+
+For each test case, the output is feasible iff:
+
+- exactly `n` integers are printed,
+- each integer is between `1` and `n`,
+- every value from `1` to `n` appears exactly once.
+
+If the output for a test case is infeasible, that test case receives score `0`.
+
+## Objective
+
+For a feasible permutation `p`, define:
+
+- `b_j = a_{p_j}`
+- for each `d` with `2 <= d <= L`,
+  - for each starting position `s` with `1 <= s <= n-d+1`,
+    - `sep_d(s) = min (b_i xor b_j)` over all `s <= i < j <= s+d-1`
+
+The objective value is
+
+`F = sum_{d=2..L} w_d * sum_{s=1..n-d+1} sep_d(s)`.
+
+Your goal is to **maximize `F`**.
+
+The judge computes `F` exactly using 64-bit signed integers.
+
+## Scoring
+
+For each test case, a deterministic **baseline ordering** is defined as follows:
+
+- sort indices `1..n` by `(a_i, i)` in increasing lexicographic order.
+
+Let `B` be the objective value of that baseline ordering, and `F` be the objective value of your output.
+
+The per-test score is
+
+`score = 100 * clamp((F + 1) / (B + 1), 0, 2)`
+
+where
+
+- `clamp(x, 0, 2) = max(0, min(2, x))`.
+
+So:
+
+- matching the baseline gives score `100`,
+- doing worse gives a score between `0` and `100`,
+- doing better gives a score between `100` and `200`,
+- reaching at least twice the baseline gives the maximum per-test score `200`.
+
+The final score is the arithmetic mean of per-test scores over all test cases.
+
+## Constraints
+
+- `1 <= t <= 200`
+- `2 <= n <= 4000`
+- `2 <= L <= min(12, n)`
+- `0 <= a_i <= 10^9`
+- `1 <= w_d <= 1000`
+- the sum of `n` over all test cases does not exceed `30000`
+
+This search space is enormous (`n!` possible orderings), and exact optimization is not expected to be tractable.
+
+- Time limit: 8 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+1
+5 3
+1 2 4 8 16
+1 2
+```
+
+### Output
+```text
+1 3 5 2 4
+```
+
+### Explanation
+The output permutation gives the reordered sequence:
+
+`[1, 4, 16, 2, 8]`
+
+- Length `2` windows:
+  - `[1,4] -> 1 xor 4 = 5`
+  - `[4,16] -> 20`
+  - `[16,2] -> 18`
+  - `[2,8] -> 10`
+  - sum = `53`
+
+- Length `3` windows:
+  - `[1,4,16]`: pair xors are `5, 17, 20`, so separation = `5`
+  - `[4,16,2]`: pair xors are `20, 6, 18`, so separation = `6`
+  - `[16,2,8]`: pair xors are `18, 24, 10`, so separation = `10`
+  - sum = `21`, weighted by `w_3 = 2`, contribution = `42`
+
+So the total objective is:
+
+`F = 53 + 42 = 95`
+
+The baseline order is the sorted order `[1,2,4,8,16]`, whose objective is `B = 87`.
+
+Therefore the score for this test is
+
+`100 * (95 + 1) / (87 + 1) = 109.09...`
+```

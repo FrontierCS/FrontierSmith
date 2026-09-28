@@ -1,0 +1,197 @@
+```markdown
+# Exclusion-OR Keycards
+
+## Problem
+
+A secure vault has `n` slots. You must install exactly one **distinct** keycard into each slot, chosen from `m` available keycards.
+
+Each keycard carries a non-negative integer mask using only the lowest `L` bits.  
+If keycard `x_i` is installed in slot `i`, then the **visible mask** of slot `i` is defined as the bitwise OR of the masks of **all other installed keycards**:
+
+\[
+V_i = \bigvee_{k \ne i} M_{x_k}
+\]
+
+So a slot sees the combined permissions of every installed keycard except its own.
+
+For each slot `i`, the vault designer provides:
+
+- a **target mask** `T_i`
+- a penalty `a_i` for each target bit that is **missing** from `V_i`
+- a penalty `b_i` for each bit that is **present in `V_i` but not wanted** by `T_i`
+
+Each chosen keycard `j` also has an installation cost `C_j`.
+
+Your task is to choose and assign keycards to slots so as to minimize the total cost plus mismatch penalties.
+
+This is an optimization problem: any feasible output is accepted and scored by its objective value.
+
+## Input
+
+The first line contains three integers:
+
+- `n` — number of slots
+- `m` — number of available keycards
+- `L` — number of relevant bits
+
+The next `m` lines describe the keycards.  
+Line `j+1` contains two integers:
+
+- `M_j` — bitmask of keycard `j`
+- `C_j` — installation cost of keycard `j`
+
+The next `n` lines describe the slots.  
+Line `m+1+i` contains three integers:
+
+- `T_i` — target mask for slot `i`
+- `a_i` — penalty per missing target bit
+- `b_i` — penalty per extra bit
+
+### Bit interpretation
+
+All masks use only bits `0 ... L-1`.  
+Let `ALL = 2^L - 1`.
+
+For a visible mask `V_i`:
+
+- missing bits at slot `i` are the 1-bits of `T_i & (~V_i)`
+- extra bits at slot `i` are the 1-bits of `(~T_i) & V_i & ALL`
+
+## Output
+
+Output exactly `n` integers:
+
+- `x_1 x_2 ... x_n`
+
+where `x_i` is the index of the keycard installed in slot `i`.
+
+### Feasibility requirements
+
+A submission is **feasible** iff:
+
+- `1 <= x_i <= m` for every `i`
+- all `x_i` are pairwise distinct
+
+If the output is infeasible, the submission gets score `0` on that test.
+
+## Objective
+
+For a feasible assignment `x_1, ..., x_n`, define:
+
+\[
+V_i = \bigvee_{k \ne i} M_{x_k}
+\]
+
+\[
+\text{miss}_i = \operatorname{popcount}(T_i \,\&\, \sim V_i)
+\]
+
+\[
+\text{extra}_i = \operatorname{popcount}((\sim T_i) \,\&\, V_i \,\&\, ALL)
+\]
+
+The total objective to **minimize** is:
+
+\[
+\text{Obj} =
+\sum_{i=1}^{n} C_{x_i}
++
+\sum_{i=1}^{n}
+\left(
+a_i \cdot \text{miss}_i
++
+b_i \cdot \text{extra}_i
+\right)
+\]
+
+Lower is better.
+
+## Scoring
+
+For each test case, let:
+
+- `Your` = objective value of your feasible solution
+- `Base` = objective value of the following baseline solution
+
+### Baseline solution
+
+1. Select the `n` keycards with smallest installation cost `C_j`
+   - break ties by smaller keycard index
+2. Sort those selected keycards by index
+3. Assign them to slots in that order:
+   - smallest selected index to slot `1`
+   - next to slot `2`
+   - ...
+   - largest selected index to slot `n`
+
+### Per-test score
+
+If your output is infeasible, the score is `0`.
+
+Otherwise:
+
+\[
+\text{Score} =
+10^6 \cdot \min\left(5,\; \frac{Base + 1}{Your + 1}\right)
+\]
+
+So:
+
+- matching the baseline gives `1,000,000`
+- improving on the baseline gives a higher score
+- doing worse gives a lower positive score
+- the ratio is capped at `5`
+
+### Overall score
+
+If there are multiple test files, the final score is the arithmetic mean of the per-test scores.
+
+## Constraints
+
+- `2 <= n <= 400`
+- `n <= m <= 2000`
+- `1 <= L <= 60`
+- `0 <= M_j < 2^L`
+- `0 <= T_i < 2^L`
+- `0 <= C_j <= 10^9`
+- `1 <= a_i, b_i <= 10^6`
+
+## Constraints
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+## Example
+
+Sample input:
+```text
+2 3 4
+3 5
+12 6
+5 4
+12 3 1
+3 3 1
+```
+
+Sample output:
+```text
+1 2
+```
+
+Brief explanation:
+
+- Slot 1 gets keycard 1 (`0011`)
+- Slot 2 gets keycard 2 (`1100`)
+
+Then:
+
+- `V_1 = 1100`, which exactly matches `T_1 = 1100`
+- `V_2 = 0011`, which exactly matches `T_2 = 0011`
+
+So mismatch penalties are zero, and the objective is just the installation cost:
+
+\[
+5 + 6 = 11
+\]
+
+The baseline picks the two cheapest keycards: indices `1` and `3`, assigns them as `(1, 3)`, and gets a worse objective on this instance.
+```

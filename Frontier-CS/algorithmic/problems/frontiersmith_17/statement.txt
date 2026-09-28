@@ -1,0 +1,166 @@
+```markdown
+# Energy-Aware Token Restoration
+
+## Problem
+
+A warehouse has `n` storage stations, numbered `1..n`, connected by bidirectional swap links.  
+Station `i` should finally contain crate `i`, but currently station `i` contains crate `p_i`, where `p` is a permutation of `1..n`.
+
+You may perform a sequence of **swap operations**. In one operation, choose one swap link `(u, v)` and exchange the crates currently stored at stations `u` and `v`. Each link has an energy cost, and every time you use that link, you pay its cost.
+
+Your task is to restore all crates to their home stations while spending as little total energy as possible.
+
+This is an **optimization problem**: any feasible restoring sequence is accepted, and better solutions receive higher scores.
+
+## Input
+
+The first line contains one integer `t` — the number of test cases.
+
+Each test case has the following format:
+
+- One line with two integers `n` and `m`  
+  (`n` stations/crates, `m` swap links).
+- One line with `n` integers `p_1, p_2, ..., p_n` — a permutation of `1..n`.  
+  Initially, station `i` contains crate `p_i`.
+- Then `m` lines follow. The `j`-th of these lines contains three integers  
+  `u_j, v_j, w_j`:
+  - `u_j`, `v_j` — endpoints of the `j`-th undirected swap link,
+  - `w_j` — energy cost of using this link once.
+
+The links are indexed `1..m` in the order they appear in the input.
+
+The input guarantees that each graph is connected.
+
+## Output
+
+For each test case, output:
+
+- one integer `k` — the number of swaps you perform,
+- followed by exactly `k` integers `e_1, e_2, ..., e_k`, where each `e_i` is an edge index from `1` to `m`.
+
+These `k` indices may be printed on one line or multiple lines.
+
+Using edge `e_i = j` means: swap the crates currently at stations `u_j` and `v_j`, and pay `w_j`.
+
+### Feasibility requirements
+
+For each test case:
+
+- `0 <= k <= n(n-1)/2`,
+- every `e_i` must be a valid edge index,
+- after applying all swaps in order, station `i` must contain crate `i` for every `i`.
+
+If any of these conditions fail, the solution for that test case is considered **infeasible** and receives score `0` on that test.
+
+## Objective
+
+For a feasible solution, let
+
+\[
+C = \sum_{i=1}^{k} w_{e_i}
+\]
+
+be the total energy consumed.
+
+Your goal is to **minimize `C`**.
+
+## Scoring
+
+Each test case is scored independently.
+
+### Baseline
+
+For each test case, the judge computes a deterministic baseline cost `B` as follows:
+
+1. Build a **minimum spanning tree** of the graph using Kruskal's algorithm.
+   - Sort edges by `(weight, edge_index)`.
+   - Break all ties by the smaller edge index.
+2. Root this tree at vertex `1`.
+3. Run a DFS from vertex `1`, visiting children in increasing vertex-number order.
+4. Let `postorder` be the order in which vertices finish in this DFS.
+5. Process all vertices in `postorder`, excluding the root:
+   - for the current vertex `v`, find the current location of crate `v`,
+   - in the tree, take the unique path from that location to `v`,
+   - swap along that path, in path order, moving crate `v` step by step into station `v`.
+
+The total energy of these swaps is `B`.
+
+This baseline is always feasible.
+
+### Per-test score
+
+Let `C` be your solution cost.
+
+- If your output is infeasible:  
+  `score = 0`
+- Else if `B = 0`:
+  - if `C = 0`, then `score = 1,000,000`
+  - otherwise `score = 0`
+- Else:
+
+\[
+score = \left\lfloor 1{,}000{,}000 \cdot \min\left(2,\ \frac{B}{C}\right) \right\rfloor
+\]
+
+So:
+
+- matching the baseline gives exactly `1,000,000`,
+- doing better gives more than `1,000,000`,
+- doing worse gives less than `1,000,000`,
+- extremely good solutions are capped at `2,000,000` per test.
+
+### Total score
+
+Your final score is the **sum** of per-test scores over all test cases.
+
+## Constraints
+
+- `1 <= t <= 20`
+- `1 <= n <= 1000`
+- `n-1 <= m <= 4000`
+- `1 <= w_j <= 10^9`
+- `p` is a permutation of `1..n`
+- the graph is simple, undirected, and connected
+- over the whole input:
+  - `sum n <= 4000`
+  - `sum m <= 16000`
+
+- Time limit: 8 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample input
+```text
+1
+4 3
+2 1 4 3
+1 2 1
+2 3 1
+3 4 1
+```
+
+### Sample output
+```text
+2
+1 3
+```
+
+### Explanation
+
+Initially, the stations contain crates `[2, 1, 4, 3]`.
+
+- Swap edge `1` (`1-2`): crates become `[1, 2, 4, 3]`
+- Swap edge `3` (`3-4`): crates become `[1, 2, 3, 4]`
+
+Total energy used: `1 + 1 = 2`.
+
+The graph is already a tree, so the baseline uses the same two swaps and also has cost `B = 2`.  
+Therefore this solution gets:
+
+\[
+\left\lfloor 1{,}000{,}000 \cdot \frac{2}{2} \right\rfloor = 1{,}000{,}000
+\]
+
+points on this test.
+```

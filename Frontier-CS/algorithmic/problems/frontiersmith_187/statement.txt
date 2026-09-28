@@ -1,0 +1,211 @@
+```markdown
+# Budgeted Recoloring of a Signal Tree
+
+## Problem
+
+A communication network is a rooted tree with nodes numbered `1..n`, rooted at node `1`.
+
+For every node `v > 1`:
+
+- `p_v` is its parent,
+- the edge `(v, p_v)` initially carries a digit `a_v` in `{1,2,...,9}`,
+- changing that edge to any other digit costs `c_v`.
+
+There are `m` monitoring routes.  
+For route `i`, you are given:
+
+- two nodes `x_i, y_i`,
+- a positive weight `w_i`,
+- a pattern string `S_i` of length exactly `X`, consisting of digits `1..9`.
+
+Let `T_i` be the digit string obtained by reading edge labels along the **directed simple path** from `x_i` to `y_i`.
+
+The contribution of route `i` is:
+
+- `w_i * occ(S_i, T_i)`
+
+where `occ(P, T)` is the number of occurrences of pattern `P` in text `T`, **allowing overlaps**.
+
+Example: `occ(121, 1212122) = 2`.
+
+You may recolor some edges, subject to a total cost budget `B`.  
+Your task is to output a recoloring plan that maximizes the total contribution over all routes.
+
+---
+
+## Input
+
+The first line contains four integers:
+
+`n m X B`
+
+- `n`: number of nodes
+- `m`: number of routes
+- `X`: common pattern length
+- `B`: total recoloring budget
+
+The second line contains `n-1` integers:
+
+`p_2 p_3 ... p_n`
+
+where `p_v < v` for all `v > 1`.
+
+The third line contains a string `A` of length `n-1`.
+
+- `A[v-1]` is the initial digit on edge `(v, p_v)`, for `v = 2..n`.
+
+The fourth line contains `n-1` integers:
+
+`c_2 c_3 ... c_n`
+
+where `c_v` is the cost to change edge `(v, p_v)`.
+
+Each of the next `m` lines describes one route:
+
+`x_i y_i w_i S_i`
+
+- `x_i`, `y_i`: endpoints of the route
+- `w_i`: weight of the route
+- `S_i`: a digit string of length exactly `X`
+
+It is guaranteed that for every route, the number of edges on the simple path from `x_i` to `y_i` is at least `X`.
+
+---
+
+## Output
+
+On the first line, output an integer `k` — the number of edges you choose to recolor.
+
+On each of the next `k` lines, output:
+
+`v d`
+
+meaning that the edge `(v, p_v)` will be relabeled to digit `d` (`1 <= d <= 9`).
+
+### Feasibility requirements
+
+Your output is **feasible** if all of the following hold:
+
+- `0 <= k <= n-1`
+- each listed node `v` is distinct and satisfies `2 <= v <= n`
+- each digit `d` is in `1..9`
+- the total cost of edges whose final digit differs from the original digit is at most `B`
+
+Any edge not listed keeps its original digit.
+
+If the output is malformed or infeasible, its objective value is defined to be `0`.
+
+---
+
+## Objective
+
+Let the final digit on edge `(v, p_v)` be `b_v`.
+
+For each route `i`:
+
+1. Form the string `T_i` by reading the final edge digits along the directed simple path from `x_i` to `y_i`.
+2. Compute `occ(S_i, T_i)`, the number of occurrences of `S_i` in `T_i`, allowing overlaps.
+3. The route contributes `w_i * occ(S_i, T_i)`.
+
+Your objective value is
+
+\[
+\text{OBJ} = \sum_{i=1}^{m} w_i \cdot occ(S_i, T_i)
+\]
+
+and must be **maximized**.
+
+---
+
+## Scoring
+
+For each test case, let:
+
+- `OBJ` be your objective value,
+- `BASE` be the objective value of the **baseline solution** that makes **no recolorings**.
+
+The per-test score is:
+
+\[
+\text{Score} =
+\operatorname{clamp}\left(
+0,\ 10^6,\ 
+500000 + 500000 \cdot \frac{OBJ - BASE}{\max(1, BASE)}
+\right)
+\]
+
+where `clamp(L, R, z)` means:
+- `L` if `z < L`,
+- `R` if `z > R`,
+- otherwise `z`.
+
+Notes:
+
+- The baseline solution always outputs `k = 0`.
+- Matching the baseline gives exactly `500000` points on that test.
+- Doubling the baseline objective or better gives `1000000` points on that test.
+- Scoring is continuous: partial improvements over the baseline receive proportionally higher scores.
+
+If there are multiple test cases, the final score is the arithmetic mean of per-test scores.
+
+---
+
+## Constraints
+
+- `1 <= n <= 5 * 10^5`
+- `1 <= m <= 5 * 10^5`
+- `1 <= X <= 5 * 10^5`
+- `0 <= B <= 10^18`
+- `1 <= c_v <= 10^9`
+- `1 <= w_i <= 10^9`
+- edge digits and pattern digits are in `1..9`
+- `p_v < v` for all `v > 1`
+- `|S_i| = X` for all routes
+- for every route, `dist(x_i, y_i) >= X`
+- \(\sum_{i=1}^{m} dist(x_i, y_i) \le 5 * 10^5\)
+- `m * X <= 5 * 10^5`
+
+## Constraints
+- Time limit: 5 seconds
+- Memory limit: 1024 MB
+
+## Example
+
+### Sample input
+```text
+5 3 2 3
+1 1 2 2
+1212
+2 1 2 1
+4 3 5 12
+5 3 4 22
+4 5 3 11
+```
+
+### Sample output
+```text
+1
+2 2
+```
+
+### Explanation
+
+The tree edges are:
+
+- `(2,1)` with initial digit `1`, cost `2`
+- `(3,1)` with initial digit `2`, cost `1`
+- `(4,2)` with initial digit `1`, cost `2`
+- `(5,2)` with initial digit `2`, cost `1`
+
+The output changes only edge `(2,1)` from `1` to `2`, using cost `2 <= B`.
+
+Then:
+
+- Route `4 -> 3` has path string `122`, so `occ(12, 122) = 1`, contribution `5`
+- Route `5 -> 3` has path string `222`, so `occ(22, 222) = 2`, contribution `8`
+- Route `4 -> 5` has path string `12`, so `occ(11, 12) = 0`, contribution `0`
+
+So `OBJ = 13`.
+
+The baseline (no recoloring) has objective `BASE = 5`, so this submission scores the maximum on this example test after clamping.
+```

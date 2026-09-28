@@ -1,0 +1,202 @@
+```markdown
+# Refueling Inspection Tour
+
+## Problem
+A utility company operates a single inspection car on an undirected road network.
+
+The car starts at the depot (vertex `1`) with a full tank containing exactly `H` liters of fuel.  
+It consumes `1` liter of fuel per unit of road length traveled. The fuel tank capacity is `H`, and the car cannot move if it does not have enough fuel for the next edge.
+
+Each vertex `i` may contain:
+
+- an **inspection site** with penalty `W_i` if it is never visited,
+- a **fuel package** with price `P_i` yen and amount `F_i` liters.
+
+When the car is at vertex `i`, it may choose to buy the fuel package there **at most once in total**. If it buys it while currently holding `x` liters, the fuel becomes `min(H, x + F_i)`, and `P_i` is added to the total cost.
+
+The car may visit vertices and traverse edges multiple times. A site is considered inspected if the car visits its vertex at least once. The tour is feasible only if the car starts at vertex `1`, ends at vertex `1`, and never lets its fuel become negative.
+
+Your task is to output **any feasible tour** that minimizes:
+
+- the total prices of all bought fuel packages, plus
+- the sum of penalties of all inspection sites that were never visited.
+
+This is an optimization challenge: better solutions receive higher scores.
+
+## Input
+The input is given in the following format:
+
+```text
+V E H
+W_1 W_2 ... W_V
+P_1 F_1
+P_2 F_2
+...
+P_V F_V
+u_1 v_1 L_1
+u_2 v_2 L_2
+...
+u_E v_E L_E
+```
+
+- `V`: number of vertices
+- `E`: number of undirected edges
+- `H`: fuel tank capacity
+- `W_i`: penalty if vertex `i` is never visited
+- `P_i, F_i`: price and fuel amount of the package at vertex `i`
+- `u_j, v_j, L_j`: an undirected edge between vertices `u_j` and `v_j` of length `L_j`
+
+Additional guarantees:
+
+- `W_1 = 0`
+- `P_1 = 0`, `F_1 = 0`
+- If `P_i = 0`, then `F_i = 0` and vertex `i` has no fuel package
+- The graph is connected
+- There are no self-loops or multiple edges
+
+## Output
+Output a tour in the following format:
+
+```text
+K
+v_1 v_2 ... v_K
+b_1 b_2 ... b_K
+```
+
+Where:
+
+- `1 ≤ K ≤ 200000`
+- `v_1 = 1` and `v_K = 1`
+- Each `v_t` is a vertex index
+- Each `b_t` is either `0` or `1`
+
+Interpretation:
+
+- The car starts at vertex `v_1 = 1` with `H` liters.
+- For each `t = 1, 2, ..., K-1`, the car moves from `v_t` to `v_{t+1}` along a single edge. That edge must exist.
+- After being at vertex `v_t`, if `b_t = 1`, the car buys the fuel package at that vertex immediately.
+- Each fuel package may be bought at most once in total.
+- If `b_t = 1` at a vertex with no unused package, the output is invalid.
+
+A vertex is considered visited if it appears anywhere in the sequence `v_1, ..., v_K`.
+
+## Objective
+For a feasible output, let:
+
+- `C_fuel` = sum of `P_i` over all bought fuel packages
+- `C_penalty` = sum of `W_i` over all vertices `i` that were never visited
+
+Your objective value is:
+
+```text
+Y = C_fuel + C_penalty
+```
+
+Lower is better.
+
+If the output is infeasible, it receives score `0` on that test.
+
+### Feasibility check
+The judge simulates the tour as follows:
+
+1. Initial fuel is `H`.
+2. At each move from `v_t` to `v_{t+1}`, subtract the edge length from fuel.
+3. If fuel becomes negative at any time, the output is infeasible.
+4. Whenever `b_t = 1`, the package at vertex `v_t` must exist and be unused. Then:
+   - pay `P_{v_t}`
+   - fuel becomes `min(H, fuel + F_{v_t})`
+
+## Scoring
+For each test case, define the **baseline objective** `B` as follows.
+
+Let
+
+- `T = W_2 + W_3 + ... + W_V`
+- `dist(i)` = shortest-path distance from depot `1` to vertex `i`
+
+The baseline is the better of:
+
+1. **Do nothing**: stay at the depot  
+   objective = `T`
+2. **Visit exactly one reachable site and return, using no fuel packages**  
+   for any vertex `i` with `2 * dist(i) ≤ H`, objective = `T - W_i`
+
+Therefore,
+
+```text
+B = min( T, min_{i : 2*dist(i) ≤ H} (T - W_i) )
+```
+
+If your feasible solution has objective `Y`, your score for that test is
+
+```text
+score = min(10^9, floor(10^6 * (B + 1) / (Y + 1)))
+```
+
+If your output is infeasible, then
+
+```text
+score = 0
+```
+
+The total score is the sum of scores over all test cases.
+
+A solution matching the baseline gets approximately `10^6` points on that test. Better solutions get higher scores, and worse solutions get lower scores.
+
+## Constraints
+- `2 ≤ V ≤ 500`
+- `V - 1 ≤ E ≤ 3000`
+- `1 ≤ H ≤ 10^9`
+- `0 ≤ W_i ≤ 10^6`
+- `0 ≤ P_i ≤ 10^6`
+- `0 ≤ F_i ≤ H`
+- `1 ≤ L_j ≤ 10^6`
+
+## Example
+### Sample input
+```text
+4 3 8
+0 5 8 9
+0 0
+3 4
+4 4
+0 0
+1 2 2
+2 3 2
+3 4 2
+```
+
+### Sample output
+```text
+7
+1 2 3 4 3 2 1
+0 1 1 0 0 0 0
+```
+
+### Explanation
+The route is:
+
+- start at `1` with `8` liters
+- move to `2` (fuel `6`), buy there: fuel becomes `8`, cost `3`
+- move to `3` (fuel `6`), buy there: fuel becomes `8`, cost `4`
+- move to `4`, then return along the same path to `1`
+
+All inspection sites `2, 3, 4` are visited, so the penalty is `0`.  
+Total objective value:
+
+```text
+Y = 3 + 4 + 0 = 7
+```
+
+For the baseline:
+- total penalty if visiting nothing: `T = 5 + 8 + 9 = 22`
+- shortest distances from `1`: `2, 4, 6`
+- only vertices `2` and `3` are reachable for a no-refuel round trip within `H = 8`
+- best such single visit is vertex `3`, giving `B = 22 - 8 = 14`
+
+So this output scores:
+
+```text
+floor(10^6 * (14 + 1) / (7 + 1)) = 1875000
+```
+```

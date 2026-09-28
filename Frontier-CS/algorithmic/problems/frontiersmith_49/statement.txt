@@ -1,0 +1,305 @@
+```markdown
+# Twilight Caravan Hubs
+
+## Problem
+
+Every autumn, the merchants of Fantasia rush to move fresh moonberries from remote groves into city vaults before sunrise.
+
+You are given:
+
+- **groves** that can harvest moonberries,
+- **temporary caravan hubs** that can be opened for one night,
+- **city vaults** that want to receive moonberries.
+
+Moonberries must travel in **two stages**:
+
+1. from a grove to a caravan hub,
+2. from a caravan hub to a city vault.
+
+A grove may ship to only some hubs, and a hub may ship to only some vaults.
+
+Your task is to output **any feasible transportation plan**. Better plans receive higher scores.
+
+### Cost model
+
+If grove `i` ships a total of `x_i` units, the harvesting cost is
+
+`A_i * x_i^2 + B_i * x_i`.
+
+If hub `j` handles a total of `y_j` units, then:
+
+- it is considered **opened** if `y_j > 0`,
+- it pays a fixed opening cost `F_j`,
+- and a handling cost `H_j * y_j^2 + G_j * y_j`.
+
+Each transportation edge also has a linear per-unit cost.
+
+Each vault `k` has demand `D_k`. If it receives only `z_k`, then the unmet part `D_k - z_k` incurs a penalty
+
+`P_k * (D_k - z_k)`.
+
+You must minimize the **total cost**.
+
+---
+
+A plan is feasible if:
+
+- all shipped amounts are nonnegative integers,
+- only listed edges are used,
+- each grove ships at most its capacity,
+- each hub's incoming flow equals its outgoing flow,
+- each hub handles at most its capacity,
+- each vault receives at most its demand.
+
+There is **no requirement** to satisfy all demand.
+
+## Input
+
+The input format is:
+
+```text
+n p m
+A_1 B_1 S_1
+...
+A_n B_n S_n
+F_1 H_1 G_1 U_1
+...
+F_p H_p G_p U_p
+D_1 P_1
+...
+D_m P_m
+e1
+i_1 j_1 c_1
+...
+i_e1 j_e1 c_e1
+e2
+j'_1 k_1 t_1
+...
+j'_e2 k_e2 t_e2
+```
+
+### Meaning
+
+- `n`: number of groves
+- `p`: number of caravan hubs
+- `m`: number of vaults
+
+For each grove `i`:
+
+- `A_i, B_i`: harvest cost coefficients
+- `S_i`: maximum amount that grove `i` can ship
+
+For each hub `j`:
+
+- `F_j`: fixed opening cost
+- `H_j, G_j`: handling cost coefficients
+- `U_j`: maximum throughput of hub `j`
+
+For each vault `k`:
+
+- `D_k`: demand
+- `P_k`: penalty per unit of unmet demand
+
+Then:
+
+- `e1`: number of allowed grove-to-hub edges  
+  Each such edge is `(i, j, c)`, meaning grove `i` may send to hub `j` at cost `c` per unit.
+- `e2`: number of allowed hub-to-vault edges  
+  Each such edge is `(j, k, t)`, meaning hub `j` may send to vault `k` at cost `t` per unit.
+
+Input guarantees that within each edge set there are no duplicate edges.
+
+## Output
+
+Output any feasible plan in the following format:
+
+```text
+q1 q2
+i_1 j_1 x_1
+...
+i_q1 j_q1 x_q1
+j'_1 k_1 y_1
+...
+j'_q2 k_q2 y_q2
+```
+
+### Meaning
+
+- `q1`: number of grove-to-hub shipments you specify
+- `q2`: number of hub-to-vault shipments you specify
+
+Each of the next `q1` lines gives a positive integer shipment:
+
+- `i j x`: send `x` units from grove `i` to hub `j`
+
+Each of the next `q2` lines gives a positive integer shipment:
+
+- `j k y`: send `y` units from hub `j` to vault `k`
+
+### Feasibility requirements
+
+Let:
+
+- `f[i][j]` be the total amount you send from grove `i` to hub `j` (0 if omitted),
+- `g[j][k]` be the total amount you send from hub `j` to vault `k` (0 if omitted).
+
+Your output is feasible iff all of the following hold:
+
+1. Every listed amount is a **positive integer**.
+2. No pair `(i, j)` appears more than once among the first `q1` lines.
+3. No pair `(j, k)` appears more than once among the last `q2` lines.
+4. Every used edge must exist in the input.
+5. For every grove `i`:
+   - `x_i = sum_j f[i][j]`
+   - `x_i <= S_i`
+6. For every hub `j`:
+   - `in_j = sum_i f[i][j]`
+   - `out_j = sum_k g[j][k]`
+   - `in_j = out_j`
+   - `in_j <= U_j`
+7. For every vault `k`:
+   - `z_k = sum_j g[j][k]`
+   - `z_k <= D_k`
+
+Any violation makes the submission infeasible.
+
+## Objective
+
+For a feasible output, define:
+
+- `x_i = sum_j f[i][j]` for each grove `i`
+- `y_j = sum_i f[i][j] = sum_k g[j][k]` for each hub `j`
+- `z_k = sum_j g[j][k]` for each vault `k`
+
+The total cost is:
+
+```text
+sum over groves i:
+    (A_i * x_i^2 + B_i * x_i)
+
++ sum over hubs j:
+    if y_j = 0 then 0
+    else F_j + H_j * y_j^2 + G_j * y_j
+
++ sum over used grove->hub edges (i,j):
+    c(i,j) * f[i][j]
+
++ sum over used hub->vault edges (j,k):
+    t(j,k) * g[j][k]
+
++ sum over vaults k:
+    P_k * (D_k - z_k)
+```
+
+The goal is to **minimize** this total cost.
+
+## Scoring
+
+This is an optimization problem. Lower cost is better.
+
+### Baseline
+
+The official baseline solution is:
+
+- ship nothing at all (`q1 = 0`, `q2 = 0`).
+
+Its cost on a test is
+
+```text
+C0 = sum_k P_k * D_k
+```
+
+### Per-test score
+
+If your output is infeasible, the score for that test is `0`.
+
+Otherwise, let `C` be your total cost.
+
+- If `C0 = 0`, then every feasible output gets `1,000,000` points on that test.
+- Otherwise, the score is:
+
+```text
+score = 1,000,000 * min(2, C0 / max(1, C))
+```
+
+This is a continuous score: every improvement in objective value improves the score, up to a cap of `2,000,000` per test.
+
+### Final score
+
+The final score is the arithmetic mean of the per-test scores over all test files.
+
+## Constraints
+
+- `1 <= n, p, m <= 250`
+- `0 <= A_i, B_i, F_j, H_j, G_j, c, t, P_k <= 1000`
+- `0 <= S_i, U_j, D_k <= 10000`
+- `0 <= e1, e2 <= 20000`
+- Time limit: 2 seconds
+- Memory limit: 512 MB
+
+All arithmetic in evaluation is exact integer arithmetic.
+
+## Example
+
+### Sample input
+
+```text
+2 2 2
+1 1 4
+0 2 3
+3 0 1 5
+1 1 0 3
+3 15
+2 12
+3
+1 1 1
+1 2 2
+2 1 1
+3
+1 1 1
+1 2 2
+2 2 1
+```
+
+### Sample output
+
+```text
+2 2
+1 1 3
+2 1 1
+1 1 3
+1 2 1
+```
+
+### Explanation
+
+This plan sends:
+
+- 3 units from grove 1 to hub 1,
+- 1 unit from grove 2 to hub 1,
+- then 3 units from hub 1 to vault 1,
+- and 1 unit from hub 1 to vault 2.
+
+So:
+
+- grove totals: `x_1 = 3`, `x_2 = 1`
+- hub 1 throughput: `y_1 = 4`
+- vault receipts: `z_1 = 3`, `z_2 = 1`
+
+The total cost is:
+
+- grove costs: `1*3^2 + 1*3 = 12`, and `0*1^2 + 2*1 = 2`
+- hub 1 cost: `3 + 0*4^2 + 1*4 = 7`
+- transport: `3*1 + 1*1 + 3*1 + 1*2 = 9`
+- unmet-demand penalty: vault 2 misses 1 unit, so `12`
+
+Total: `12 + 2 + 7 + 9 + 12 = 42`.
+
+The baseline ships nothing, so `C0 = 3*15 + 2*12 = 69`.
+
+Thus this output would score:
+
+```text
+1,000,000 * min(2, 69 / 42) = 1,642,857.142857...
+```
+```

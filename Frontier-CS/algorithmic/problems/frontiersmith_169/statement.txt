@@ -1,0 +1,158 @@
+```markdown
+# Weighted Motif Reversal
+
+## Problem
+You are editing a long lowercase string to maximize advertising revenue.
+
+The original banner is a string `A` of length `n`, consisting of lowercase English letters.  
+There are `m` clients. Client `i` pays `w_i` for **each occurrence** of a pattern string `P_i` in the final banner.
+
+You may perform at most `K` edit operations.  
+In one operation, choose indices `l, r` (`1 <= l <= r <= n`) and reverse the contiguous substring `S[l..r]` of the **current** string.
+
+Your total edit budget is limited: if you perform operations on intervals of lengths
+`(r_1-l_1+1), (r_2-l_2+1), ...`, then their sum must be at most `B`.
+
+Your task is to output any feasible sequence of reversals that maximizes total revenue.
+
+Occurrences of patterns may overlap.
+
+## Input
+The input is given in the following format:
+
+```text
+n K B m
+A
+P_1 w_1
+P_2 w_2
+...
+P_m w_m
+```
+
+- `n`: length of the original string
+- `K`: maximum number of reversals allowed
+- `B`: maximum total reversed length
+- `m`: number of client patterns
+- `A`: the original string of length `n`
+- `P_i`: pattern string of client `i`
+- `w_i`: positive integer reward for each occurrence of `P_i`
+
+## Output
+Output a feasible sequence of reversals in the following format:
+
+```text
+t
+l_1 r_1
+l_2 r_2
+...
+l_t r_t
+```
+
+Where:
+
+- `0 <= t <= K`
+- `1 <= l_j <= r_j <= n`
+- `sum_j (r_j - l_j + 1) <= B`
+
+The reversals are applied in the output order, each to the current string after previous reversals.
+
+If your output is invalid, the score for that test case is `0`.
+
+## Objective
+Let `S` be the final string after applying your reversals.
+
+For each client `i`, let `occ_i(S)` be the number of occurrences of `P_i` in `S`  
+(overlaps are allowed).
+
+Your objective value is:
+
+```text
+Obj(S) = sum_{i=1..m} w_i * occ_i(S)
+```
+
+You must maximize `Obj(S)`.
+
+## Scoring
+For each test case:
+
+- Let `Base` be the objective value of the **baseline solution** that performs `0` reversals, i.e. `S = A`.
+- Let `W = sum_{i=1..m} w_i`.
+- Let `Obj` be your objective value.
+
+Your score for the test case is:
+
+```text
+score = round(1,000,000 * clamp(0, (Obj + W) / (Base + W), 2))
+```
+
+where
+
+```text
+clamp(L, x, R) = min(R, max(L, x)).
+```
+
+So:
+
+- the baseline always gets exactly `1,000,000` points,
+- better solutions get more than `1,000,000`,
+- worse solutions get fewer than `1,000,000`,
+- scores are capped at `2,000,000` per test case.
+
+Your total score is the sum of scores over all test cases.
+
+## Constraints
+- `1 <= n <= 200000`
+- `0 <= K <= 30`
+- `0 <= B <= 400000`
+- `1 <= m <= 5000`
+- `A` consists of lowercase English letters
+- `1 <= |P_i| <= 20`
+- `P_i` consists of lowercase English letters
+- `1 <= w_i <= 10^6`
+- `sum |P_i| <= 100000`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample Input
+```text
+4 1 4 4
+aatt
+atat 8
+atta 7
+taat 6
+tt 1
+```
+
+### Sample Output
+```text
+1
+2 3
+```
+
+### Explanation
+Reversing `A[2..3]` changes `aatt` into `atat`.
+
+Then:
+
+- `atat` occurs once: `+8`
+- `atta` occurs `0` times
+- `taat` occurs `0` times
+- `tt` occurs `0` times
+
+So `Obj = 8`.
+
+The baseline performs no reversal, leaving `aatt`, where only `tt` occurs once, so `Base = 1`.
+
+Also, `W = 8 + 7 + 6 + 1 = 22`.
+
+Therefore the sample score is based on:
+
+```text
+(Obj + W) / (Base + W) = (8 + 22) / (1 + 22) = 30 / 23
+```
+
+which is greater than the baseline's ratio `1`.
+```

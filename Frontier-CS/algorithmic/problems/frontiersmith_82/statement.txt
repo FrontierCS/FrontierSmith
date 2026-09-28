@@ -1,0 +1,150 @@
+```markdown
+# Cyborg Tape Rewriting
+
+## Problem
+
+Petr# stores sensor readings on a long memory tape.  
+Each cell of the tape contains one integer. Rewriting a cell costs energy, but many diagnostic tools inspect **odd-length segments** of the tape and penalize asymmetry.
+
+You must output a new tape configuration that balances these two effects.
+
+This is an **optimization challenge**: any feasible output is accepted, and better outputs receive higher scores.
+
+Formally, the tape has length `n` and initial values `a1, a2, ..., an`.  
+If you change position `i` to any different value, you pay `ci`.
+
+There are `q` diagnostic requests.  
+Request `j` is described by `(lj, rj, wj)` where `rj - lj + 1` is odd.
+
+For a final tape `x1, x2, ..., xn`, define the **palindromicity** of request `j` as the minimum number of elements that must be replaced to make the subarray
+
+`xlj, x(lj+1), ..., xrj`
+
+a palindrome.
+
+Because the length is odd, this is exactly the number of mismatched mirrored pairs:
+
+\[
+\text{pal}_j(x)=\sum_{t=0}^{(r_j-l_j-1)/2} [x_{l_j+t} \ne x_{r_j-t}]
+\]
+
+where `[condition]` is `1` if the condition is true and `0` otherwise.
+
+Your goal is to output a final tape minimizing:
+
+\[
+F(x)=\sum_{i=1}^{n} c_i [x_i \ne a_i] + \sum_{j=1}^{q} w_j \cdot \text{pal}_j(x)
+\]
+
+Requests may overlap arbitrarily.
+
+## Input
+
+The input contains:
+
+- The first line: two integers `n` and `q`
+- The second line: `n` integers `a1, a2, ..., an`
+- The third line: `n` integers `c1, c2, ..., cn`
+- The next `q` lines: three integers `lj, rj, wj` describing one request each
+
+## Output
+
+Output exactly `n` integers `x1, x2, ..., xn` — the final tape.
+
+A solution is **feasible** if:
+
+- `1 <= xi <= 10^9` for every `i`
+
+Any feasible tape is accepted and scored.
+
+## Objective
+
+Minimize
+
+\[
+F(x)=\sum_{i=1}^{n} c_i [x_i \ne a_i] + \sum_{j=1}^{q} w_j \cdot \text{pal}_j(x)
+\]
+
+where
+
+\[
+\text{pal}_j(x)=\sum_{t=0}^{(r_j-l_j-1)/2} [x_{l_j+t} \ne x_{r_j-t}]
+\]
+
+All computations use 64-bit signed integers.
+
+## Scoring
+
+For each test file:
+
+- Let `B` be the objective value of the **baseline solution** `x = a`  
+  (i.e. keep the original tape unchanged).
+- Let `Y` be your objective value.
+
+The per-test score is:
+
+- `0`, if your output is infeasible
+- `1,000,000`, if `B = 0` and `Y = 0`
+- `0`, if `B = 0` and `Y > 0`
+- otherwise
+
+\[
+\text{score} = \left\lfloor 10^6 \cdot \max\left(0, \min\left(1, \frac{B-Y}{B}\right)\right) + 0.5 \right\rfloor
+\]
+
+So:
+
+- matching the baseline gets score `0`
+- improving on the baseline gives a positive score
+- reaching objective `0` gets score `1,000,000`
+
+The final score is the arithmetic mean of per-test scores over all test files, rounded to the nearest integer.
+
+## Constraints
+
+- `1 <= n <= 200000`
+- `1 <= q <= 200000`
+- `1 <= ai <= 200000`
+- `1 <= ci <= 10^9`
+- `1 <= lj <= rj <= n`
+- `rj - lj + 1` is odd
+- `1 <= wj <= 10^9`
+- \(\sum_{j=1}^{q} \frac{r_j-l_j}{2} \le 10^6\)
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample input
+```text
+7 3
+1 2 3 2 4 2 1
+5 1 4 1 3 1 5
+1 7 3
+2 6 2
+3 7 4
+```
+
+### Sample output
+```text
+1 2 3 2 3 2 1
+```
+
+### Explanation
+
+The sample output changes only position `5` from `4` to `3`, so the rewrite cost is `3`.
+
+Request contributions:
+
+1. `[1, 7] = [1, 2, 3, 2, 3, 2, 1]` is already a palindrome, so penalty `0 * 3 = 0`
+2. `[2, 6] = [2, 3, 2, 3, 2]` is also a palindrome, so penalty `0 * 2 = 0`
+3. `[3, 7] = [3, 2, 3, 2, 1]` has one mismatched mirrored pair, so penalty `1 * 4 = 4`
+
+Thus the objective value is:
+
+`3 + 0 + 0 + 4 = 7`
+
+For the baseline `x = a`, the objective is `9`, so this output improves on the baseline.
+```

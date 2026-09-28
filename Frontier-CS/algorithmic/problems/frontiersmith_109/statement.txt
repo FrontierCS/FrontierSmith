@@ -1,0 +1,194 @@
+# Bonfire Ring Design
+
+## Problem
+At the school festival, \(N\) students will spread out from a bonfire while holding hands. Each student must use their **right hand** to hold exactly one other student's **left hand**, and each student's left hand must be held by exactly one other student's right hand.
+
+Therefore, a hand-holding scheme is a permutation \(\pi\) of \(\{1,\dots,N\}\), where student \(i\)'s right hand holds student \(\pi_i\)'s left hand.
+
+As the students move apart, the scheme decomposes into disjoint directed cycles. A cycle of length \(2\) is considered unsafe and is **not allowed**; every cycle must have length at least \(3\).
+
+Each directed hold \(i \to j\) has a nonnegative excitement value \(W_{i,j}\), and each circle length \(\ell\) has a length bonus \(B_\ell\), which may be positive or negative.
+
+Your task is to output **any feasible scheme** that maximizes the total festival excitement.
+
+---
+
+## Input
+A single test file contains one instance.
+
+- The first line contains one integer \(N\).
+- The second line contains \(N-2\) integers:
+  \[
+  B_3, B_4, \dots, B_N
+  \]
+- The next \(N\) lines each contain \(N\) integers.  
+  The \(j\)-th integer on the \(i\)-th of these lines is \(W_{i,j}\).
+
+### Meaning of the input
+- \(W_{i,j}\) is the value gained if student \(i\)'s right hand holds student \(j\)'s left hand.
+- \(W_{i,i}\) is present in the input but cannot be used, because self-holds are forbidden.
+
+---
+
+## Output
+Output one line with \(N\) integers:
+\[
+\pi_1\ \pi_2\ \dots\ \pi_N
+\]
+where \(\pi_i\) is the student whose left hand is held by student \(i\)'s right hand.
+
+### Feasibility requirements
+Your output is **feasible** iff all of the following hold:
+
+1. \(1 \le \pi_i \le N\) for all \(i\)
+2. \(\pi_i \ne i\) for all \(i\)
+3. \((\pi_1,\dots,\pi_N)\) is a permutation of \(\{1,\dots,N\}\)
+4. Every directed cycle in this permutation has length at least \(3\)
+
+If the output is infeasible, the objective value for that test is treated as invalid and the score for that test is \(0\).
+
+---
+
+## Objective
+Let the permutation decompose into cycles \(C_1, C_2, \dots, C_m\), and let \(|C_t|\) be the length of cycle \(C_t\).
+
+The objective value is:
+
+\[
+\text{Obj}(\pi) = \sum_{i=1}^{N} W_{i,\pi_i} \;+\; \sum_{t=1}^{m} B_{|C_t|}
+\]
+
+Your goal is to **maximize** \(\text{Obj}(\pi)\).
+
+---
+
+## Scoring
+Scores are computed independently for each official test file, then summed.
+
+### Baseline
+For each test, define the deterministic baseline scheme as follows:
+
+- Partition students in increasing index order into consecutive blocks:
+  - if \(N \bmod 3 = 0\): all blocks have size \(3\)
+  - if \(N \bmod 3 = 1\): all earlier blocks have size \(3\), and the last block has size \(4\)
+  - if \(N \bmod 3 = 2\): all earlier blocks have size \(3\), and the last block has size \(5\)
+
+Within each block \([l, l+1, \dots, r]\), form the cycle:
+\[
+l \to l+1 \to \dots \to r \to l
+\]
+
+Let the objective value of this baseline scheme be `Base`.
+
+### Upper bound
+Define:
+\[
+U_{\text{edge}} = \sum_{i=1}^{N} \max_{j \ne i} W_{i,j}
+\]
+
+Let \(U_{\text{bonus}}\) be the maximum possible total length bonus over any partition of \(N\) into parts of size at least \(3\):
+- \(DP[0]=0\)
+- \(DP[1]=DP[2]=-\infty\)
+- for \(x \ge 3\):
+\[
+DP[x] = \max_{3 \le \ell \le x} (DP[x-\ell] + B_\ell)
+\]
+Then:
+\[
+U_{\text{bonus}} = DP[N]
+\]
+
+Finally:
+\[
+UB = U_{\text{edge}} + U_{\text{bonus}}
+\]
+
+This is a judge-computed upper bound on the objective.
+
+### Per-test score
+If your output is infeasible, the per-test score is \(0\).
+
+Otherwise:
+
+- if \(UB = Base\), the per-test score is \(1{,}000{,}000\)
+- else:
+\[
+\text{Score} =
+\left\lfloor
+1{,}000{,}000 \cdot
+\operatorname{clamp}\!\left(
+0.5 + 0.5 \cdot \frac{\text{Obj} - Base}{UB - Base},
+\, 0,\, 1
+\right)
+\right\rfloor
+\]
+where
+\[
+\operatorname{clamp}(x,0,1)=\min(1,\max(0,x))
+\]
+
+So:
+- matching the baseline gives about **500,000**
+- improving beyond the baseline increases the score smoothly
+- approaching the upper bound approaches **1,000,000**
+
+### Total score
+Your total score is the sum of per-test scores over all official test files.
+
+---
+
+## Constraints
+- \(3 \le N \le 1500\)
+- \(0 \le W_{i,j} \le 10^6\)
+- \(W_{i,i} = 0\)
+- \(-10^{12} \le B_\ell \le 10^{12}\) for all \(3 \le \ell \le N\)
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+### Sample input
+```text
+7
+20 18 15 10 30
+0 8 7 1 1 1 1
+1 0 9 1 1 1 1
+10 1 0 1 1 1 1
+1 1 1 0 6 1 5
+1 1 1 4 0 7 1
+1 1 1 1 8 0 1
+1 1 1 9 1 1 0
+```
+
+### Sample output
+```text
+2 3 1 5 6 7 4
+```
+
+### Explanation
+This output forms two circles:
+
+- \(1 \to 2 \to 3 \to 1\), length \(3\)
+- \(4 \to 5 \to 6 \to 7 \to 4\), length \(4\)
+
+Its objective is:
+
+- edge sum:
+  \[
+  W_{1,2}+W_{2,3}+W_{3,1}+W_{4,5}+W_{5,6}+W_{6,7}+W_{7,4}
+  = 8+9+10+6+7+1+9 = 50
+  \]
+- length bonuses:
+  \[
+  B_3 + B_4 = 20 + 18 = 38
+  \]
+
+So the total objective is:
+\[
+50 + 38 = 88
+\]
+
+The judge then compares this value against the baseline and the upper bound using the scoring formula above.

@@ -1,0 +1,251 @@
+```markdown
+# Border Mural Reconstruction
+
+## Problem
+
+Ringo wants to recreate a target mural on an `N × M` white canvas using assistants standing on the outside border of the canvas.
+
+The canvas is surrounded by a one-cell-thick black frame. Some assistants are placed on that frame and face inward:
+
+- Left side: for each row `i` (`1 ≤ i ≤ N`), if `A[i] = '1'`, there is an assistant at the left of row `i`, facing right.
+- Right side: for each row `i`, if `B[i] = '1'`, there is an assistant at the right of row `i`, facing left.
+- Top side: for each column `j` (`1 ≤ j ≤ M`), if `C[j] = '1'`, there is an assistant above column `j`, facing down.
+- Bottom side: for each column `j`, if `D[j] = '1'`, there is an assistant below column `j`, facing up.
+
+All interior cells start white.
+
+Before any assistant moves, you may place up to `K` **black blockers** on distinct interior cells. A blocker permanently turns that cell black.
+
+Then you may activate any subset of assistants in any order. When an assistant is activated:
+
+1. They repeatedly look at the next cell in the direction they face.
+2. If that next cell is white, they move into it and paint it with their side's color family:
+   - left-side assistants paint type `L`
+   - right-side assistants paint type `R`
+   - top-side assistants paint type `U`
+   - bottom-side assistants paint type `D`
+3. If the next cell is not white (already painted or blocked or outside the canvas), they stop immediately.
+4. After stopping, that assistant is removed and can never be used again.
+
+Every painted cell keeps the family of the assistant that painted it. A blocked cell stays black forever. Unpainted, unblocked cells remain white.
+
+For each cell `(i, j)`, the input gives:
+
+- a desired final type `T[i][j]` from `{L, R, U, D, W}`
+- a reward `V[i][j]` if the cell ends with exactly that type
+- a blocker penalty `P[i][j]` if you place a blocker on that cell
+
+Your task is to choose blocker locations and an activation sequence to maximize the total mural value.
+
+---
+
+## Input
+
+The input is given in the following format:
+
+```text
+N M K
+A
+B
+C
+D
+T_1
+T_2
+...
+T_N
+V_1,1 V_1,2 ... V_1,M
+V_2,1 V_2,2 ... V_2,M
+...
+V_N,1 V_N,2 ... V_N,M
+P_1,1 P_1,2 ... P_1,M
+P_2,1 P_2,2 ... P_2,M
+...
+P_N,1 P_N,2 ... P_N,M
+```
+
+- `A`, `B` are binary strings of length `N`
+- `C`, `D` are binary strings of length `M`
+- each `T_i` is a string of length `M` consisting of `L`, `R`, `U`, `D`, `W`
+
+---
+
+## Output
+
+Output a feasible plan in the following format:
+
+```text
+b p
+x_1 y_1
+x_2 y_2
+...
+x_b y_b
+s_1 id_1
+s_2 id_2
+...
+s_p id_p
+```
+
+- `b` = number of blockers you place
+- `p` = number of assistants you activate
+- each blocker position `(x_k, y_k)` is a distinct interior cell, using 1-based coordinates
+- each activation command specifies one existing assistant:
+  - `L i` : left-side assistant on row `i`
+  - `R i` : right-side assistant on row `i`
+  - `U j` : top-side assistant on column `j`
+  - `D j` : bottom-side assistant on column `j`
+
+### Feasibility requirements
+
+Your output is **feasible** iff all of the following hold:
+
+- `0 ≤ b ≤ K`
+- all blocker cells are distinct and satisfy `1 ≤ x_k ≤ N`, `1 ≤ y_k ≤ M`
+- every activated assistant exists according to `A, B, C, D`
+- no assistant is activated more than once
+
+Assistants not listed in your output are simply not used.
+
+Any infeasible output receives score `0` on that test case.
+
+---
+
+## Objective
+
+Let the final state of each cell be one of:
+
+- `L`, `R`, `U`, `D` if painted by that family
+- `W` if it remains unpainted and unblocked
+- `B` if it contains a blocker
+
+The objective value is:
+
+```text
+Objective = Σ reward(i, j) - Σ blocker_penalty(i, j)
+```
+
+where:
+
+- if final state of cell `(i, j)` equals `T[i][j]`, then `reward(i, j) = V[i][j]`
+- otherwise, `reward(i, j) = 0`
+- for every blocker placed on `(i, j)`, subtract `P[i][j]`
+
+Equivalently:
+
+- matching the desired type of a cell earns `V[i][j]`
+- placing a blocker on a cell always costs `P[i][j]`
+- blocked cells never count as matching any target type
+
+Your goal is to **maximize** `Objective`.
+
+---
+
+## Scoring
+
+For each test case `t`, define two baseline plans:
+
+1. **Do-nothing baseline**  
+   - place no blockers
+   - activate no assistants
+
+2. **Fixed-order baseline**  
+   - place no blockers
+   - activate all existing assistants in the following order:
+     - `L 1, L 2, ..., L N`
+     - `R 1, R 2, ..., R N`
+     - `U 1, U 2, ..., U M`
+     - `D 1, D 2, ..., D M`
+   - skipping assistants that do not exist
+
+Let:
+
+```text
+Base_t = max(1, Objective(do-nothing), Objective(fixed-order))
+```
+
+If your feasible solution for test case `t` has objective `Obj_t`, then its score is:
+
+```text
+Score_t = floor(10^6 × min(10, max(0, Obj_t) / Base_t))
+```
+
+Your total score is the sum of `Score_t` over all test cases.
+
+Remarks:
+
+- Scoring is continuous: improving the objective improves the score.
+- Beating the baseline increases your score above `10^6` on that case.
+- Per-test scores are capped at `10^7`.
+
+---
+
+## Constraints
+
+- `1 ≤ N, M ≤ 200`
+- `0 ≤ K ≤ N × M`
+- `A, B` have length `N`
+- `C, D` have length `M`
+- `T[i][j] ∈ {L, R, U, D, W}`
+- `0 ≤ V[i][j] ≤ 10^6`
+- `0 ≤ P[i][j] ≤ 10^6`
+
+### Judge limits
+- Time limit: 5 seconds
+- Memory limit: 1024 MB
+
+The official test set contains multiple instances. Exact optimization is not expected to be tractable.
+
+---
+
+## Example
+
+### Sample Input
+
+```text
+2 2 1
+10
+01
+10
+01
+LW
+RD
+5 1
+4 6
+2 2
+2 2
+```
+
+### Sample Output
+
+```text
+0 2
+L 1
+R 2
+```
+
+### Explanation
+
+- No blockers are placed.
+- `L 1` paints both cells of the first row as `L`.
+- `R 2` paints both cells of the second row as `R`.
+
+Final canvas:
+
+```text
+L L
+R R
+```
+
+Matched cells:
+- `(1,1)` matches `L`, gain `5`
+- `(2,1)` matches `R`, gain `4`
+
+Other cells do not match their targets, and no blocker penalties are paid.
+
+So the objective is `9`.
+
+For this instance:
+- do-nothing baseline objective = `1` (only cell `(1,2)` wants `W`)
+- fixed-order baseline objective = `9`
+
+Hence `Base = 9`, and this output gets full baseline score on the sample.
+```

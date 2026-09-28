@@ -1,0 +1,171 @@
+```markdown
+# Telemetry Monitor Layout
+
+## Problem
+
+A hospital monitor must display many one-cell-thick cardiogram traces on the same fixed-width ASCII screen.
+
+Each trace is described by a sequence of positive integers. Starting from a vertex at `(0, 0)`, the trace consists of diagonal unit segments that go one column to the right at every step. Consecutive runs alternate direction.
+
+For a run of length `a`:
+
+- an **up-run** consists of `a` steps of type `(x, y) -> (x+1, y+1)`
+- a **down-run** consists of `a` steps of type `(x, y) -> (x+1, y-1)`
+
+A trace may start either with an up-run or with a down-run; after that, directions must alternate.
+
+To map a segment to ASCII cells, use the following rule:
+
+- for an up-step from `(x, y)` to `(x+1, y+1)`, the occupied cell is `(x, y)`
+- for a down-step from `(x, y)` to `(x+1, y-1)`, the occupied cell is `(x, y-1)`
+
+Thus each unit step occupies exactly one grid cell, and a trace of total length `L` occupies exactly `L` cells in columns `0, 1, ..., L-1`.
+
+You must place all traces on one common screen of width `W` by choosing, for each trace:
+
+- a horizontal shift `X_i`
+- a vertical shift `Y_i`
+- whether it starts with an up-run or a down-run
+
+After shifting, every occupied cell of trace `i` at local position `(x, y)` becomes global cell `(X_i + x, Y_i + y)`.
+
+Your goal is to **minimize the used screen height**.
+
+Two traces are allowed to touch at corners or along cell borders, but they must **not occupy the same cell**.
+
+## Input
+
+The first line contains two integers:
+
+- `n` — number of traces
+- `W` — screen width
+
+Then follow `n` lines.  
+Line `i` contains:
+
+- `k_i` — number of runs in trace `i`
+- `a_{i,1}, a_{i,2}, ..., a_{i,k_i}` — run lengths
+
+## Output
+
+Print exactly `n` lines.
+
+For each trace `i`, output:
+
+- `X_i` — integer horizontal shift
+- `Y_i` — integer vertical shift
+- `D_i` — either `U` or `D`
+
+where:
+
+- `D_i = U` means the first run is an up-run
+- `D_i = D` means the first run is a down-run
+
+### Feasibility requirements
+
+Your output is **feasible** iff all of the following hold:
+
+1. `0 <= X_i <= W - L_i`, where `L_i = sum_j a_{i,j}`
+2. `|Y_i| <= 10^9`
+3. `D_i` is `U` or `D`
+4. No two occupied cells from different traces are equal
+5. All occupied cells satisfy `0 <= x < W`
+
+If the output is malformed or infeasible, the score for that test is `0`.
+
+## Objective
+
+For a feasible output, let `S` be the set of all occupied cells of all traces after shifting.
+
+Define:
+
+- `y_min = min { y : (x, y) in S }`
+- `y_max = max { y : (x, y) in S }`
+
+The used screen height is:
+
+`H = y_max - y_min + 1`
+
+Your objective is to **minimize `H`**.
+
+## Scoring
+
+For each test case:
+
+- if your output is infeasible, `score = 0`
+- otherwise, let `H` be your height and let `H_base` be the baseline height
+
+The baseline is defined as follows:
+
+- all traces use `X_i = 0`
+- all traces use `D_i = U`
+- traces are stacked vertically in input order without overlap:
+  if trace `i` has local occupied rows from `m_i` to `M_i`, its local height is `h_i = M_i - m_i + 1`
+  and it is shifted so that its occupied rows become a fresh block of `h_i` rows above all previous traces
+
+Therefore,
+
+`H_base = sum_i h_i`
+
+The per-test score is:
+
+`score = 1000 * clamp(H_base / H, 0, 2)`
+
+where
+
+`clamp(v, 0, 2) = max(0, min(2, v))`
+
+So:
+
+- matching the baseline gives `1000`
+- doing worse gives less than `1000`
+- improving on the baseline gives more than `1000`
+- the per-test score is capped at `2000`
+
+The final score is the sum of per-test scores over all official test cases.
+
+## Constraints
+
+- `2 <= n <= 300`
+- `1 <= W <= 3000`
+- `1 <= k_i`
+- `1 <= a_{i,j} <= 1000`
+- `sum over all traces of k_i <= 30000`
+- `sum over all traces of L_i <= 30000`
+- for every trace, `L_i <= W`
+
+- Time limit: 3 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+3 8
+3 2 1 2
+2 3 2
+4 1 1 1 1
+```
+
+### Output
+```text
+0 1 U
+3 3 D
+1 4 U
+```
+
+### Explanation
+The three traces are placed with different horizontal shifts and starting directions so that no occupied cells overlap.
+
+- Trace 1 has width `5`
+- Trace 2 has width `5`
+- Trace 3 has width `4`
+
+The sample placement uses global occupied rows from `0` to `4`, so `H = 5`.
+
+For this input, the baseline stacks the three traces separately with total height `H_base = 7`, so this submission would obtain:
+
+`1000 * 7 / 5 = 1400`
+
+(up to the cap, which is not reached here).
+```

@@ -1,0 +1,137 @@
+```markdown
+# Two-Hop Courier Loop
+
+## Problem
+A company has `n` hubs, numbered `1` to `n`. Every night, each hub forwards all of its parcels to exactly one **next hub**. To keep operations simple, the company wants a single closed loop visiting every hub exactly once, so the nightly forwarding rule must be a permutation `q` consisting of **one cycle of length `n`**.
+
+If a parcel starts at hub `i`, then after one night it is at hub `q[i]`, and after two nights it is at hub `q[q[i]]`.
+
+For planning purposes, the company is given a target permutation `p`:
+- hub `i` would like its parcels to be at hub `p[i]` after two nights.
+
+This may be impossible to satisfy for all hubs while keeping one short loop, so your task is to output **any feasible loop** and optimize a trade-off:
+
+- short physical route length,
+- few missed two-night targets.
+
+Each hub `i` has coordinates `(x_i, y_i)` and importance weight `w_i`.
+
+The distance of a nightly move from hub `a` to hub `b` is the **Manhattan distance**
+`|x_a - x_b| + |y_a - y_b|`.
+
+## Input
+The first line contains two integers:
+
+- `n` — number of hubs
+- `M` — global penalty multiplier
+
+The next `n` lines each contain three integers:
+
+- `x_i`, `y_i` — coordinates of hub `i`
+- `w_i` — penalty weight of hub `i`
+
+The last line contains a permutation:
+
+- `p_1, p_2, ..., p_n`
+
+## Output
+Output one line with `n` integers:
+
+- `q_1, q_2, ..., q_n`
+
+where `q` must satisfy all of the following:
+
+1. `q` is a permutation of `1..n`.
+2. `q` consists of exactly **one cycle** of length `n`.
+
+Equivalently, starting from any hub and repeatedly applying `q`, you visit every hub exactly once before returning to the start.
+
+If the output is infeasible, the solution for that test receives score `0`.
+
+## Objective
+For a feasible permutation `q`, define:
+
+- **Travel cost**
+  
+  `T(q) = sum over i=1..n of dist(i, q[i])`
+
+  where
+
+  `dist(a, b) = |x_a - x_b| + |y_a - y_b|`.
+
+- **Mismatch penalty**
+  
+  `P(q) = M * sum over i=1..n of w_i * [ q[q[i]] != p[i] ]`
+
+  where `[condition]` is `1` if the condition is true and `0` otherwise.
+
+Your objective is to **minimize**
+
+`C(q) = T(q) + P(q)`.
+
+## Scoring
+For each official test case, the judge also computes the cost of the fixed baseline loop
+
+`q_base = [2, 3, ..., n, 1]`.
+
+Let:
+
+- `B` = `C(q_base)`
+- `Y` = your cost `C(q)`
+
+Then your score on that test is:
+
+- `0`, if your output is infeasible
+- `1000`, if `B = 0` and `Y = 0`
+- `0`, if `B = 0` and `Y > 0`
+- otherwise:
+
+`score = min(1000, 100 * B / Y)`
+
+So:
+- matching the baseline gives score `100`,
+- doing better than the baseline gives more than `100`,
+- worse solutions still receive partial credit,
+- very strong improvements are capped at `1000`.
+
+The final score is the **arithmetic mean** of scores over all test cases in the test set.
+
+## Constraints
+- `3 <= n <= 200000`
+- `1 <= M <= 10^6`
+- `0 <= x_i, y_i <= 10^9`
+- `1 <= w_i <= 10^6`
+- `p` is a permutation of `1..n`
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+Input
+```text
+4 10
+0 0 3
+2 0 2
+2 2 1
+0 2 4
+2 1 4 3
+```
+
+Output
+```text
+3 4 2 1
+```
+
+Brief explanation:
+
+- The output means `1 -> 3 -> 2 -> 4 -> 1`, which is one cycle through all 4 hubs.
+- Then `q^2 = [2, 1, 4, 3]`, which matches `p` exactly, so the mismatch penalty is `0`.
+- Travel cost is:
+
+  `dist(1,3)=4, dist(2,4)=4, dist(3,2)=2, dist(4,1)=2`, total `12`.
+
+So the objective value is `12`.
+
+The baseline loop is `1 -> 2 -> 3 -> 4 -> 1`, with travel cost `8`, but all four two-night targets are missed, so its total cost is much larger.
+```

@@ -1,0 +1,281 @@
+```markdown
+# Midnight Toolkit Heist
+
+## Problem
+
+A museum is modeled as an undirected graph of rooms connected by corridors. Room `1` is the entrance and the only escape point.
+
+A thief has a limited amount of time before security arrives, a backpack with limited capacity, and access to a set of specialized tools that can be taken from the entrance before the heist starts. Some rooms can only be looted if the thief carries all tools required by that room.
+
+Each painting has:
+- a **weight** (uses backpack capacity),
+- a **steal time** (seconds needed to take it),
+- a **value**.
+
+Each tool has:
+- a **weight** (it also uses backpack capacity for the entire heist).
+
+The thief must:
+1. choose a subset of tools,
+2. choose a walk through the museum starting at room `1` and ending at room `1`,
+3. choose a subset of paintings to steal.
+
+A painting may be stolen only if:
+- its room appears at least once in the walk, and
+- all tools required by that room were selected.
+
+The total used capacity is:
+
+`sum(selected tool weights) + sum(stolen painting weights)`
+
+The total time is:
+
+`sum(travel times along the walk) + sum(steal times of stolen paintings)`
+
+The thief must return to room `1` with at least 1 second remaining, so total time must be at most `T - 1`.
+
+Your task is to output **any feasible plan** that maximizes the total value of stolen paintings.
+
+---
+
+## Input
+
+The input format is:
+
+```text
+T C N M K
+u1 u2 ... uK
+for i = 1..N:
+    reqMask_i b_i
+    (b_i lines follow:)
+        w t v
+(M lines follow:)
+a_j b_j d_j
+```
+
+### Meaning
+
+- `T` — total time until security arrives.
+- `C` — backpack capacity.
+- `N` — number of rooms.
+- `M` — number of corridors.
+- `K` — number of tool types.
+
+- `u_k` — weight of tool `k`.
+
+For each room `i`:
+- `reqMask_i` — bitmask of required tools for room `i`.
+  - Bit `(k-1)` is `1` iff tool `k` is required.
+- `b_i` — number of paintings in room `i`.
+
+Then `b_i` lines follow, one per painting in that room:
+- `w` — painting weight,
+- `t` — steal time,
+- `v` — painting value.
+
+Paintings are assigned global IDs from `1` upward in **input order**:
+- room `1`, first listed painting to last,
+- then room `2`, and so on.
+
+Each corridor line:
+- `a_j b_j d_j` — undirected corridor between rooms `a_j` and `b_j` with travel time `d_j`.
+
+### Guarantees
+
+- The graph is connected.
+- No self-loops.
+- No multiple corridors between the same pair of rooms.
+
+---
+
+## Output
+
+Output exactly 4 lines:
+
+```text
+x L y
+tool_1 tool_2 ... tool_x
+r_1 r_2 ... r_L
+p_1 p_2 ... p_y
+```
+
+Where:
+
+- `x` = number of selected tools.
+- `L` = number of rooms in the walk.
+- `y` = number of stolen paintings.
+
+### Feasibility requirements
+
+Your output is **feasible** iff all of the following hold:
+
+1. `0 <= x <= K`, `L >= 1`, `y >= 0`.
+2. Tool IDs are distinct integers in `[1, K]`.
+3. Painting IDs are distinct valid global painting IDs.
+4. The walk starts and ends at room `1`:
+   - `r_1 = 1`
+   - `r_L = 1`
+5. Every consecutive pair `(r_i, r_{i+1})` is connected by a corridor in the input.
+6. For every stolen painting:
+   - its room appears at least once among `r_1 ... r_L`,
+   - all tools required by that room are among the selected tools.
+7. Capacity constraint:
+   - `sum(weights of selected tools) + sum(weights of stolen paintings) <= C`
+8. Time constraint:
+   - `sum(corridor travel times along the walk) + sum(steal times of stolen paintings) <= T - 1`
+
+If the output is infeasible, its objective value is defined to be `0`.
+
+### Empty lines
+
+If `x = 0` or `y = 0`, the corresponding line should be empty.
+
+---
+
+## Objective
+
+Maximize:
+
+```text
+total value of all stolen paintings
+```
+
+If the output is infeasible, the objective value is `0`.
+
+---
+
+## Scoring
+
+For each test case:
+
+- Let `V` be your objective value.
+- Let `B` be the objective value of the official **baseline** algorithm below.
+
+Your test-case score is:
+
+```text
+score = clamp( 100 * (V + 1) / (B + 1), 0, 300 )
+```
+
+where
+
+```text
+clamp(z, 0, 300) = max(0, min(300, z))
+```
+
+The final score is the arithmetic mean of test-case scores.
+
+### Baseline algorithm
+
+The baseline only considers heists that loot **exactly one room** and return immediately.
+
+For each room `i`:
+
+1. Compute the shortest-path distance `dist(1, i)` in the corridor graph.
+2. Let `toolWeight(i)` be the sum of weights of all tools required by room `i`.
+   - If `toolWeight(i) > C`, room `i` is skipped.
+3. Available limits for paintings in room `i`:
+   - remaining capacity = `C - toolWeight(i)`
+   - remaining time = `T - 1 - 2 * dist(1, i)`
+   - If remaining time < 0, room `i` is skipped.
+4. Among paintings in room `i` only, choose a subset maximizing total value under:
+   - total painting weight <= remaining capacity
+   - total painting steal time <= remaining time
+5. `B` is the maximum value obtained over all rooms, or `0` if no room is feasible.
+
+So:
+- matching the baseline gives score `100`,
+- doing better gives more than `100`,
+- up to a maximum of `300` per test.
+
+---
+
+## Constraints
+
+- `1 <= N <= 250`
+- `1 <= M <= 1500`
+- `1 <= K <= 20`
+- `1 <= T <= 30000`
+- `1 <= C <= 5000`
+- `1 <= u_k <= 100`
+- For each room `i`:
+  - `0 <= b_i <= 30`
+  - `0 <= reqMask_i < 2^K`
+- Total number of paintings over all rooms: at most `2500`
+- For every painting:
+  - `1 <= weight <= 100`
+  - `1 <= steal time <= 60`
+  - `1 <= value <= 10^6`
+- For every corridor:
+  - `1 <= d_j <= 200`
+
+### Limits
+
+- Time limit: 2 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+
+```text
+30 10 4 4 2
+2 3
+0 0
+1 2
+2 3 8
+3 4 10
+2 1
+4 2 12
+3 1
+3 5 20
+1 2 4
+2 3 3
+1 3 5
+3 4 4
+```
+
+### Sample output
+
+```text
+2 6 2
+1 2
+1 2 3 4 3 1
+1 4
+```
+
+### Explanation
+
+- Selected tools: `1` and `2`  
+  Tool weight = `2 + 3 = 5`
+- Stolen paintings: `1` and `4`
+  - painting `1`: weight `2`, time `3`, value `8`
+  - painting `4`: weight `3`, time `5`, value `20`
+
+Capacity used:
+- tools `5` + paintings `2 + 3 = 5`
+- total = `10` (feasible)
+
+Travel time of walk:
+- `1->2->3->4->3->1 = 4 + 3 + 4 + 4 + 5 = 20`
+
+Steal time:
+- `3 + 5 = 8`
+
+Total time:
+- `20 + 8 = 28 <= 29 = T - 1`
+
+Objective value:
+- `8 + 20 = 28`
+
+Baseline:
+- Best single-room plan is looting room `4` only for value `20`
+
+So this output scores:
+
+```text
+100 * (28 + 1) / (20 + 1) = 138.095238...
+```
+```

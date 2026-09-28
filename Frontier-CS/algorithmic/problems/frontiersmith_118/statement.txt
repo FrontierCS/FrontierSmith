@@ -1,0 +1,246 @@
+```markdown
+# Permutation Window Repair
+
+## Problem
+
+A data stream is encoded as a sequence `a` of length `n`, where every value lies in `[1, n]`.  
+There is also a fixed permutation `p` on `[1, n]`, with `p_i != i` for every `i`.
+
+For any final sequence `b`, define the **label set** inside an interval `[l, r]` as
+
+\[
+S(l,r)=\{b_l,b_{l+1},\dots,b_r\}.
+\]
+
+A label `x` is called **supported** in `[l,r]` if both `x` and `p_x` belong to `S(l,r)`.
+
+So the number of supported labels in `[l,r]` is
+
+\[
+c(l,r)=|\{x\in[1,n]\mid x\in S(l,r)\ \text{and}\ p_x\in S(l,r)\}|.
+\]
+
+You are allowed to modify at most `k` positions of the initial sequence `a`, producing a final sequence `b`.
+
+There are `q` weighted intervals.  
+For interval `t`, you are given:
+
+- `l_t, r_t` — the interval,
+- `w_t` — its weight,
+- `d_t` — its demand.
+
+Its contribution is
+
+\[
+\text{gain}_t = w_t \cdot \min(c(l_t,r_t), d_t).
+\]
+
+Your goal is to choose the final sequence `b` to maximize the total gain.
+
+This is an optimization problem: better solutions receive higher scores.
+
+---
+
+## Input
+
+The first line contains three integers:
+
+\[
+n,\ q,\ k
+\]
+
+- `n` — sequence length and value range,
+- `q` — number of weighted intervals,
+- `k` — maximum number of positions you may modify.
+
+The second line contains `n` integers:
+
+\[
+p_1,p_2,\dots,p_n
+\]
+
+forming a permutation of `[1,n]`, with `p_i != i` for all `i`.
+
+The third line contains `n` integers:
+
+\[
+a_1,a_2,\dots,a_n
+\]
+
+the initial sequence, where each `a_i` is in `[1,n]`.
+
+Each of the next `q` lines contains four integers:
+
+\[
+l_t,\ r_t,\ w_t,\ d_t
+\]
+
+describing one interval.
+
+---
+
+## Output
+
+Output one line containing `n` integers:
+
+\[
+b_1,b_2,\dots,b_n
+\]
+
+the final sequence.
+
+### Feasibility requirements
+
+Your output is **feasible** if all of the following hold:
+
+- `1 <= b_i <= n` for every `i`,
+- the Hamming distance between `a` and `b` is at most `k`, i.e.
+  \[
+  |\{i \mid a_i \ne b_i\}| \le k.
+  \]
+
+If the output is infeasible, its objective value for that test case is treated as `0`.
+
+---
+
+## Objective
+
+For each interval `t`, let
+
+\[
+S_t=\{b_{l_t},b_{l_t+1},\dots,b_{r_t}\}
+\]
+
+and
+
+\[
+c_t = |\{x\in[1,n]\mid x\in S_t\ \text{and}\ p_x\in S_t\}|.
+\]
+
+Then the interval contributes
+
+\[
+w_t \cdot \min(c_t,d_t).
+\]
+
+The total objective value is
+
+\[
+\text{Obj} = \sum_{t=1}^{q} w_t \cdot \min(c_t,d_t).
+\]
+
+You must **maximize** `Obj`.
+
+---
+
+## Scoring
+
+For each test case:
+
+- Let `B` be the objective value of the **baseline solution** that makes **no modifications**, i.e. `b = a`.
+- Let
+  \[
+  U=\sum_{t=1}^{q} w_t \cdot d_t
+  \]
+  be the trivial upper bound for that test case.
+
+Your test-case score is:
+
+\[
+\text{Score}=
+\begin{cases}
+100, & \text{if } U=B,\\[4pt]
+100 \cdot \operatorname{clamp}\!\left(\dfrac{\text{Obj}-B}{U-B},\,0,\,1\right), & \text{otherwise.}
+\end{cases}
+\]
+
+where
+
+\[
+\operatorname{clamp}(x,0,1)=\max(0,\min(1,x)).
+\]
+
+The final score is the arithmetic mean of the test-case scores.
+
+### Notes
+
+- Submitting the unchanged sequence `a` always achieves the baseline score contribution `0` on every nontrivial test.
+- Any improvement over the baseline yields a strictly higher score.
+- Reaching the upper bound `U` yields score `100` on that test case.
+
+---
+
+## Constraints
+
+- `1 <= n <= 200000`
+- `1 <= q <= 200000`
+- `0 <= k <= n`
+- `1 <= a_i <= n`
+- `p` is a permutation of `[1,n]`
+- `p_i != i`
+- `1 <= l_t <= r_t <= n`
+- `1 <= w_t <= 10^6`
+- `1 <= d_t <= n`
+
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+5 3 1
+2 3 1 5 4
+1 4 1 5 3
+1 3 10 1
+2 5 6 2
+1 5 4 3
+```
+
+### Output
+```text
+1 4 2 5 3
+```
+
+### Explanation
+
+The permutation is:
+
+- `1 -> 2`
+- `2 -> 3`
+- `3 -> 1`
+- `4 -> 5`
+- `5 -> 4`
+
+The output changes only position `3`, so it is feasible because `k = 1`.
+
+For the final sequence `b = [1,4,2,5,3]`:
+
+- Interval `[1,3]` contains labels `{1,2,4}`.  
+  Supported labels: `1` (because `2` is present).  
+  So `c_1 = 1`, contribution `10 * min(1,1) = 10`.
+
+- Interval `[2,5]` contains labels `{2,3,4,5}`.  
+  Supported labels: `2`, `4`, `5`.  
+  So `c_2 = 3`, contribution `6 * min(3,2) = 12`.
+
+- Interval `[1,5]` contains labels `{1,2,3,4,5}`.  
+  All five labels are supported.  
+  So `c_3 = 5`, contribution `4 * min(5,3) = 12`.
+
+Total objective:
+
+\[
+10 + 12 + 12 = 34.
+\]
+
+The baseline `b=a=[1,4,1,5,3]` has objective `24`, while
+
+\[
+U = 10\cdot1 + 6\cdot2 + 4\cdot3 = 34.
+\]
+
+So this output achieves the maximum possible score `100` on this example.
+```

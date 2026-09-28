@@ -1,0 +1,188 @@
+```markdown
+# Byteasar's Heritage Lanes
+
+## Problem
+
+Byteasar wants to preserve a few of Byteotia's old dirt roads as **heritage lanes** before they are all converted into motorways.
+
+The villages are connected by a tree rooted at village `1` (Bitburg). For every road, a future upgrade day is already scheduled. Before that day, the road is still a dirt road; from that day onward, it becomes a motorway unless Byteasar pays to preserve it forever.
+
+Byteasar also remembers `m` mail trips. Each trip starts in Bitburg and goes to a destination village on a given day. Dirt roads are slower, but they contribute nostalgia value. Motorways are faster, but contribute no nostalgia.
+
+Your task is to choose which roads to preserve, under a total subsidy budget, so as to maximize Byteasar's total satisfaction.
+
+For each road `e`, you are given:
+
+- `t_e` — the day when the road would be upgraded,
+- `c_e` — preservation cost,
+- `d_e` — travel time if the road is dirt,
+- `h_e` — travel time if the road is a motorway (`h_e < d_e`),
+- `g_e` — nostalgia gained when traversing that road while it is dirt.
+
+For each trip `i`, you are given:
+
+- `tau_i` — the day of the trip,
+- `x_i` — destination village,
+- `L_i` — preferred maximum total travel time,
+- `w_i` — importance multiplier for nostalgia,
+- `p_i` — penalty per unit of lateness.
+
+The route of a trip is always the unique path from village `1` to village `x_i`.
+
+If road `e` is preserved, then it is treated as dirt on every day.
+If road `e` is not preserved, then:
+
+- it is dirt on days `tau < t_e`,
+- it is a motorway on days `tau >= t_e`.
+
+Trips are independent; there is no congestion or interaction between trips.
+
+## Input
+
+The input instance has the following format:
+
+- The first line contains three integers  
+  `n m B` — the number of villages, the number of trips, and the total preservation budget.
+- The next `n-1` lines describe the roads.  
+  Line `j` (`1 <= j <= n-1`) contains seven integers  
+  `a_j b_j t_j c_j d_j h_j g_j`
+  describing road `j`, connecting villages `a_j` and `b_j`.
+- The next `m` lines describe the trips.  
+  Line `i` contains five integers  
+  `tau_i x_i L_i w_i p_i`.
+
+Roads are numbered from `1` to `n-1` in input order.
+
+The road network is guaranteed to form a tree.
+
+## Output
+
+Output any preservation plan in the following format:
+
+- The first integer must be `k` — the number of preserved roads.
+- Then output `k` distinct road IDs, each between `1` and `n-1`.
+
+Any whitespace-separated format is accepted.
+
+A plan is **feasible** iff:
+
+- all chosen road IDs are distinct and valid,
+- the sum of their preservation costs is at most `B`.
+
+If the output is malformed or infeasible, the score for that test case is `0`.
+
+## Objective
+
+Let `S` be the set of preserved roads.
+
+For a trip `i`, consider each road `e` on the path from `1` to `x_i`:
+
+- if `e in S` or `tau_i < t_e`, then:
+  - traversal time on `e` is `d_e`,
+  - nostalgia gained on `e` is `g_e`;
+- otherwise:
+  - traversal time on `e` is `h_e`,
+  - nostalgia gained on `e` is `0`.
+
+Define:
+
+- `T_i(S)` = total travel time of trip `i`,
+- `G_i(S)` = total nostalgia gained on trip `i`.
+
+The utility of trip `i` is
+
+`U_i(S) = w_i * G_i(S) - p_i * max(0, T_i(S) - L_i)`.
+
+The total objective is
+
+`OBJ(S) = sum of U_i(S) over all trips`.
+
+Your goal is to **maximize `OBJ(S)`**.
+
+## Scoring
+
+For each test case:
+
+- Let `BASE = OBJ(empty set)` — the objective of preserving no roads.
+- Let
+
+  `UPPER = sum over trips i of (w_i * total_g_i)`
+
+  where `total_g_i` is the sum of `g_e` over all roads on the path from `1` to `x_i`.
+
+`UPPER` is a valid upper bound because it assumes every road on every trip is dirt and ignores all lateness penalties.
+
+If your output is infeasible, the score for the test case is `0`.
+
+Otherwise, let `ANS = OBJ(S)` for your submitted plan.  
+The test-case score is:
+
+- `1_000_000`, if `UPPER = BASE`,
+- otherwise
+
+`floor(1_000_000 * clamp((ANS - BASE) / (UPPER - BASE), 0, 1))`.
+
+Here `clamp(v, 0, 1) = max(0, min(1, v))`.
+
+The total score is the arithmetic mean of the test-case scores, rounded down to the nearest integer.
+
+### Baseline
+
+A valid baseline solution is: preserve no roads.
+
+## Constraints
+
+- `1 <= n <= 200000`
+- `1 <= m <= 200000`
+- `1 <= B <= 10^14`
+- `1 <= t_j, tau_i <= 10^9`
+- `1 <= c_j <= 10^9`
+- `1 <= h_j < d_j <= 1000`
+- `1 <= g_j <= 100`
+- `0 <= L_i <= 2 * 10^8`
+- `1 <= w_i, p_i <= 1000`
+- All values fit in signed 64-bit integers.
+- Time limit: 8 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+5 4 6
+1 2 3 4 5 2 6
+1 3 5 3 4 1 4
+2 4 2 2 3 1 5
+2 5 4 5 6 2 7
+1 4 10 1 3
+3 4 6 2 4
+4 5 7 1 2
+5 3 3 3 5
+```
+
+### Output
+```text
+2 1 3
+```
+
+### Explanation
+
+The submission preserves roads `1` and `3`, whose total cost is `4 + 2 = 6`, exactly the budget.
+
+- Trip 1 (`day 1`, to village `4`) happens before either of those roads would be upgraded, so it already enjoys both dirt roads.
+- Trip 2 (`day 3`, to village `4`) would normally see both roads already upgraded, but preserving them restores nostalgia at the cost of slower travel.
+- Trip 3 benefits from preserving road `1`.
+- Trip 4 does not use either preserved road.
+
+For this instance:
+
+- `OBJ(empty set) = 11`
+- `OBJ({1,3}) = 31`
+- `UPPER = 58`
+
+So the test-case score of the sample output is:
+
+`floor(1_000_000 * (31 - 11) / (58 - 11)) = 425531`.
+
+This is only one possible solution; better plans may exist on other instances.
+```

@@ -2,6 +2,21 @@
 
 Reproducibility manifests for the dataset subsets used in the paper.
 
+## `frontiersmith_train_200.json`
+
+The exact 200-problem synthetic training set. Each `problems` entry contains
+only a released `problem_id` (`frontiersmith_0` through `frontiersmith_199`).
+The entry order matches the training Parquet row order.
+
+See the [repository README](../../README.md) for the release contents
+and Parquet preparation command.
+
+## `frontiersmith_parity_10.json`
+
+The 10 parity examples are a subset of the 200 training problems. Their
+duplicate directories have been removed. Each entry records the canonical `problem_id`,
+the original `parity_index` (1–10), and its `frontiercs_id` (306–315).
+
 ## `harbor_sample_30.jsonl`
 
 30 problem statements (10 each from HardTest, Frontier-CS public, and the
@@ -10,16 +25,16 @@ synthetic set) sampled with seed `20260506`. Each line is a JSON object:
 ```jsonc
 {
   "statement": "<sample-folder>/<n>.txt",  // logical position in the harbor sample
-  "dataset":   "hardtest" | "frontiercs_statement" | "synthetic_v5",
+  "dataset":   "hardtest" | "frontiercs_statement" | "frontiersmith",
   "task_dir":  "frontier-cs-algorithm-<problem_id>",
   "problem_id": "<problem_id>",
-  "source_dir": "Frontier-CS/algorithmic/problems/<problem_id>",
-  "old_statement": "statement_<i>.txt"
+  "source_dir": "Frontier-CS/algorithmic/problems/<problem_id>"
 }
 ```
 
-The 10 `synthetic_v5` problems referenced here are the ones shipped in this
-branch under `Frontier-CS/algorithmic/problems/synthetic_v5_*`.
+The 10 `frontiersmith` entries reference the canonical `frontiersmith_*`
+directories in this release. `problem_id`, `source_dir`, and `task_dir` use
+the zero-based released IDs.
 
 ## `hardtest_hard_sampled_200.json`
 

@@ -1,0 +1,197 @@
+```markdown
+# Sushi Belt Harmony Designer
+
+## Problem
+
+At the NOI celebration, the organizers want to display sushi on several conveyor belts before dinner starts.
+
+There are `n` sushi plates, indexed `1..n`. Plate `i` has deliciousness value `a_i`.
+
+There are `m` conveyor belts. Belt `t` must contain exactly `L_t` plates, arranged in a **line** from left to right.
+
+A displayed arrangement earns points in two ways:
+
+1. **Belt preference bonus**  
+   Belt `t` has an anchor flavor number `q_t` and a bonus value `b_t`.  
+   Every plate `i` placed on belt `t` contributes:
+   - `b_t` points if `gcd(a_i, q_t) > 1`
+   - `0` otherwise
+
+2. **Adjacency harmony bonus**  
+   Belt `t` also has an adjacency multiplier `c_t`.  
+   For every adjacent pair of plates `(x, y)` on that belt, add:
+   - `c_t * (gcd(a_x, a_y) - 1)` if `gcd(a_x, a_y) > 1`
+   - `0` otherwise
+
+Your task is to assign every plate to exactly one belt and choose the order on each belt to **maximize the total score**.
+
+This is an optimization problem: any feasible output is accepted, and better solutions receive higher scores.
+
+---
+
+## Input
+
+The input contains a single test case.
+
+- The first line contains two integers `n` and `m`.
+- The second line contains `n` integers `a_1, a_2, ..., a_n`.
+- The next `m` lines describe the belts. Line `t` contains four integers:
+  `L_t c_t q_t b_t`
+
+### Meaning
+- `n`: number of sushi plates
+- `m`: number of conveyor belts
+- `a_i`: deliciousness value of plate `i`
+- `L_t`: required number of plates on belt `t`
+- `c_t`: adjacency harmony multiplier of belt `t`
+- `q_t`: anchor flavor number of belt `t`
+- `b_t`: per-plate preference bonus of belt `t`
+
+It is guaranteed that:
+
+- `L_1 + L_2 + ... + L_m = n`
+
+---
+
+## Output
+
+Output exactly `m` lines.
+
+- Line `t` must contain exactly `L_t` distinct integers: the indices of the plates placed on belt `t`, in left-to-right order.
+
+### Feasibility requirements
+Your output is **feasible** iff all of the following hold:
+
+- Every printed number is an integer in `[1, n]`
+- Each plate index appears **exactly once** across all `m` lines
+- Line `t` contains exactly `L_t` indices
+
+If your output is infeasible, the objective value for that test is `0`.
+
+---
+
+## Objective
+
+For belt `t`, let its output sequence be:
+
+`p_{t,1}, p_{t,2}, ..., p_{t,L_t}`
+
+Then the score of belt `t` is:
+
+\[
+\text{Score}_t =
+\sum_{j=1}^{L_t}
+\left[
+\gcd(a_{p_{t,j}}, q_t) > 1
+\right] \cdot b_t
++
+c_t \cdot
+\sum_{j=1}^{L_t-1}
+\max(0, \gcd(a_{p_{t,j}}, a_{p_{t,j+1}}) - 1)
+\]
+
+where `[...]` is `1` if the condition is true and `0` otherwise.
+
+The total objective value is:
+
+\[
+\text{Obj} = \sum_{t=1}^{m} \text{Score}_t
+\]
+
+Your goal is to **maximize `Obj`**.
+
+---
+
+## Scoring
+
+For each test case, the judge also computes a **baseline solution**:
+
+1. Sort all plates by increasing `(a_i, i)`.
+2. Fill belt `1`, then belt `2`, ..., then belt `m` in this sorted order.
+3. Within each belt, keep the same order.
+
+Let:
+- `Y` = your objective value
+- `B` = baseline objective value
+
+Then your score for that test case is:
+
+\[
+\text{TestScore} =
+100 \times \min\left(2,\ \frac{Y+1}{B+1}\right)
+\]
+
+If your output is infeasible, `TestScore = 0`.
+
+The final score over multiple test files is the arithmetic mean of `TestScore` over all test files.
+
+### Notes
+- The `+1` avoids division by zero.
+- The score is capped at `200` per test file.
+- The baseline is always deterministic and can be implemented by contestants.
+
+---
+
+## Constraints
+
+- `1 <= m <= 50`
+- `1 <= n <= 4000`
+- `2 <= a_i <= 10^9`
+- `1 <= L_t <= n`
+- `1 <= c_t <= 10^4`
+- `2 <= q_t <= 10^9`
+- `0 <= b_t <= 10^4`
+- `L_1 + ... + L_m = n`
+
+The official tests are designed so that exhaustive search is not practical.
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+6 2
+6 10 15 7 14 21
+4 3 6 5
+2 1 35 4
+```
+
+### Sample output
+```text
+1 2 5 6
+3 4
+```
+
+### Explanation
+
+Belt 1 contains plates with deliciousness values `6, 10, 14, 21`.
+
+- Preference bonus on belt 1:
+  - `gcd(6,6)>1`, `gcd(10,6)>1`, `gcd(14,6)>1`, `gcd(21,6)>1`
+  - so `4 * 5 = 20`
+- Adjacency bonus on belt 1:
+  - `(6,10)`: `gcd=2`, contributes `3*(2-1)=3`
+  - `(10,14)`: `gcd=2`, contributes `3`
+  - `(14,21)`: `gcd=7`, contributes `3*(7-1)=18`
+  - total adjacency = `24`
+
+So belt 1 scores `44`.
+
+Belt 2 contains deliciousness values `15, 7`.
+
+- Preference bonus:
+  - `gcd(15,35)>1`, `gcd(7,35)>1`
+  - so `2 * 4 = 8`
+- Adjacency bonus:
+  - `gcd(15,7)=1`, contributes `0`
+
+So belt 2 scores `8`.
+
+Total objective value: `44 + 8 = 52`.
+
+The judge would compare `52` with the baseline solution's objective to compute the final score for this test.
+```

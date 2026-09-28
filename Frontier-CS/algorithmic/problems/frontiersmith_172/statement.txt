@@ -1,0 +1,234 @@
+```markdown
+# Sheldon's Avatar Factory
+
+## Problem
+> "I'm a fan of anything that tries to replace actual human contact." — Sheldon
+
+Sheldon wants to replace each person with a programmable **avatar**.
+
+There are `k` people. Person `i` is described by a nonnegative integer `n_i` whose binary representation over `B` bits indicates which interaction traits this person possesses.
+
+An avatar is also described by a `B`-bit integer `m`.
+
+Avatar `m` can imitate person `i` **only if**
+- every bit set in `m` is also set in `n_i`, i.e. `m` is a bitwise submask of `n_i`, or equivalently
+- `(m & ~n_i) = 0`.
+
+(As a curiosity, this is exactly the condition under which the binomial coefficient `C(n_i, m)` is odd.)
+
+Each bit position `b` has a positive importance `c_b`.  
+Define the **trait value** of any mask `x` as
+
+\[
+V(x) = \sum_{b=0}^{B-1} c_b \cdot \text{bit}(x,b),
+\]
+
+where `bit(x,b)` is `1` if bit `b` is set in `x`, otherwise `0`.
+
+If person `i` is assigned to avatar `m`, then the **dissatisfaction cost** is
+
+\[
+w_i \cdot (V(n_i) - V(m)),
+\]
+
+where `w_i` is the importance weight of person `i`.
+
+If Sheldon deploys an avatar with mask `m`, then the **deployment cost** is
+
+\[
+F + G \cdot V(m)^2.
+\]
+
+You may deploy any number of avatars and assign every person to exactly one deployed avatar that can imitate them.
+
+Your goal is to **minimize the total cost**:
+- sum of deployment costs of all deployed avatars,
+- plus sum of dissatisfaction costs over all people.
+
+This is an optimization problem: exact solutions are generally infeasible under the full constraints, so good heuristics matter.
+
+## Input
+The first line contains a single integer `T` — the number of test cases.
+
+Each test case has the following format:
+
+- One line with four integers  
+  `k B F G`
+- One line with `B` integers  
+  `c_0 c_1 ... c_{B-1}`
+- Then `k` lines follow, each containing two integers  
+  `n_i w_i`
+
+### Meaning
+- `k` — number of people
+- `B` — number of bits / traits
+- `F`, `G` — deployment parameters
+- `c_b` — importance of bit `b`
+- `n_i` — trait mask of person `i`
+- `w_i` — dissatisfaction weight of person `i`
+
+## Output
+For each test case output a feasible avatar plan in the following format:
+
+- One line with an integer `r` — the number of deployed avatars
+- One line with `r` integers  
+  `m_1 m_2 ... m_r`
+- One line with `k` integers  
+  `a_1 a_2 ... a_k`
+
+### Interpretation
+- `m_j` is the mask of avatar `j`
+- `a_i` is the index (1-based) of the avatar assigned to person `i`
+
+### Feasibility requirements
+For every test case:
+- `1 <= r <= k`
+- `0 <= m_j < 2^B` for all `j`
+- `1 <= a_i <= r` for all `i`
+- for every person `i`, avatar `a_i` must be able to imitate them:
+  \[
+  (m_{a_i} \;\&\; \sim n_i) = 0
+  \]
+  considering only the lowest `B` bits.
+
+Unused avatars are allowed, but they still count toward the deployment cost.
+
+Any violation makes the output for that test case **invalid**.
+
+## Objective
+For a feasible output, define:
+
+- deployment cost
+  \[
+  \sum_{j=1}^{r} \left(F + G \cdot V(m_j)^2\right)
+  \]
+
+- dissatisfaction cost
+  \[
+  \sum_{i=1}^{k} w_i \cdot (V(n_i) - V(m_{a_i}))
+  \]
+
+The total objective value is
+
+\[
+C = \sum_{j=1}^{r} \left(F + G \cdot V(m_j)^2\right)
++ \sum_{i=1}^{k} w_i \cdot (V(n_i) - V(m_{a_i})).
+\]
+
+You must **minimize `C`**.
+
+## Scoring
+For each test case, the judge also computes the cost of the following baseline solution:
+
+- deploy `k` avatars,
+- avatar `i` has mask exactly `n_i`,
+- person `i` is assigned to avatar `i`.
+
+Its cost is
+
+\[
+B_{\text{base}} = \sum_{i=1}^{k} \left(F + G \cdot V(n_i)^2\right),
+\]
+
+because every dissatisfaction term is `0`.
+
+If your output for a test case is invalid, that test case receives score `0`.
+
+Otherwise, if your solution cost is `C`, your score for that test case is
+
+\[
+\text{score} = 10^6 \cdot \frac{B_{\text{base}}}{B_{\text{base}} + C}.
+\]
+
+This gives:
+- exactly `500000` if you match the baseline,
+- more than `500000` if you beat the baseline,
+- less than `500000` if you are worse,
+- values approaching `1000000` as `C` approaches `0`.
+
+The final score is the arithmetic mean of the per-test scores.
+
+All objective and scoring calculations are exact; implementations should use at least 128-bit integer arithmetic for costs.
+
+## Constraints
+- `1 <= T <= 20`
+- `1 <= B <= 60`
+- `1 <= k`
+- Sum of `k` over all test cases does not exceed `200000`
+- `1 <= F <= 10^18`
+- `1 <= G <= 10^6`
+- `1 <= c_b <= 10^6`
+- `0 <= n_i < 2^B`
+- `1 <= w_i <= 10^6`
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample input
+```text
+1
+3 3 10 1
+3 2 1
+7 5
+6 4
+4 6
+```
+
+### One possible sample output
+```text
+2
+6 4
+1 1 2
+```
+
+### Explanation
+There are 3 bits with values:
+- bit 0 → 3
+- bit 1 → 2
+- bit 2 → 1
+
+So:
+- `V(7 = 111₂) = 3+2+1 = 6`
+- `V(6 = 110₂) = 2+1 = 3`
+- `V(4 = 100₂) = 1`
+
+The output deploys:
+- avatar 1 with mask `6 = 110₂`
+- avatar 2 with mask `4 = 100₂`
+
+Assignments:
+- person 1 → avatar 1
+- person 2 → avatar 1
+- person 3 → avatar 2
+
+All assignments are feasible because each avatar mask is a submask of the assigned person's mask.
+
+Costs:
+- deployment:
+  - avatar `6`: `10 + 1 * 3^2 = 19`
+  - avatar `4`: `10 + 1 * 1^2 = 11`
+- dissatisfaction:
+  - person 1: `5 * (6 - 3) = 15`
+  - person 2: `4 * (3 - 3) = 0`
+  - person 3: `6 * (1 - 1) = 0`
+
+Total:
+\[
+C = 19 + 11 + 15 = 45
+\]
+
+Baseline:
+- one avatar per person with exact masks
+\[
+B_{\text{base}} = (10+6^2) + (10+3^2) + (10+1^2) = 46+19+11 = 76
+\]
+
+Score:
+\[
+10^6 \cdot \frac{76}{76+45} \approx 628099.17
+\]
+
+So this output scores about `628099.17` on this test.
+```

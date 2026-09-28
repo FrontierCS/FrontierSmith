@@ -1,194 +1,209 @@
 ```markdown
-# Scorched Bridges Campaign
+# Sparse Prefix/Suffix Calibration
 
 ## Problem
 
-The enemy controls an archipelago of islands connected by bridges. Their headquarters is on island `1`.
+A laboratory is calibrating a line of `n` storage cells.  
+Cell `i` will finally contain an **integer** load `a_i` with `-m <= a_i <= m`.
 
-You have obtained a forecast of the next `m` days. On day `i`, several islands will contain energy depots. If an island with a depot is still connected to island `1`, the enemy harvests its energy that day. If it is disconnected from island `1`, that depot is denied.
+The lab has `q` noisy meter readings. Reading `j` is attached to a position `p_j` and can observe either:
 
-You may prepare a long-term demolition campaign:
+- a **prefix sum**: `a_1 + a_2 + ... + a_{p_j}`, or
+- a **suffix sum**: `a_{p_j} + a_{p_j+1} + ... + a_n`.
 
-- A bridge can be **rigged** in advance, paying a one-time installation cost.
-- On any day, you may **detonate** any subset of rigged bridges, paying a per-use cost for each detonation.
-- Destroyed bridges are repaired by the enemy overnight, so each day starts from the original graph again.
-- Each rigged bridge has a limited number of times it can be detonated during the whole campaign.
-- Your demolition teams also have a daily limit on how many bridges they can blow up on each day.
+Some meters are fixed to one direction; others can be rewired.
 
-Your task is to output **any feasible campaign plan**. The judge will compute its total cost, combining your demolition expenses and the total energy still harvested by the enemy. Lower is better.
+Additionally, due to maintenance cost, at most `k` cells may be non-zero.
 
-Because the graph is general and decisions interact across many days, exact optimization is intended to be intractable; heuristic approaches are expected.
+Your task is to output:
+
+1. an integer array `a_1, ..., a_n`,
+2. for every reading, whether it is interpreted as prefix (`P`) or suffix (`S`),
+
+so as to maximize the total calibration reward.
+
+---
+
+For reading `j`, the input gives:
+
+- position `p_j`,
+- type `c_j` in `{P, S, ?}`,
+- target value `b_j`,
+- importance weight `w_j`,
+- tolerance `d_j`.
+
+If you assign this reading direction:
+
+- `P`, its predicted value is `sum(a_1 ... a_{p_j})`,
+- `S`, its predicted value is `sum(a_{p_j} ... a_n)`.
+
+If `c_j` is `P` or `S`, you must keep that direction.  
+If `c_j` is `?`, you may choose either `P` or `S`.
+
+The reward of reading `j` is
+
+`reward_j = w_j * max(0, d_j + 1 - |pred_j - b_j|)`.
+
+So:
+
+- exact match gives `w_j * (d_j + 1)`,
+- being off by `1` loses `w_j`,
+- ...
+- being off by more than `d_j` gives `0`.
+
+Your goal is to maximize the sum of rewards over all readings.
 
 ## Input
 
-The first line contains two integers:
+The first line contains one integer `t` — the number of test cases.
 
-- `n` — number of islands
-- `e` — number of bridges
+Each test case begins with a line containing four integers:
 
-Islands are numbered from `1` to `n`.  
-Bridges are numbered from `1` to `e` in input order.
+`n q k m`
 
-The next `e` lines each contain five integers:
+- `n` — number of cells,
+- `q` — number of readings,
+- `k` — maximum allowed number of non-zero cells,
+- `m` — bound on `|a_i|`.
 
-- `u_j, v_j` — endpoints of bridge `j`
-- `a_j` — installation cost to rig bridge `j`
-- `b_j` — cost each time bridge `j` is detonated
-- `c_j` — maximum number of days bridge `j` may be detonated over the whole campaign
+Then follow `q` lines, one per reading:
 
-Then follows one integer:
+`p_j c_j b_j w_j d_j`
 
-- `m` — number of forecast days
+where:
 
-The next `m` lines describe the days.  
-Line `i` contains:
-
-- `r_i` — number of energy depots on day `i`
-- `L_i` — maximum number of bridges you may detonate on day `i`
-- then `2 * r_i` integers:
-  - `h_1, v_1, h_2, v_2, ..., h_{r_i}, v_{r_i}`
-
-meaning island `h_t` has a depot worth `v_t` energy on day `i`.
-
-### Guarantees
-
-- The bridge graph is connected.
-- `h_t != 1` for all depots.
-- Within one day, all depot islands are distinct.
+- `1 <= p_j <= n`,
+- `c_j` is `P`, `S`, or `?`,
+- `b_j` is the target sum,
+- `w_j` is the importance weight,
+- `d_j` is the tolerance.
 
 ## Output
 
-Your output must describe one campaign plan.
+For each test case, output **two lines**:
 
-- First line: one integer `x` — number of rigged bridges.
-- Second line: `x` distinct integers — the IDs of the rigged bridges, in any order.  
-  If `x = 0`, this line should be empty.
+1. `n` integers: `a_1 a_2 ... a_n`
+2. a string `o` of length `q`, consisting only of `P` and `S`
 
-Then output `m` lines.  
-On day `i`, output:
+Feasibility rules:
 
-- `d_i` — number of bridges detonated on day `i`
-- followed by `d_i` distinct bridge IDs
+- `|a_i| <= m` for every `i`,
+- at most `k` values among `a_1, ..., a_n` may be non-zero,
+- if `c_j = P`, then `o_j` must be `P`,
+- if `c_j = S`, then `o_j` must be `S`,
+- if `c_j = ?`, then `o_j` may be either `P` or `S`.
 
-### Feasibility requirements
-
-Your output is **feasible** iff all of the following hold:
-
-1. Every listed bridge ID is between `1` and `e`.
-2. The rigged bridge list contains no duplicates.
-3. On each day, the detonated bridge list contains no duplicates.
-4. Every detonated bridge must be rigged.
-5. For each day `i`, `d_i <= L_i`.
-6. For each bridge `j`, it is detonated on at most `c_j` different days over the entire campaign.
-
-If your output is infeasible, the score for that test is `0`.
+If your output for a test case is infeasible, that test case receives objective value `0`.
 
 ## Objective
 
-For each day `i`:
+For a feasible output, define:
 
-1. Start from the original graph.
-2. Remove all bridges detonated on day `i`.
-3. Any depot island still connected to island `1` contributes its value to the enemy's harvested energy that day.
-4. Any depot island disconnected from island `1` contributes `0`.
+- `pref_i = a_1 + ... + a_i`
+- `suff_i = a_i + ... + a_n`
 
-Let:
+For reading `j`:
 
-- `InstallCost = sum of a_j over all rigged bridges`
-- `BlastCost = sum of b_j over all detonations on all days`
-- `Harvested = sum of values of all depots that remain connected to island 1 on their respective days`
+- if `o_j = P`, then `pred_j = pref_{p_j}`,
+- if `o_j = S`, then `pred_j = suff_{p_j}`.
 
-Your objective value is
+Its reward is
 
-`F = InstallCost + BlastCost + Harvested`
+`reward_j = w_j * max(0, d_j + 1 - |pred_j - b_j|)`.
 
-You must **minimize** `F`.
+The objective value for the test case is
+
+`OBJ = sum(reward_j for all readings j)`.
+
+Higher is better.
 
 ## Scoring
 
-For each test file, define the baseline solution as:
+For each test case, let `B` be the objective value of the following **baseline**:
 
-- rig no bridges,
-- detonate no bridges on every day.
+- consider the all-zero array, and
+- for every position `x` from `1` to `n`, also consider the arrays with exactly one non-zero entry:
+  - `a_x = +m`, all others `0`
+  - `a_x = -m`, all others `0`
 
-Its objective value is
+For each of these candidate arrays:
 
-`B = sum of all depot values on all days`.
+- fixed readings keep their fixed direction,
+- each `?` reading chooses whichever of `P` or `S` gives larger reward for that candidate.
 
-For a feasible submission with objective value `F`, the test score is
+`B` is the maximum objective among all these candidates.
 
-`Score_test = min(1000, 100 * B / max(1, F))`
+If your objective on the test case is `OBJ`, then the test-case score is
 
-An infeasible submission receives `Score_test = 0`.
-
-The final score is the arithmetic mean of `Score_test` over all test files.
+`score = floor(1_000_000 * min(5, (OBJ + 1) / (B + 1)))`.
 
 Notes:
 
-- The baseline always scores exactly `100` on every test.
-- Better solutions score higher than `100`.
-- A solution at least `10` times better than the baseline is capped at `1000` on that test.
+- A submission matching the baseline gets approximately `1,000,000` points on that test.
+- Better-than-baseline solutions get more.
+- The factor is capped at `5`.
+
+The final score is the arithmetic mean of test-case scores over all test cases in the input file.
 
 ## Constraints
 
-- `2 <= n <= 2 * 10^5`
-- `n - 1 <= e <= 3 * 10^5`
-- `1 <= m <= 2 * 10^5`
-- `1 <= u_j, v_j <= n`, `u_j != v_j`
-- `1 <= a_j, b_j <= 10^6`
-- `1 <= c_j <= 20`
-- `1 <= r_i < n`
-- `0 <= L_i <= 20`
-- `1 <= v_t <= 10^6`
-- `sum r_i <= 5 * 10^5`
-- `sum L_i <= 5 * 10^5`
+- `1 <= t <= 20`
+- `2 <= n <= 5000`
+- `1 <= q <= 50000`
+- `0 <= k <= min(n, 60)`
+- `2 <= m <= 10^9`
+- `|b_j| <= m * n`
+- `1 <= w_j <= 1000`
+- `0 <= d_j <= 1000`
+- Sum of `n` over all test cases `<= 15000`
+- Sum of `q` over all test cases `<= 200000`
 
-## Constraints
-- Time limit: 8 seconds
+- Time limit: 5 seconds
 - Memory limit: 512 MB
 
 ## Example
 
 ### Input
 ```text
-5 4
-1 2 5 2 2
-2 3 2 1 1
-2 4 2 1 1
-1 5 4 2 1
-2
-2 1 3 10 4 8
-2 2 5 12 3 5
+1
+5 4 4 10
+3 P 4 5 0
+2 ? 1 3 1
+4 S 3 2 0
+5 ? 7 4 2
 ```
 
 ### Output
 ```text
-2
-1 4
-1 1
-2 1 4
+1 0 3 2 1
+PPSP
 ```
 
 ### Explanation
+The array has 4 non-zero entries, so it is feasible.
 
-- Rig bridges `1` and `4`.
-- Day 1: detonate bridge `1` (`1-2`), disconnecting islands `3` and `4`.
-- Day 2: detonate bridges `1` and `4`, disconnecting islands `3` and `5`.
+Its prefix sums are:
+- `1, 1, 4, 6, 7`
 
-Costs:
+Its suffix sums are:
+- `7, 6, 6, 3, 1`
 
-- Installation: `5 + 4 = 9`
-- Detonation: day 1 uses bridge `1` (`2`), day 2 uses bridges `1` and `4` (`2 + 2`), total `6`
-- Harvested energy: `0`
+Reading-by-reading:
 
-So `F = 9 + 6 + 0 = 15`.
+1. `(p=3, P, b=4, w=5, d=0)`  
+   predicted `4`, exact match, reward `5 * (0+1) = 5`.
 
-Baseline value:
-- Day 1: `10 + 8 = 18`
-- Day 2: `12 + 5 = 17`
-- `B = 35`
+2. `(p=2, ?, b=1, w=3, d=1)` with chosen `P`  
+   predicted `1`, exact match, reward `3 * (1+1) = 6`.
 
-Therefore this output gets
+3. `(p=4, S, b=3, w=2, d=0)`  
+   predicted `3`, exact match, reward `2`.
 
-`Score_test = 100 * 35 / 15 = 233.333...`
+4. `(p=5, ?, b=7, w=4, d=2)` with chosen `P`  
+   predicted `7`, exact match, reward `4 * (2+1) = 12`.
+
+So `OBJ = 5 + 6 + 2 + 12 = 25`.
+
+The judge also computes the baseline `B` from the zero array and all single-spike arrays `(+10)` / `(-10)`.  
+Your score for this test is then computed from `OBJ` and `B` using the scoring formula above.
 ```

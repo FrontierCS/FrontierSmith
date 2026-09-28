@@ -1,0 +1,203 @@
+```markdown
+# Perpetual Caravan Coverage
+
+## Problem
+
+A trade league wants to keep long-term contracts active across a road network.
+
+There are `n` cities and `m` one-way roads. City `i` has contract value `w_i`.
+
+The league may launch several independent caravans. Each caravan:
+
+- starts in one chosen city,
+- receives some integer amount of initial capital,
+- follows a finite **plan** consisting of a prefix and then a directed cycle,
+- repeats that cycle forever.
+
+A road can be used only if the caravan currently has enough capital. After taking a road, the caravan's capital changes by that road's profit/loss.
+
+Your task is to design up to `K` perpetual caravan plans, with total initial capital at most `B`, to **maximize the total contract value of cities visited by at least one caravan**.
+
+A city is considered covered if at least one caravan visits it at least once, either in its prefix or in one traversal of its cycle.
+
+---
+
+For each road `e`:
+
+- it goes from city `u_e` to city `v_e`,
+- it requires current capital at least `r_e` before traversal,
+- after traversal, capital becomes `capital + p_e`.
+
+Here `p_e` may be negative.
+
+A caravan plan is valid if:
+
+1. its listed roads form a continuous walk starting from its chosen start city,
+2. after the designated prefix, the remaining roads form a directed cycle,
+3. at every traversal in the listed walk, the caravan has enough capital and its capital never becomes negative after the move,
+4. after one full traversal of the cycle, the caravan ends with capital **at least** what it had at the start of the cycle.
+
+Condition 4 guarantees the cycle can be repeated forever.
+
+All caravans are independent: they do not share capital, roads, or cities in any special way.
+
+## Input
+
+The input describes one test file.
+
+- The first line contains four integers  
+  `n m K B`
+- The second line contains `n` integers  
+  `w_1 w_2 ... w_n`
+- The next `m` lines each contain four integers  
+  `u_e v_e r_e p_e`  
+  describing road `e` (roads are numbered from `1` to `m` in input order)
+
+## Output
+
+On the first line, output one integer `q` — the number of caravans you launch.
+
+Then output `q` caravan descriptions.
+
+For each caravan, output:
+
+- one line with four integers  
+  `s A L z`
+  - `s` = start city
+  - `A` = initial capital
+  - `L` = number of roads in the listed walk
+  - `z` = number of roads in the prefix
+
+- one line with `L` integers  
+  `e_1 e_2 ... e_L`  
+  the road IDs used, in order
+
+The meaning is:
+
+- the caravan starts at city `s` with capital `A`,
+- it traverses roads `e_1, e_2, ..., e_L`,
+- the first `z` roads are the prefix,
+- the remaining `L - z` roads are the cycle repeated forever.
+
+### Feasibility requirements
+
+Your output is feasible iff all of the following hold:
+
+- `0 <= q <= K`
+- for every caravan:
+  - `0 <= A`
+  - `1 <= L`
+  - `0 <= z < L`  
+    (the cycle must contain at least one road)
+  - road `e_1` starts at city `s`
+  - for all `t` from `1` to `L-1`, road `e_t` ends where road `e_{t+1}` starts
+  - if `z = 0`, then after road `e_L` the caravan returns to city `s`
+  - if `z > 0`, then after road `e_L` the caravan returns to the city reached after road `e_z`
+  - during simulation of roads `e_1..e_L`:
+    - before traversing road `e_t`, current capital must be at least that road's `r`
+    - after traversing it, current capital changes by `p`
+    - current capital must remain at least `0`
+  - if `C_cycle` is the capital immediately after the first `z` roads, and `C_end` is the capital after all `L` roads, then `C_end >= C_cycle`
+- the sum of all caravans' initial capitals is at most `B`
+- the sum of all `L` values is at most `400000`
+
+If the output is infeasible, the score for that test file is `0`.
+
+## Objective
+
+Let a city be **covered** if it is visited by at least one caravan at one of these moments:
+
+- its start city,
+- the city reached after any traversed road in the listed walk.
+
+(Only the listed walk matters; repeating the same cycle forever does not add new cities beyond those already seen in one cycle traversal.)
+
+Let `S` be the set of covered cities.
+
+Your objective value is
+
+\[
+O = \sum_{i \in S} w_i
+\]
+
+Maximize `O`.
+
+## Scoring
+
+For a test file:
+
+- let `W = \sum_{i=1}^n w_i`
+- the official baseline submits `q = 0`, so its objective is `O_base = 0`
+
+Your per-file score is
+
+\[
+\text{score} =
+100 \times \frac{\max(0, O - O_{base})}{W - O_{base}}
+=
+100 \times \frac{O}{W}
+\]
+
+clamped to the range `[0, 100]`.
+
+If your output is infeasible, the per-file score is `0`.
+
+The final score is the arithmetic mean of per-file scores over all test files.
+
+## Constraints
+
+- `2 <= n, m <= 200000`
+- `1 <= K <= 60`
+- `0 <= B <= 10^{12}`
+- `1 <= w_i <= 10^9`
+- `1 <= u_e, v_e <= n`
+- `u_e != v_e`
+- `0 <= r_e <= 10^9`
+- `-10^9 <= p_e <= 10^9`
+- total output walk length must be at most `400000`
+
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample Input
+```text
+5 6 2 4
+5 4 7 6 3
+1 2 2 1
+2 3 3 0
+3 1 3 1
+4 5 1 0
+5 4 1 0
+2 4 10 5
+```
+
+### Sample Output
+```text
+2
+1 3 3 0
+1 2 3
+4 1 2 0
+4 5
+```
+
+### Explanation
+
+- Caravan 1 starts at city `1` with capital `3`, and repeats roads `1 -> 2 -> 3`.
+  - Capitals: `3 -> 4 -> 4 -> 5`
+  - It returns to city `1`, and ends the cycle with at least its starting cycle capital, so it can repeat forever.
+  - It covers cities `1, 2, 3`.
+
+- Caravan 2 starts at city `4` with capital `1`, and repeats roads `4 -> 5`.
+  - Capitals: `1 -> 1 -> 1`
+  - It covers cities `4, 5`.
+
+All 5 cities are covered, so
+
+\[
+O = 5 + 4 + 7 + 6 + 3 = 25
+\]
+
+and since `W = 25`, the score for this file is `100`.
+```

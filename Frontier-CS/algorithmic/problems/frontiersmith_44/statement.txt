@@ -1,0 +1,128 @@
+```markdown
+# Factor Quartet Packing
+
+## Problem
+Dreamoon has collected `N` numbered crystals. Crystal `i` has a positive integer value `x_i`.
+
+You may build any number of **disjoint quartets**. A quartet is a set of exactly four **distinct indices**. Each crystal may belong to **at most one** quartet; leaving crystals unused is allowed.
+
+For a quartet `Q = {a, b, c, d}`, define:
+
+- `g2(Q)` = sum of the gcd of all `6` unordered pairs:
+  - `gcd(x_a, x_b) + gcd(x_a, x_c) + gcd(x_a, x_d) + gcd(x_b, x_c) + gcd(x_b, x_d) + gcd(x_c, x_d)`
+- `g4(Q)` = `gcd(x_a, x_b, x_c, x_d)`
+
+Its value is
+
+`value(Q) = max(0, g2(Q) + 2 * g4(Q) - P)`
+
+where `P` is a penalty given in the input.
+
+Your task is to output a feasible family of disjoint quartets maximizing the sum of their values.
+
+## Input
+The first line contains two integers:
+
+- `N` — number of crystals
+- `P` — quartet penalty
+
+The second line contains `N` integers:
+
+- `x_1, x_2, ..., x_N`
+
+## Output
+On the first line, print one integer `q` — the number of quartets in your solution.
+
+Then print `q` lines.  
+Each line must contain four distinct integers `a b c d` (`1 <= a, b, c, d <= N`) — the indices of one quartet.
+
+### Feasibility requirements
+Your output is **feasible** iff:
+
+- `0 <= q <= floor(N / 4)`
+- every printed line contains four distinct valid indices
+- no index appears in two different quartets
+
+If the output is not feasible, the score for that test case is `0`.
+
+The order of quartets and the order of indices inside a quartet do not matter.
+
+## Objective
+For a feasible output with quartets `Q_1, Q_2, ..., Q_q`, the objective value is
+
+`A = value(Q_1) + value(Q_2) + ... + value(Q_q)`
+
+where `value(Q)` is defined above.
+
+The judge computes `A` exactly using 64-bit signed integer arithmetic.
+
+## Scoring
+This is an optimization problem.
+
+For each test case, the judge also computes a **baseline solution** as follows:
+
+1. Form pairs `(x_i, i)` for all indices.
+2. Sort them by increasing `x_i`, breaking ties by increasing `i`.
+3. Take consecutive blocks of four in this sorted order:
+   - block 1 = positions `1..4`
+   - block 2 = positions `5..8`
+   - and so on
+4. Ignore any leftover `1`, `2`, or `3` elements.
+5. The baseline objective `B` is the sum of `value(Q)` over these blocks.
+
+Let your objective be `A`.  
+The score for that test case is:
+
+`score = 100 * clamp(0, 2, A / max(1, B))`
+
+where
+
+- `clamp(0, 2, z) = max(0, min(2, z))`
+
+So:
+
+- matching the baseline gives `100`
+- doing worse gives a score between `0` and `100`
+- doing better gives a score between `100` and `200`
+- scores are capped at `200` per test case
+
+The final score is the arithmetic mean of test-case scores.
+
+## Constraints
+- `1 <= N <= 3000`
+- `1 <= P <= 10^9`
+- `1 <= x_i <= 10^9`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+Input
+```text
+8 20
+6 12 18 24 5 10 15 25
+```
+
+Output
+```text
+2
+1 2 3 4
+5 6 7 8
+```
+
+Brief explanation:
+
+- For quartet `{1,2,3,4}` with values `{6,12,18,24}`:
+  - pairwise gcd sum = `42`
+  - gcd of all four = `6`
+  - value = `max(0, 42 + 2*6 - 20) = 34`
+- For quartet `{5,6,7,8}` with values `{5,10,15,25}`:
+  - pairwise gcd sum = `30`
+  - gcd of all four = `5`
+  - value = `max(0, 30 + 2*5 - 20) = 20`
+
+Total objective: `54`.
+
+The baseline sorts the values as `5, 6, 10, 12, 15, 18, 24, 25`, groups them into two consecutive blocks, and scores those blocks instead.
+```

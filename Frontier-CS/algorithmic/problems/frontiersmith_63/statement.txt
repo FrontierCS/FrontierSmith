@@ -1,0 +1,201 @@
+```markdown
+# Matched Backbone Redesign
+
+## Problem
+A company operates a communication backbone on `n` sites.  
+The current backbone is a **tree**. It can be redesigned by keeping some original links and replacing others with optional leased links, but the final backbone must still be a **spanning tree**.
+
+After the redesign, the company will run a synchronization procedure: some edges of the final tree will be chosen as a **matching** (no two chosen edges may share a vertex). If edge `(u, v)` is chosen in that matching, it yields value:
+
+`p[u] + p[v] + s[e]`
+
+where:
+
+- `p[i]` is the importance of site `i`
+- `s[e]` is the synchronization bonus of edge `e`
+
+Each optional leased link also has a leasing cost `c[e]`. Original tree edges have cost `0`.
+
+Your task is to output a final spanning tree maximizing:
+
+- the value of the **best possible matching inside your tree**
+- minus the total leasing cost of all optional edges used in your tree
+
+In other words, you choose the backbone; then the judge computes the maximum-weight matching on that tree.
+
+This is an optimization problem: better solutions receive higher scores.
+
+---
+
+## Input
+The input contains one test case.
+
+- The first line contains two integers `n` and `m` — the number of vertices and the number of optional edges.
+- The second line contains `n` integers `p[1], p[2], ..., p[n]`.
+
+Then follow the `n - 1` original edges, in order.  
+Each of these lines contains:
+
+- `u v s`
+
+meaning an original edge between `u` and `v` with synchronization bonus `s` and cost `0`.
+
+Then follow the `m` optional edges, in order.  
+Each of these lines contains:
+
+- `u v s c`
+
+meaning an optional edge between `u` and `v` with synchronization bonus `s` and leasing cost `c`.
+
+### Edge IDs
+All edges are assigned IDs as follows:
+
+- original edges: IDs `1 ... n-1` in input order
+- optional edges: IDs `n ... n+m-1` in input order
+
+It is guaranteed that:
+
+- the original `n-1` edges form a tree
+- all edges are undirected
+- no unordered pair of vertices appears more than once among all edges
+
+---
+
+## Output
+Output exactly `n - 1` **distinct** edge IDs — the edges of your final backbone.
+
+These IDs may be printed on one line or multiple lines, in any order.
+
+### Feasibility requirements
+Your chosen edges must:
+
+1. all be valid edge IDs
+2. be pairwise distinct
+3. contain exactly `n - 1` edges
+4. form a connected acyclic graph on all `n` vertices
+
+If any requirement is violated, the output is considered invalid and receives score `0` for the test.
+
+---
+
+## Objective
+Let `T` be the tree defined by your chosen edges.
+
+For every edge `e = (u, v)` in `T`, define its matching weight as:
+
+`w[e] = p[u] + p[v] + s[e]`
+
+Let `M` be any matching in `T` (a set of pairwise vertex-disjoint edges of `T`).
+
+The value of matching `M` is:
+
+`match_value(M) = sum of w[e] over all e in M`
+
+The total leasing cost of your tree is:
+
+`tree_cost(T) = sum of c[e] over all e in T`
+
+(where `c[e] = 0` for original edges)
+
+Your objective value is:
+
+`OBJ(T) = max over all matchings M in T of match_value(M) - tree_cost(T)`
+
+The judge computes this value exactly.
+
+---
+
+## Scoring
+This is a **maximization** problem.
+
+For each test, let:
+
+- `B` be the baseline objective value obtained by outputting the original tree:
+  `1 2 3 ... n-1`
+- `O` be your objective value
+
+Your per-test score is:
+
+`Score = 1000 * clamp(0, 2, (O + 1) / (B + 1))`
+
+where:
+
+- `clamp(0, 2, x) = max(0, min(2, x))`
+
+So:
+
+- matching the baseline gives exactly `1000`
+- improving on the baseline gives more than `1000`
+- very poor solutions may get close to `0`
+- scores are capped at `2000` per test
+
+If your output is invalid, the score for that test is `0`.
+
+If the contest uses multiple hidden tests, the final score is the **sum of per-test scores**.
+
+---
+
+## Constraints
+- `2 <= n <= 200000`
+- `0 <= m <= 300000`
+- `1 <= p[i] <= 10^6`
+- `0 <= s[e] <= 10^6`
+- `0 <= c[e] <= 10^6`
+- endpoints are between `1` and `n`
+
+Use 64-bit signed integers for all objective computations.
+
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+### Input
+```text
+4 2
+5 1 4 3
+1 2 0
+2 3 0
+3 4 0
+1 4 10 1
+2 4 5 3
+```
+
+### Output
+```text
+1 2 4
+```
+
+### Explanation
+Edge IDs are:
+
+- `1`: `(1,2)` original, bonus `0`, cost `0`
+- `2`: `(2,3)` original, bonus `0`, cost `0`
+- `3`: `(3,4)` original, bonus `0`, cost `0`
+- `4`: `(1,4)` optional, bonus `10`, cost `1`
+- `5`: `(2,4)` optional, bonus `5`, cost `3`
+
+The output chooses edges `{1, 2, 4}`, which form a tree.
+
+In this tree, the best matching is `{(2,3), (1,4)}` with value:
+
+- `(2,3)`: `p[2] + p[3] + 0 = 1 + 4 = 5`
+- `(1,4)`: `p[1] + p[4] + 10 = 5 + 3 + 10 = 18`
+
+So the best matching value is `23`.
+
+The tree uses optional edge `4`, so total leasing cost is `1`.
+
+Therefore:
+
+`OBJ = 23 - 1 = 22`
+
+The baseline is the original path `{1,2,3}`. Its best matching is `{(1,2), (3,4)}` with value:
+
+`(5+1) + (4+3) = 13`
+
+So `B = 13`, and the sample score would be:
+
+`1000 * (22 + 1) / (13 + 1) = 1642.857...`
+```

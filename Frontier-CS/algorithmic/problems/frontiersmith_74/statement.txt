@@ -1,0 +1,206 @@
+```markdown
+# Forward-Only Shuttle Design
+
+## Problem
+
+A city has a straight road with bus stops numbered from `0` to `n` in increasing order. Stop `0` is a residential area, stop `n` is the school district, and the stops in between are transfer points.
+
+There are `m` candidate shuttle routes. Route `i` is described by four integers:
+
+- `s_i`, `t_i` — the route starts at stop `s_i` and ends at stop `t_i` (`s_i < t_i`)
+- `c_i` — the route can carry at most `c_i` passengers in total
+- `f_i` — the fixed cost to operate this route
+
+A shuttle visits every intermediate stop from `s_i` to `t_i` in order. A passenger group may board route `i` at **any** stop `x` such that `s_i <= x < t_i`, but once they board it, they must stay on it until stop `t_i`.
+
+There are `p` passenger groups. Group `j` is described by four integers:
+
+- `a_j`, `b_j` — start and destination stops (`a_j < b_j`)
+- `q_j` — number of passengers in the group
+- `r_j` — reward earned if the whole group reaches `b_j`
+
+A group is either:
+
+- **served**: the whole group travels together on a sequence of operated routes, or
+- **not served**
+
+Groups cannot split, walk, or move backward.
+
+A served group `j` may use a route sequence `i_1, i_2, ..., i_k` if all of the following hold:
+
+1. `1 <= k <= 20`
+2. The group starts at `cur = a_j`
+3. For each route `i_t` in order:
+   - `s_{i_t} <= cur < t_{i_t}`
+   - after taking the route, `cur := t_{i_t}`
+4. After the last route, `cur = b_j`
+
+Using a route consumes capacity equal to the whole group size.  
+If group `j` uses route `i`, then `q_j` is added to the load of route `i`.  
+For every operated route `i`, the total load assigned to it must not exceed `c_i`.
+
+Operating a route costs `f_i` **once**, no matter how many groups use it.  
+The sum of costs of all distinct operated routes must not exceed the global budget `K`.
+
+Your task is to output any feasible transportation plan with high total reward.
+
+## Input
+
+The first line contains four integers:
+
+`n m p K`
+
+- `1 <= n <= 10^9`
+- `0 <= m <= 70000`
+- `0 <= p <= 70000`
+- `1 <= K <= 10^12`
+
+The next `m` lines describe the candidate routes.  
+Line `i` contains:
+
+` s_i t_i c_i f_i`
+
+- `0 <= s_i < t_i <= n`
+- `1 <= c_i <= 10^6`
+- `1 <= f_i <= 10^9`
+
+The next `p` lines describe the passenger groups.  
+Line `j` contains:
+
+` a_j b_j q_j r_j`
+
+- `0 <= a_j < b_j <= n`
+- `1 <= q_j <= 10^6`
+- `1 <= r_j <= 10^9`
+
+Routes and groups are indexed from `1` in input order.
+
+## Output
+
+Output a transportation plan.
+
+On the first line, print a single integer `z` — the number of served groups.
+
+Then print `z` lines. Each line describes one served group:
+
+`g k i_1 i_2 ... i_k`
+
+where
+
+- `g` is the group ID (`1 <= g <= p`)
+- `k` is the number of routes used by that group (`1 <= k <= 20`)
+- `i_1 ... i_k` are route IDs (`1 <= i_t <= m`)
+
+### Feasibility requirements
+
+Your output is feasible if all of the following hold:
+
+- each group ID appears at most once
+- every listed route ID is valid
+- each listed group path satisfies the boarding/arrival rules above
+- for every route `i`, the sum of `q_j` over all served groups whose path contains `i` is at most `c_i`
+- the sum of `f_i` over all distinct routes appearing in at least one served group path is at most `K`
+
+If the output is malformed or infeasible, the objective for that test is `0`.
+
+## Objective
+
+Let `S` be the set of served groups in your feasible output.
+
+Your objective value is
+
+`O = sum of r_j over all j in S`
+
+That is, maximize the total reward of served groups.
+
+## Scoring
+
+Each test file is scored independently.
+
+### Baseline solution
+
+For the same input, the judge computes a deterministic baseline objective `B` as follows.
+
+1. For each group `j`, find its **preferred direct route**:
+   - among all routes `i` such that `s_i <= a_j`, `t_i = b_j`, and `c_i >= q_j`,
+   - choose one with minimum `f_i`,
+   - break ties by smaller route ID.
+   - If no such route exists, the group is ignored by the baseline.
+2. Sort all non-ignored groups by:
+   - decreasing ratio `r_j / f_pref(j)`
+   - then decreasing `r_j`
+   - then increasing group ID
+3. Start with remaining budget `R = K`, all routes inactive, and remaining capacities equal to `c_i`.
+4. Process the groups in that order:
+   - let `i = pref(j)`
+   - if remaining capacity of `i` is less than `q_j`, skip the group
+   - if route `i` is inactive and `f_i > R`, skip the group
+   - otherwise, serve the group using only route `i`
+   - if `i` was inactive, activate it and subtract `f_i` from `R`
+   - subtract `q_j` from the remaining capacity of `i`
+5. The baseline objective `B` is the sum of rewards of the groups served this way.
+
+### Score formula
+
+Let `O` be your objective and `B` the baseline objective.
+
+Per test score:
+
+- if `O = 0` and `B = 0`, score = `0`
+- otherwise, score = `1000 * O / (O + B)`
+
+This value is always in `[0, 1000)` when `B > 0`, and equals `1000` only when `B = 0` and `O > 0`.
+
+Final score is the arithmetic mean of per-test scores over all test files.
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+5 4 3 7
+0 2 4 3
+2 5 4 4
+0 5 3 8
+0 3 2 2
+0 5 2 10
+0 3 2 5
+2 5 2 4
+```
+
+### Output
+```text
+2
+1 2 1 2
+3 1 2
+```
+
+### Explanation
+
+- Group `1` goes `0 -> 2 -> 5` using routes `1, 2`
+- Group `3` goes `2 -> 5` using route `2`
+
+Used routes are `{1, 2}`, so total cost is `3 + 4 = 7`, within budget.
+
+Capacities:
+- route `1`: used by group `1` only, load `2 <= 4`
+- route `2`: used by groups `1` and `3`, load `2 + 2 = 4 <= 4`
+
+Objective:
+- served rewards = `10 + 4 = 14`
+
+Baseline:
+- group `2` can be served directly by route `4` (cost `2`, reward `5`)
+- group `3` can be served directly by route `2` (cost `4`, reward `4`)
+- group `1` has direct route `3`, but it costs `8` and does not fit after the earlier choices
+- baseline objective `B = 9`
+
+So this output gets per-test score
+
+`1000 * 14 / (14 + 9) ≈ 608.69`
+
+At a high level, strong solutions will exploit transfers and route sharing, not just direct service.
+```

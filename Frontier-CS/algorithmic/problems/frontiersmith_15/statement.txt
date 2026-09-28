@@ -1,0 +1,161 @@
+```markdown
+# Budgeted Re-Tag Ranking
+
+## Problem
+
+A store has `n` products. Product `i` currently has an integer price tag `a_i` (from `1` to `10^9`).
+
+You may **retag every product independently** by choosing a new integer price `b_i` in the same range. Retagging product `i` from `a_i` to `b_i` costs `|a_i - b_i|`, and the total retagging cost must not exceed a given budget `B`.
+
+After retagging, the products are displayed in **non-decreasing order of their new prices**.  
+If several products have the same new price, the one with smaller index comes first.  
+So the final display order is the order obtained by sorting pairs `(b_i, i)`.
+
+There are `m` customer-preference requests. Each request is a triple `(u, v, w)` meaning:
+
+- the store earns `w` points if product `u` appears **before** product `v` in the final display order.
+
+Your task is to output any feasible retagging plan. The judge will compute the total earned weight.
+
+This is an optimization problem: better plans earn more weight.
+
+## Input
+
+The input describes one test instance.
+
+- The first line contains three integers `n`, `m`, `B`.
+- The second line contains `n` integers `a_1, a_2, ..., a_n`.
+- Each of the next `m` lines contains three integers `u_j`, `v_j`, `w_j` describing one preference request.
+
+### Constraints
+
+- `1 <= n <= 50000`
+- `0 <= m <= 200000`
+- `0 <= B <= 10^14`
+- `1 <= a_i <= 10^9`
+- `1 <= u_j, v_j <= n`
+- `u_j != v_j`
+- `1 <= w_j <= 10^6`
+
+Multiple requests may involve the same pair; they are counted independently.
+
+## Output
+
+Output exactly `n` integers `b_1, b_2, ..., b_n`:
+
+- `1 <= b_i <= 10^9`
+- total retagging cost must satisfy  
+  `sum_{i=1..n} |a_i - b_i| <= B`
+
+If your output is malformed or infeasible, your score for this test is `0`.
+
+## Objective
+
+Let `pos(i)` be the position of product `i` in the final display order after sorting by `(b_i, i)`.
+
+The objective value of your output is
+
+\[
+O = \sum_{j=1}^{m} 
+\begin{cases}
+w_j, & \text{if } pos(u_j) < pos(v_j) \\
+0,   & \text{otherwise}
+\end{cases}
+\]
+
+That is, you must **maximize the total weight of satisfied preference requests**.
+
+## Scoring
+
+For each test instance:
+
+- Let `O_base` be the objective value of the **baseline solution**:
+  - do not retag anything, i.e. `b_i = a_i` for all `i`.
+- Let `W = sum w_j`, the total weight of all requests.
+
+Your per-test score is:
+
+- If your output is invalid: `0`
+- Else if `O_base = W`: `1,000,000`
+- Else
+
+\[
+\text{score} = 10^6 \cdot \operatorname{clamp}\!\left(\frac{O - O_{base}}{W - O_{base}}, 0, 1\right)
+\]
+
+where
+
+\[
+\operatorname{clamp}(x,0,1)=\max(0,\min(1,x)).
+\]
+
+So:
+
+- matching the baseline gives score `0`,
+- improving on the baseline gives a proportionally higher score,
+- satisfying all requests gives score `1,000,000`.
+
+The final score over a test set is the **arithmetic mean** of per-test scores.
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+4 5 7
+5 6 7 8
+3 1 6
+4 2 5
+1 2 2
+2 3 3
+1 4 1
+```
+
+### Output
+```text
+5 8 4 6
+```
+
+### Explanation
+The retagging cost is
+
+\[
+|5-5| + |6-8| + |7-4| + |8-6| = 0+2+3+2 = 7,
+\]
+
+so the output is feasible.
+
+Sorting by `(b_i, i)` gives the final order:
+
+- product 3 (`4`)
+- product 1 (`5`)
+- product 4 (`6`)
+- product 2 (`8`)
+
+Satisfied requests:
+
+- `3 before 1` with weight `6`
+- `4 before 2` with weight `5`
+- `1 before 2` with weight `2`
+- `1 before 4` with weight `1`
+
+Unsatisfied:
+
+- `2 before 3` with weight `3`
+
+So the objective is `O = 14`.
+
+For the baseline `b_i = a_i`, the order is `1,2,3,4`, which satisfies weights `2 + 3 + 1 = 6`, so `O_base = 6`.
+
+The total request weight is `W = 17`, hence
+
+\[
+\text{score} = 10^6 \cdot \frac{14-6}{17-6}
+= 727272.72\ldots
+\]
+
+before the contest system's final rounding/display.
+```

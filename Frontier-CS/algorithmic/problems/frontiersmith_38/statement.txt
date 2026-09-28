@@ -1,0 +1,190 @@
+```markdown
+# Depot Backbone Sparsification
+
+## Problem
+A city has an undirected connected road network. Some intersections host emergency depots, and every depot has an importance weight. During long-term maintenance, only a limited number of roads can remain open as a **backbone**. The backbone must still connect all intersections.
+
+Your task is to choose which roads stay open.
+
+Let the original graph be \(G=(V,E)\), with \(|V|=n\). You must output a connected spanning subgraph \(H\) that uses exactly \(B\) edges from \(E\).
+
+For each depot \(t\), located at root \(r_t\) with importance \(w_t\), and for each vertex \(v\):
+
+- \(d_G(r_t,v)\) = shortest-path distance from \(r_t\) to \(v\) in the original graph,
+- \(d_H(r_t,v)\) = shortest-path distance from \(r_t\) to \(v\) in your chosen backbone.
+
+Because \(H\) is a connected subgraph of \(G\), we always have
+\[
+d_H(r_t,v) \ge d_G(r_t,v).
+\]
+
+Define the **excess distance**
+\[
+\Delta_t(v)=d_H(r_t,v)-d_G(r_t,v).
+\]
+
+Your goal is to keep these excess distances as small as possible for important depots, while respecting the edge budget.
+
+---
+
+## Input
+The first line contains four integers
+\[
+n,\ m,\ q,\ B
+\]
+where:
+
+- \(n\) = number of vertices,
+- \(m\) = number of edges,
+- \(q\) = number of depots,
+- \(B\) = required number of edges in your backbone.
+
+The next \(m\) lines describe the edges.  
+The \(i\)-th of these lines contains two integers
+\[
+u_i,\ v_i
+\]
+meaning that edge \(i\) connects vertices \(u_i\) and \(v_i\).
+
+The next \(q\) lines describe the depots.  
+The \(t\)-th of these lines contains two integers
+\[
+r_t,\ w_t
+\]
+meaning that depot \(t\) is at vertex \(r_t\) and has importance \(w_t\).
+
+Edges are indexed from \(1\) to \(m\) in input order.
+
+---
+
+## Output
+Output exactly \(B\) distinct integers: the indices of the edges kept in the backbone.
+
+The chosen edges must satisfy all of the following:
+
+1. each index is between \(1\) and \(m\),
+2. all indices are distinct,
+3. the selected edges form a connected spanning subgraph on all \(n\) vertices,
+4. exactly \(B\) edges are selected.
+
+If your output is malformed or infeasible, your objective value for that test is defined to be \(0\).
+
+The order of the printed indices does not matter.
+
+---
+
+## Objective
+For a feasible backbone \(H\), define its **quality**
+\[
+Q(H)=\sum_{t=1}^{q}\sum_{v=1}^{n} w_t \cdot (n-\Delta_t(v)).
+\]
+
+Since \(H\) is connected, every simple path has at most \(n-1\) edges, so
+\[
+0 \le \Delta_t(v) \le n-1,
+\]
+and therefore every term is at least \(w_t\).
+
+You must **maximize** \(Q(H)\).
+
+Equivalent view: maximizing \(Q(H)\) is the same as minimizing the weighted total distance increase
+\[
+\sum_{t=1}^{q}\sum_{v=1}^{n} w_t \cdot \Delta_t(v).
+\]
+
+---
+
+## Scoring
+For each test case, let:
+
+- \(Q_{\text{sub}}\) = the quality of your output,
+- \(Q_{\max}=n^2\sum_{t=1}^{q} w_t\), which is the theoretical maximum quality,
+- \(Q_{\text{base}}\) = the quality of the following baseline solution.
+
+### Baseline solution
+Construct a canonical BFS tree rooted at depot \(r_1\):
+
+1. Run BFS from \(r_1\) in the original graph.
+2. For each vertex \(v \ne r_1\), choose its parent as the smallest-numbered vertex \(u\) such that:
+   - \((u,v)\) is an edge of the graph, and
+   - \(d_G(r_1,u)+1=d_G(r_1,v)\).
+3. The corresponding \(n-1\) edges form the baseline tree.
+4. If \(B>n-1\), add unused edges in increasing edge-index order until exactly \(B\) edges are selected.
+
+This defines the baseline backbone uniquely.
+
+### Per-test score
+If \(Q_{\max} = Q_{\text{base}}\), then the test score is \(10^6\).
+
+Otherwise:
+\[
+\text{score}_{\text{test}}
+=
+10^6 \cdot
+\operatorname{clamp}\!\left(
+\frac{Q_{\text{sub}}-Q_{\text{base}}}{Q_{\max}-Q_{\text{base}}},
+0,
+1
+\right),
+\]
+where
+\[
+\operatorname{clamp}(x,0,1)=\min(1,\max(0,x)).
+\]
+
+### Overall score
+If there are multiple test files, your final score is the arithmetic mean of the per-test scores.
+
+---
+
+## Constraints
+- \(2 \le n \le 2500\)
+- \(n-1 \le B \le m \le 8000\)
+- \(1 \le q \le 200\)
+- \(1 \le u_i, v_i \le n\)
+- \(u_i \ne v_i\)
+- all edges are distinct
+- the graph is connected
+- \(1 \le r_t \le n\)
+- \(1 \le w_t \le 10^6\)
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample input
+```text
+5 6 2 4
+1 2
+2 3
+3 4
+4 5
+1 5
+2 4
+1 3
+5 2
+```
+
+### Sample output
+```text
+1 2 4 5
+```
+
+### Explanation
+The output keeps edges:
+
+- \(1\): \(1\!-\!2\)
+- \(2\): \(2\!-\!3\)
+- \(4\): \(4\!-\!5\)
+- \(5\): \(1\!-\!5\)
+
+These 4 edges form a connected spanning subgraph, so the solution is feasible.
+
+The judge computes shortest-path distances from depot \(1\) (weight \(3\)) and depot \(5\) (weight \(2\)) both in the original graph and in your chosen backbone, derives all excess values \(\Delta_t(v)\), and then evaluates
+\[
+Q(H)=\sum_{t=1}^{2}\sum_{v=1}^{5} w_t \cdot (5-\Delta_t(v)).
+\]
+
+A solution that preserves more original depot-to-vertex distances, or increases them by fewer steps, receives a higher score.
+```

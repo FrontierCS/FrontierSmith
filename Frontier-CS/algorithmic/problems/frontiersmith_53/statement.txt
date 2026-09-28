@@ -1,0 +1,203 @@
+```markdown
+# Barn Choreography Challenge
+
+## Problem
+
+Farmer John wants to automate his cows’ morning lineup drill.
+
+There are `N` cows, labeled `1..N`, initially standing in the row
+
+`[1, 2, 3, ..., N]`.
+
+You must choose **one fixed permutation** `A` of length `N`. This permutation is then used on every morning for `T` mornings.
+
+If a cow is standing in position `i` before a morning’s shuffle, then after the shuffle it moves to position `A_i`.
+
+Equivalently, if the row before a shuffle is `S`, then the row after the shuffle is `S'` satisfying:
+
+- `S'[A_i] = S[i]` for every `i`.
+
+So the same position-permutation `A` is applied repeatedly.
+
+Farmer John has a list of cow pairs that benefit from standing next to each other. Each such pair `(u, v)` has:
+- a reward `w`
+- a cap `c`
+
+If cows `u` and `v` are adjacent (in either order) on `x` of the `T` mornings, they contribute:
+
+`w * min(x, c)`
+
+to the total reward.
+
+However, complicated shuffles are stressful. Using permutation `A` incurs fatigue cost every morning:
+
+`F * sum(|A_i - i|)`.
+
+Since the same shuffle is used for all `T` mornings, total fatigue is:
+
+`T * F * sum(|A_i - i|)`.
+
+Your task is to output a permutation `A` that maximizes:
+
+`total reward - total fatigue`.
+
+---
+
+## Input
+
+The input contains a single test instance.
+
+The first line contains four integers:
+
+`N T R F`
+
+- `N`: number of cows
+- `T`: number of mornings
+- `R`: number of rewarded pairs
+- `F`: fatigue coefficient
+
+The next `R` lines each contain four integers:
+
+`u v w c`
+
+meaning:
+- `1 <= u < v <= N`
+- cows `u` and `v` earn reward `w`
+- at most `c` adjacencies count toward reward
+
+All rewarded pairs are distinct.
+
+---
+
+## Output
+
+Output a permutation `A_1 A_2 ... A_N`.
+
+Feasibility requirements:
+- each `A_i` must be an integer in `[1, N]`
+- all values must be distinct
+
+If the output is not a valid permutation, the submission is infeasible and receives score `0` on that test.
+
+---
+
+## Objective
+
+Let `S^(0) = [1, 2, ..., N]`.
+
+For each morning `t = 1..T`, define `S^(t)` by applying the same permutation `A` to `S^(t-1)`:
+
+- `S^(t)[A_i] = S^(t-1)[i]`
+
+For each rewarded pair `e = (u, v, w, c)`, let `adj_e` be the number of mornings `t` such that cows `u` and `v` are in consecutive positions in `S^(t)`.
+
+Its reward contribution is:
+
+`w * min(adj_e, c)`
+
+Let
+
+- `Reward = sum over all rewarded pairs of w * min(adj_e, c)`
+- `Fatigue = T * F * sum_{i=1..N} |A_i - i|`
+
+Your objective value is
+
+`V = Reward - Fatigue`
+
+which you should **maximize**.
+
+All computations use 64-bit signed integers.
+
+---
+
+## Scoring
+
+For each test instance:
+
+- **Baseline permutation**: the identity permutation  
+  `A_i = i` for all `i`
+- Let `B` be the objective value of the baseline permutation.
+- Let
+
+`U = sum over all rewarded pairs of (w * c)`
+
+This is a trivial upper bound on `Reward`, and therefore on `V`.
+
+Your per-test score is:
+
+- if `U = B`:
+  - `1,000,000` if `V = B`
+  - `0` otherwise
+- else:
+
+`1,000,000 * clamp((V - B) / (U - B), 0, 1)`
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+The overall score is the average of per-test scores over all official test files.
+
+So:
+- matching the baseline gets score `0`
+- reaching the trivial upper bound gets score `1,000,000`
+- partial improvements receive proportionally intermediate scores
+
+---
+
+## Constraints
+
+- `1 <= N <= 3000`
+- `1 <= T <= 200`
+- `0 <= F <= 10^6`
+- `0 <= R <= 300000`
+- `1 <= w <= 10^6`
+- `1 <= c <= T`
+- All rewarded pairs `(u, v)` are distinct
+
+## Constraints
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample input
+```text
+5 3 4 0
+1 2 8 1
+1 3 6 2
+4 5 5 3
+2 5 7 1
+```
+
+### Sample output
+```text
+2 3 1 5 4
+```
+
+### Explanation
+
+The chosen permutation is applied every morning.
+
+Starting from `[1,2,3,4,5]`, the rows are:
+
+- day 1: `[3,1,2,5,4]`
+- day 2: `[2,3,1,4,5]`
+- day 3: `[1,2,3,5,4]`
+
+Adjacency counts:
+- `(1,2)` appears on day 1 and day 3, so count = 2, capped at `1` → reward `8`
+- `(1,3)` appears on day 1 and day 2, so count = 2, capped at `2` → reward `12`
+- `(4,5)` appears on all 3 days, capped at `3` → reward `15`
+- `(2,5)` appears on day 1, capped at `1` → reward `7`
+
+Total reward = `8 + 12 + 15 + 7 = 42`
+
+Since `F = 0`, fatigue = `0`, so the objective is `V = 42`.
+
+The baseline identity permutation keeps the row `[1,2,3,4,5]` every day, giving objective `B = 23`.
+
+Also,
+
+`U = 8*1 + 6*2 + 5*3 + 7*1 = 42`
+
+so this sample output reaches the upper bound and receives full score on this test.
+```

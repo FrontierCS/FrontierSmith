@@ -1,0 +1,190 @@
+```markdown
+# Broadcast XOR Sweep
+
+## Problem
+
+The Rockport Police Department stores stolen records on many independent archive nodes.  
+Each node is protected by a binary password. You have obtained a collection of **one-time broadcast exploits**.
+
+When you broadcast an exploit with mask `m`, every archive node that is still locked updates its current password as:
+
+- `password := password XOR m`
+
+If a node’s password becomes exactly `0` immediately after a broadcast, that node is cracked, yields its loot value, and is removed from the system forever. Removed nodes are not affected by later broadcasts.
+
+Each exploit can be used **at most once** because it burns out after use, and using exploit `j` costs `c_j` units of bandwidth. Your total bandwidth budget is `C`.
+
+Your task is to choose an **ordered subsequence** of exploits to maximize the total loot value of cracked nodes.
+
+This is an optimization problem: any feasible solution is accepted, and better solutions receive higher scores.
+
+## Input
+
+The first line contains a single integer `T` — the number of test cases.
+
+For each test case:
+
+- The first line contains four integers  
+  `N M B C`
+  - `N` — number of archive nodes
+  - `M` — number of one-time exploits
+  - `B` — number of bits in every password/mask
+  - `C` — total bandwidth budget
+
+- The next `N` lines each contain two integers  
+  `p_i v_i`
+  - `p_i` — initial password of node `i`
+  - `v_i` — loot value of node `i`
+
+- The next `M` lines each contain two integers  
+  `e_j c_j`
+  - `e_j` — XOR mask of exploit `j`
+  - `c_j` — bandwidth cost of exploit `j`
+
+### Important details
+
+- All passwords and masks are non-negative integers strictly less than `2^B`.
+- If `p_i = 0`, node `i` is considered cracked **before any exploit is used** and its value is collected immediately.
+- Multiple nodes may have the same initial password; if that password becomes `0` for them at the same moment, all of them are cracked and all of their values are collected.
+- Exploits are indexed from `1` to `M` in the order given in the input.
+
+## Output
+
+For each test case, output exactly one line:
+
+- `q a_1 a_2 ... a_q`
+
+where:
+
+- `q` is the number of exploits you use
+- `a_1, a_2, ..., a_q` are distinct exploit indices in the order you use them
+
+### Feasibility requirements
+
+For each test case:
+
+- `0 <= q <= M`
+- all chosen indices must be distinct integers in `[1, M]`
+- the total cost of chosen exploits must satisfy  
+  `c_{a_1} + c_{a_2} + ... + c_{a_q} <= C`
+
+If your output for a test case is malformed or infeasible, your value for that test case is treated as `0`.
+
+## Objective
+
+For a chosen exploit order `a_1, a_2, ..., a_q`, simulate the process exactly:
+
+- Initially, every node has password `p_i`
+- Nodes with password `0` are cracked immediately
+- For `t = 1..q`:
+  - broadcast exploit `a_t`
+  - every still-locked node updates `password := password XOR e_{a_t}`
+  - every node whose password becomes `0` is cracked immediately and removed
+
+Let `R` be the sum of values of all cracked nodes.
+
+Your objective is to **maximize `R`**.
+
+## Scoring
+
+Higher is better.
+
+For each test case, the judge also computes a deterministic **baseline solution**:
+
+1. Start from the initial state.
+2. Repeatedly choose one unused exploit that:
+   - is affordable with the remaining budget, and
+   - maximizes
+
+   `immediate_gain / cost`
+
+   where `immediate_gain` is the total value of nodes that would be cracked **right now** if that exploit were used next.
+
+3. Ties are broken by:
+   1. larger `immediate_gain`
+   2. smaller `cost`
+   3. smaller exploit index
+4. If no affordable unused exploit has positive `immediate_gain`, stop.
+
+Let:
+
+- `R_you` = your objective value for the test case
+- `R_base` = baseline objective value for the test case
+- `R_all` = total value of all nodes in the test case
+
+The per-test normalized score is:
+
+- if `R_all = R_base`, then `S = 1`
+- otherwise  
+  `S = clamp((R_you - R_base) / (R_all - R_base), 0, 1)`
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+The final score is:
+
+`1,000,000 * (sum over test cases of R_all * S) / (sum over test cases of R_all)`
+
+So:
+
+- matching the baseline gives `0` contribution on that test
+- doing worse than the baseline also gives `0`
+- cracking every node gives the maximum possible contribution on that test
+
+## Constraints
+
+- `1 <= T <= 20`
+- `1 <= N <= 2 * 10^5` per file, and `sum N <= 2 * 10^5`
+- `1 <= M <= 200` per test case, and `sum M <= 2500`
+- `1 <= B <= 60`
+- `1 <= C <= 10^18`
+- `0 <= p_i < 2^B`
+- `1 <= v_i <= 10^9`
+- `0 <= e_j < 2^B`
+- `1 <= c_j <= 10^12`
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+1
+3 3 3 2
+3 10
+5 8
+6 7
+1 1
+2 1
+6 2
+```
+
+### Output
+```text
+2 1 2
+```
+
+### Explanation
+
+There are 3 nodes with initial passwords `3`, `5`, and `6`.
+
+- Use exploit `1` (mask `1`):
+  - passwords become `2`, `4`, `7`
+  - no node is cracked
+
+- Use exploit `2` (mask `2`):
+  - passwords become `0`, `6`, `5`
+  - the first node is cracked, gaining value `10`
+
+So this solution gets objective value `10`.
+
+The baseline picks exploit `3` immediately, because it cracks the node with password `6` for value `7`, and then stops. Thus:
+
+- `R_you = 10`
+- `R_base = 7`
+- `R_all = 25`
+
+The normalized score on this test is:
+
+`(10 - 7) / (25 - 7) = 1/6`.
+```

@@ -1,0 +1,193 @@
+```markdown
+# Triangular Stencil Approximation
+
+## Problem
+You are given a binary image `A` with `N` rows and `M` columns.
+
+Your task is to approximate this image by placing **triangular stencils** on the grid. Each stencil paints some cells with `1`, and the final reconstructed image `R` is the **union** of all painted cells.
+
+A stencil is defined by:
+
+- a type `t`
+- the top-left corner `(i, j)` of its bounding square
+- a size `h`
+
+Its bounding square is the set of cells with rows `i..i+h-1` and columns `j..j+h-1`, which must lie entirely inside the matrix.
+
+For `0 <= dr, dc < h`, the cell `(i+dr, j+dc)` belongs to the stencil if:
+
+- `TR` (top-right half, split by the main diagonal): `dc >= dr`
+- `BL` (bottom-left half, split by the main diagonal): `dr >= dc`
+- `TL` (top-left half, split by the anti-diagonal): `dr + dc < h`
+- `BR` (bottom-right half, split by the anti-diagonal): `dr + dc >= h - 1`
+
+All cells covered by at least one chosen stencil become `1` in `R`. All other cells are `0`.
+
+Your goal is to minimize the total cost of the approximation.
+
+---
+
+## Input
+The first line contains five integers:
+
+`N M F P0 P1`
+
+- `N` — number of rows
+- `M` — number of columns
+- `F` — fixed cost of each stencil
+- `P0` — penalty for each false positive cell (`A=0`, `R=1`)
+- `P1` — penalty for each false negative cell (`A=1`, `R=0`)
+
+The next `N` lines each contain a binary string of length `M`, describing `A`.
+
+---
+
+## Output
+On the first line, output a single integer `K` — the number of stencils you place.
+
+Then output `K` lines, each in the format:
+
+`t i j h`
+
+where:
+
+- `t` is one of `TR`, `BL`, `TL`, `BR`
+- `1 <= i <= N`
+- `1 <= j <= M`
+- `1 <= h`
+- the bounding square `i..i+h-1`, `j..j+h-1` must be fully inside the matrix
+
+### Feasibility requirements
+A submission is **invalid** if:
+
+- `K < 0` or `K > 200000`
+- any stencil is malformed
+- any bounding square goes outside the matrix
+
+An invalid submission receives objective value `+infinity` and score `0`.
+
+Duplicate stencils are allowed, but they are usually useless because each stencil still costs `F`.
+
+---
+
+## Objective
+Let:
+
+- `FP` = number of cells where `A[r][c] = 0` and `R[r][c] = 1`
+- `FN` = number of cells where `A[r][c] = 1` and `R[r][c] = 0`
+
+If you place `K` stencils, your total cost is:
+
+`Cost = F * K + P0 * FP + P1 * FN`
+
+Your objective is to **minimize** `Cost`.
+
+---
+
+## Scoring
+For each test case, let:
+
+- `C` = your submission's cost
+- `B` = the **baseline cost** defined below
+
+Your score on that test case is:
+
+`Score = 1000 * min(20, B / C)`
+
+If your output is invalid, then `Score = 0`.
+
+The total score is the sum of scores over all test cases.
+
+A solution matching the baseline gets `1000` points on that test.
+A better solution gets more than `1000`.
+A worse solution gets less than `1000`.
+
+### Baseline
+The baseline cost `B` is the minimum of the following two strategies:
+
+#### 1. Empty reconstruction
+Place no stencils at all.
+
+- `K = 0`
+- `FP = 0`
+- `FN = number of ones in A`
+
+So the cost is:
+
+`B_empty = P1 * (# of ones in A)`
+
+#### 2. Greedy pure-stencil cover
+This strategy uses only stencils that never paint a `0` cell of `A`.
+
+Algorithm:
+
+1. Let `U` be the set of currently uncovered cells where `A=1`.
+2. While `U` is not empty:
+   - pick the lexicographically smallest cell `(r, c)` in `U`
+   - among all feasible stencils `S` such that:
+     - `(r, c)` is covered by `S`
+     - every cell covered by `S` has value `1` in `A`
+   - choose the stencil maximizing the number of cells in `S ∩ U`
+   - break ties by:
+     1. larger `h`
+     2. type order `TR`, `BL`, `TL`, `BR`
+     3. smaller `i`
+     4. smaller `j`
+   - place that stencil and remove all cells of `S` from `U`
+3. If this uses `Kg` stencils, its cost is:
+
+`B_greedy = F * Kg`
+
+Finally:
+
+`B = min(B_empty, B_greedy)`
+
+---
+
+## Constraints
+- `1 <= N, M <= 2000`
+- `1 <= F, P0, P1 <= 10^9`
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+The search space contains `Theta(N * M * min(N, M))` possible stencil positions even before choosing subsets, so exact optimization is not expected to be feasible.
+
+---
+
+## Example
+### Input
+```text
+3 4 2 3 5
+0110
+0010
+0001
+```
+
+### Output
+```text
+2
+TR 1 2 2
+TR 3 4 1
+```
+
+### Explanation
+The first stencil paints cells:
+
+- `(1,2)`, `(1,3)`, `(2,3)`
+
+The second stencil paints:
+
+- `(3,4)`
+
+So the reconstruction exactly matches the target matrix.
+
+- `K = 2`
+- `FP = 0`
+- `FN = 0`
+
+Therefore:
+
+`Cost = 2 * 2 + 3 * 0 + 5 * 0 = 4`
+
+For this instance, the greedy baseline also uses these two pure stencils, so `B = 4`, and the score ratio is `B / C = 1`.
+```

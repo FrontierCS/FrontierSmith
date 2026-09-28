@@ -1,0 +1,170 @@
+```markdown
+# Sensor Grid Reordering
+
+## Problem
+
+A laboratory stores measurements in an `R × C` grid `A`.  
+Entry `A[i][j]` is the recorded value of sensor row `i` under column setting `j`.
+
+Before analysis, you may:
+
+1. **Reorder the rows** in any permutation.
+2. **Reorder the columns** in any permutation.
+3. **Recalibrate** every entry by increasing or decreasing it by `1` any number of times.
+
+After these changes, the resulting grid `B` must be **strictly increasing**:
+
+- left to right in every row:
+  `B[i][j] < B[i][j+1]`
+- top to bottom in every column:
+  `B[i][j] < B[i+1][j]`
+
+Values in `B` may be negative, zero, or positive.
+
+Each unit change of a cell costs `1`, so changing original value `x` to `y` costs `|x-y|`.
+
+Your task is to output **any feasible reordered-and-recalibrated grid**.  
+Lower total recalibration cost gives a better score.
+
+## Input
+
+The input contains a single test instance.
+
+- The first line contains two integers `R` and `C`.
+- The next `R` lines each contain `C` integers: the matrix `A`.
+
+## Output
+
+Output:
+
+1. One line with `R` distinct integers `p1, p2, ..., pR` — a permutation of `1..R`, the chosen row order.
+2. One line with `C` distinct integers `q1, q2, ..., qC` — a permutation of `1..C`, the chosen column order.
+3. Then output `R` lines, each containing `C` integers — the matrix `B`.
+
+### Feasibility requirements
+
+Let the reordered original matrix be `A'`, where
+
+`A'[i][j] = A[ p_i ][ q_j ]`
+
+Your output is feasible iff all of the following hold:
+
+- `p` is a permutation of `1..R`
+- `q` is a permutation of `1..C`
+- every printed `B[i][j]` is an integer in `[-10^12, 10^12]`
+- for all valid `i, j`:
+  - `B[i][j] < B[i][j+1]`
+  - `B[i][j] < B[i+1][j]`
+
+If the output is infeasible or malformed, it receives zero score on that test.
+
+## Objective
+
+Minimize the total recalibration cost
+
+\[
+C = \sum_{i=1}^{R} \sum_{j=1}^{C} |A'[i][j] - B[i][j]|
+\]
+
+where `A'` is the matrix after applying your chosen row and column permutations.
+
+## Scoring
+
+For each test, a deterministic **baseline solution** is defined as follows:
+
+- keep the original row order and original column order
+- construct a matrix `G` by scanning row by row:
+  - `G[1][1] = A[1][1]`
+  - for every other cell:
+    \[
+    G[i][j] = \max(
+      A[i][j],
+      \; (i>1 ? G[i-1][j] + 1 : -\infty),
+      \; (j>1 ? G[i][j-1] + 1 : -\infty)
+    )
+    \]
+- baseline cost:
+  \[
+  C_{\text{base}} = \sum_{i=1}^{R} \sum_{j=1}^{C} |A[i][j] - G[i][j]|
+  \]
+
+Your score on a test is
+
+\[
+\text{score} = 10^6 \cdot \operatorname{clamp}\!\left(\frac{C_{\text{base}}+1}{C+1},\; 0,\; 5\right)
+\]
+
+where
+
+\[
+\operatorname{clamp}(x, l, r) = \min(r, \max(l, x))
+\]
+
+- Matching the baseline gets exactly `1,000,000`.
+- Better solutions get more than `1,000,000`.
+- Worse solutions get less than `1,000,000`.
+- Infeasible solutions get `0`.
+
+The final score is the arithmetic mean of scores over all hidden test files.
+
+## Constraints
+
+- `1 ≤ R, C ≤ 90`
+- `R · C ≤ 7200`
+- `1 ≤ A[i][j] ≤ 10^9`
+
+- Time limit: 5 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+2 3
+4 1 7
+2 6 3
+```
+
+### Output
+```text
+2 1
+1 3 2
+1 2 6
+3 7 8
+```
+
+### Explanation
+
+The chosen row order is `[2, 1]` and the chosen column order is `[1, 3, 2]`.
+
+So the reordered original matrix is
+
+```text
+2 3 6
+4 7 1
+```
+
+The submitted matrix is
+
+```text
+1 2 6
+3 7 8
+```
+
+It is strictly increasing in every row and every column.
+
+Its objective value is
+
+\[
+|2-1|+|3-2|+|6-6|+|4-3|+|7-7|+|1-8| = 10
+\]
+
+For this input, the baseline keeps the original order and produces
+
+```text
+4 5 7
+5 6 8
+```
+
+with baseline cost `12`, so this submission scores better than the baseline.
+```

@@ -1,0 +1,148 @@
+```markdown
+# Bitmask Upgrade Budget
+
+## Problem
+You manage a fleet of `N` devices.  
+Each device `i` has:
+
+- an initial capability mask `A_i` (a 20-bit non-negative integer),
+- an importance weight `W_i`.
+
+You may **upgrade** devices by turning on additional bits in their masks.  
+If a bit `k` is turned on for any device that did not originally have it, you pay a global cost `C_k` for that device.
+
+After all upgrades, device `i` has final mask `X_i`, where every bit set in `A_i` must also be set in `X_i`.
+
+Two upgraded devices `i` and `j` are called **chain-compatible** if
+
+`X_i | X_j <= max(X_i, X_j)`,
+
+where `|` is bitwise OR.
+
+Because bitwise OR is always at least both operands, this is equivalent to
+
+`X_i | X_j = max(X_i, X_j)`,
+
+which in turn means that one upgraded mask is a bitwise subset of the other.
+
+Your task is to choose the upgraded masks `X_1, X_2, ..., X_N` under a total budget in order to maximize the total importance-weighted number of chain-compatible pairs.
+
+## Input
+The first line contains an integer `T`, the number of test cases.
+
+Each test case has the following format:
+
+- The first line contains two integers `N` and `B` — the number of devices and the upgrade budget.
+- The second line contains `20` integers `C_0, C_1, ..., C_19`, where `C_k` is the cost of turning on bit `k` for one device.
+- The third line contains `N` integers `A_1, A_2, ..., A_N`.
+- The fourth line contains `N` integers `W_1, W_2, ..., W_N`.
+
+All masks are given in decimal.
+
+## Output
+For each test case, output one line containing `N` integers:
+
+`X_1 X_2 ... X_N`
+
+where `X_i` is the final upgraded mask of device `i`.
+
+A submission is **feasible** for a test case if all of the following hold:
+
+1. `0 <= X_i < 2^20` for every `i`.
+2. Every original bit is preserved: `(A_i | X_i) = X_i` for every `i`.
+3. The total upgrade cost does not exceed `B`.
+
+The upgrade cost is computed as:
+
+`cost = sum over all devices i and bits k such that bit k is 0 in A_i and 1 in X_i of C_k`.
+
+If any of these conditions is violated for a test case, that test case receives score `0`.
+
+## Objective
+For a feasible solution, define the reward of a pair `(i, j)` with `1 <= i < j <= N` as:
+
+- `W_i * W_j`, if `X_i | X_j = max(X_i, X_j)`,
+- `0`, otherwise.
+
+The objective value for the test case is
+
+`R = sum of rewards over all pairs`.
+
+Your goal is to **maximize `R`**.
+
+## Scoring
+For each test case, let:
+
+- `R_submit` be the objective value of your output,
+- `R_base` be the objective value of the **baseline solution** defined by  
+  `X_i = A_i` for all `i` (no upgrades).
+
+The per-test score is:
+
+`score_test = clamp(0, 5_000_000, floor(1_000_000 * (R_submit + 1) / (R_base + 1)))`
+
+where `clamp(L, U, x) = min(U, max(L, x))`.
+
+The total score of a submission is:
+
+`floor((sum of score_test over all test cases) / T)`
+
+Higher is better.
+
+### Baseline
+The baseline is always feasible and can be implemented by printing the input masks unchanged.
+
+## Constraints
+- `1 <= T <= 10`
+- `1 <= N <= 2 * 10^5` per test case
+- `1 <= sum of N over all test cases <= 10^6`
+- `0 <= A_i < 2^20`
+- `1 <= W_i <= 10^4`
+- `1 <= C_k <= 10^6`
+- `0 <= B <= 10^12`
+
+## Constraints
+- Time limit: 6 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample input
+```text
+1
+4 2
+1 1 1 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100
+1 2 3 4
+1 1 2 3
+```
+
+### Sample output
+```text
+1 2 3 7
+```
+
+### Explanation
+Only device `4` is upgraded: `4 (100b) -> 7 (111b)`.
+
+- Added bits: bit `0` and bit `1`
+- Total cost: `1 + 1 = 2`, which fits the budget
+
+Chain-compatible pairs in the output:
+
+- `(1,3)`: `1 | 3 = 3` → compatible, reward `1*2 = 2`
+- `(1,4)`: `1 | 7 = 7` → compatible, reward `1*3 = 3`
+- `(2,3)`: `2 | 3 = 3` → compatible, reward `1*2 = 2`
+- `(2,4)`: `2 | 7 = 7` → compatible, reward `1*3 = 3`
+- `(3,4)`: `3 | 7 = 7` → compatible, reward `2*3 = 6`
+
+Pair `(1,2)` is not compatible.
+
+So `R_submit = 2 + 3 + 2 + 3 + 6 = 16`.
+
+The baseline uses `X = A = [1, 2, 3, 4]`, where only pairs `(1,3)` and `(2,3)` are compatible, so:
+
+`R_base = 2 + 2 = 4`.
+
+Therefore the sample score is:
+
+`floor(1_000_000 * (16 + 1) / (4 + 1)) = 3_400_000`.
+```

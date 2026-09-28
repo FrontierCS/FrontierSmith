@@ -1,0 +1,175 @@
+```markdown
+# Linked List Index Design
+
+## Problem
+A data archive is stored as a singly linked list of `N` records, numbered `1..N`, where record `1` is the head and the original `next` pointer goes from `i` to `i+1`.
+
+To speed up access while respecting a memory budget, you may build a **compressed linked index**:
+
+1. **Keep** some records as index anchors.
+2. Delete all other records from the index.
+3. Between consecutive kept records, the index automatically contains a directed `next` pointer.
+4. Optionally buy additional directed **shortcut pointers** from a given candidate list.
+
+A query for original record `i` is served by the kept record closest to `i` in index order:
+- Let `rep(i)` be the kept record minimizing `|i - j|`.
+- If there is a tie, choose the smaller index.
+
+The access cost for record `i` has two parts:
+- the shortest traversal latency from head record `1` to `rep(i)` in your built index,
+- plus a mismatch penalty for representing `i` by `rep(i)`.
+
+Your task is to choose which records to keep and which shortcuts to buy so that the total weighted access cost is as small as possible.
+
+This is an optimization problem: any feasible solution is accepted, and better solutions receive higher scores.
+
+## Input
+The input describes one test case.
+
+- First line: four integers  
+  `N M B L`
+  - `N`: number of records
+  - `M`: number of candidate shortcuts
+  - `B`: total memory budget
+  - `L`: mismatch penalty multiplier
+
+- Second line: `N` integers  
+  `w1 w2 ... wN`  
+  where `wi` is the access frequency (weight) of original record `i`.
+
+- Next `M` lines: four integers each  
+  `u v c t`
+  - `1 <= u < v <= N`
+  - `c`: memory cost of buying this shortcut
+  - `t`: traversal latency of this shortcut
+
+Candidate shortcuts are numbered `1..M` in input order.
+
+## Output
+Output a feasible index design:
+
+- First line: two integers  
+  `K P`
+  - `K`: number of kept records
+  - `P`: number of bought shortcuts
+
+- Second line: `K` distinct integers  
+  `k1 k2 ... kK`  
+  the kept record indices, in strictly increasing order.
+
+- Third line: `P` distinct integers  
+  `e1 e2 ... eP`  
+  the IDs of bought shortcuts, in any order.  
+  If `P = 0`, output an empty line.
+
+### Feasibility requirements
+Your output is feasible iff all of the following hold:
+
+1. `1` must be kept.
+2. Kept record indices are distinct and strictly increasing.
+3. Bought shortcut IDs are distinct and valid (`1..M`).
+4. If shortcut `x` is bought and corresponds to `(u, v, c, t)`, then both `u` and `v` must be kept.
+5. Total memory used must satisfy  
+   `K + sum(c for each bought shortcut) <= B`.
+
+Any infeasible output receives score `0` for that test.
+
+## Objective
+Minimize the total weighted access cost.
+
+### Built index graph
+Let the kept records be:
+`k1 < k2 < ... < kK`, with `k1 = 1`.
+
+Your index graph contains:
+- an automatic directed edge `ka -> k(a+1)` with latency `1` for every consecutive kept pair,
+- every bought shortcut edge `(u -> v)` with its given latency `t`.
+
+All edges are directed forward.
+
+### Representative of an original record
+For each original record `i`, define `rep(i)` as the kept record `j` minimizing `|i - j|`.
+If two kept records are equally close, choose the smaller one.
+
+### Access cost of record `i`
+Let `dist(j)` be the shortest-path latency from record `1` to kept record `j` in your index graph.
+
+Then:
+`cost(i) = dist(rep(i)) + L * |i - rep(i)|`
+
+### Total objective value
+Your objective value is:
+`C = sum_{i=1..N} wi * cost(i)`
+
+Smaller `C` is better.
+
+All computations use exact integer arithmetic.
+
+## Scoring
+For each test case, the judge also computes a deterministic **baseline** solution:
+
+- Let `K0 = min(B, N)`.
+- If `K0 = 1`, the baseline keeps only `{1}`.
+- Otherwise, it keeps the records
+  `1 + floor(t * (N - 1) / (K0 - 1))` for `t = 0..K0-1`.
+- The baseline buys no shortcuts.
+
+Let the baseline objective value be `C_base`, and your feasible solution's objective value be `C_sub`.
+
+Your score for the test case is:
+
+`score = 1,000,000 * clamp(C_base / C_sub, 0, 2)`
+
+where:
+- `clamp(x, 0, 2) = max(0, min(x, 2))`
+
+Thus:
+- matching the baseline gives `1,000,000`,
+- improving on it gives more than `1,000,000`,
+- doing worse gives less than `1,000,000`,
+- extremely strong solutions are capped at `2,000,000`.
+
+If your output is infeasible, the score is `0`.
+
+The final contest score is the arithmetic mean of test-case scores.
+
+## Constraints
+- `2 <= N <= 200000`
+- `0 <= M <= 300000`
+- `1 <= B <= min(N, 5000)`
+- `1 <= L <= 10^6`
+- `1 <= wi <= 10^6`
+- For each shortcut: `1 <= c <= 50`, `1 <= t <= 10^6`
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 1024 MB
+
+## Example
+Input
+```text
+8 3 4 2
+5 1 4 1 3 2 6 2
+1 5 1 1
+3 8 1 1
+1 8 2 1
+```
+
+Output
+```text
+4 0
+1 3 6 8
+
+```
+
+Brief explanation:
+
+- Kept records are `{1, 3, 6, 8}`.
+- Memory used is `4`, which fits the budget.
+- Automatic edges are `1->3`, `3->6`, `6->8`, each with latency `1`.
+- For example:
+  - `rep(2)=1` (tie between `1` and `3`, choose smaller), so its cost is `dist(1)+2*1 = 0+2 = 2`.
+  - `rep(5)=6`, so its cost is `dist(6)+2*1 = 2+2 = 4`.
+- The judge sums `wi * cost(i)` over all records to obtain `C`.
+- The score is then computed by comparing this `C` to the baseline cost on the same input.
+```

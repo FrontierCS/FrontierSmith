@@ -1,0 +1,204 @@
+```markdown
+# Anti-SET Exhibition
+
+## Problem
+
+A museum wants to display a collection of unusual cards.
+
+Each card is described by:
+
+- a string of length \(k\),
+- using only the digits `1`, `2`, `3`,
+- and a positive popularity value.
+
+All card strings are distinct.
+
+The museum has \(h\) display rooms. Room \(j\) can hold at most \(c_j\) cards.
+
+A room becomes **invalid** if it contains three displayed cards that form a **SET**.  
+Three cards \(A,B,C\) form a SET if for every position \(x\):
+
+- either \(A_x = B_x = C_x\),
+- or \(A_x, B_x, C_x\) are all different.
+
+You may choose which cards to display and in which room. A card may be placed in **at most one** room, or left in storage.
+
+Your task is to maximize the total popularity of displayed cards while keeping every room valid.
+
+---
+
+## Input
+
+The first line contains three integers:
+
+- \(n\) — number of cards
+- \(k\) — length of each card string
+- \(h\) — number of rooms
+
+The second line contains \(h\) integers:
+
+- \(c_1, c_2, \dots, c_h\) — capacities of the rooms
+
+Each of the next \(n\) lines contains:
+
+- an integer \(w_i\) — popularity of card \(i\)
+- a string \(s_i\) of length \(k\), consisting only of `1`, `2`, `3`
+
+Card strings are pairwise distinct.
+
+---
+
+## Output
+
+Output exactly \(n\) integers \(a_1,a_2,\dots,a_n\).
+
+- \(a_i = 0\) means card \(i\) is not displayed.
+- \(a_i = j\) means card \(i\) is placed in room \(j\), where \(1 \le j \le h\).
+
+### Feasibility requirements
+
+Your output is **feasible** if all of the following hold:
+
+1. Each \(a_i\) is an integer in \([0,h]\).
+2. For every room \(j\), at most \(c_j\) cards are assigned to it.
+3. No room contains three cards forming a SET.
+
+If any of these conditions is violated, the solution is infeasible.
+
+---
+
+## Objective
+
+For a feasible solution, let
+
+\[
+V = \sum_{i : a_i \ne 0} w_i
+\]
+
+be the total popularity of all displayed cards.
+
+Your goal is to **maximize \(V\)**.
+
+For an infeasible solution, the objective value is treated as invalid and the test-case score is \(0\).
+
+---
+
+## Scoring
+
+For each test case, the judge computes two reference values:
+
+### Baseline value \(G\)
+
+The baseline is the value produced by the following deterministic greedy algorithm:
+
+1. Sort cards by decreasing popularity \(w_i\).  
+   Break ties by smaller input index.
+2. Process cards in that order.
+3. For the current card, try rooms \(1,2,\dots,h\) in order.
+4. Place the card into the first room such that:
+   - the room is not full, and
+   - adding the card does **not** create a SET inside that room.
+5. If no such room exists, discard the card.
+
+Let the total popularity of cards placed by this algorithm be \(G\).
+
+### Upper bound \(U\)
+
+Let
+
+\[
+C = \min\left(n, \sum_{j=1}^{h} c_j\right).
+\]
+
+Sort all card popularities in decreasing order.  
+Let \(U\) be the sum of the largest \(C\) popularities.
+
+This ignores SET conflicts, so it is always a valid upper bound on any feasible solution.
+
+---
+
+### Test-case score
+
+Let \(V\) be your feasible objective value.
+
+- If your output is infeasible: score \(= 0\).
+- Otherwise:
+
+If \(U = G\), then
+
+\[
+\text{score} = 100 \cdot \frac{V}{U}.
+\]
+
+Else if \(G = 0\), then
+
+\[
+\text{score} = 100 \cdot \frac{V}{U}.
+\]
+
+Else if \(V \le G\), then
+
+\[
+\text{score} = 50 \cdot \frac{V}{G}.
+\]
+
+Else
+
+\[
+\text{score} = 50 + 50 \cdot \frac{V-G}{U-G}.
+\]
+
+After computation, the score is clamped to the range \([0,100]\).
+
+The final score is the arithmetic mean of test-case scores over all test cases.
+
+---
+
+## Constraints
+
+- \(1 \le k \le 12\)
+- \(1 \le h \le 8\)
+- \(1 \le n \le \min(30000, 3^k)\)
+- \(1 \le c_j \le 300\)
+- \(\sum_{j=1}^{h} c_j \le 1500\)
+- \(1 \le w_i \le 10^6\)
+- all strings \(s_i\) are distinct
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+5 3 2
+2 2
+9 111
+8 222
+7 333
+6 123
+5 132
+```
+
+### Sample output
+```text
+1 1 2 2 0
+```
+
+### Explanation
+
+- Room 1 gets cards `111`, `222`
+- Room 2 gets cards `333`, `123`
+- Card `132` is not displayed
+
+Each room has size at most 2, so neither room can contain a SET.  
+The total popularity is
+
+\[
+9 + 8 + 7 + 6 = 30.
+\]
+
+Since the total room capacity is \(4\), the simple upper bound is also the sum of the 4 largest popularities, which is \(30\). So this solution reaches the upper bound.
+```

@@ -1,0 +1,203 @@
+```markdown
+# Synchronized Grid Evacuation
+
+## Problem
+A factory floor is modeled as a rectangular grid.  
+There are **robots**, **exits**, and **walls**.
+
+You control all robots **simultaneously** using a single global command sequence.  
+At each step, you choose one direction:
+
+- `U` = up
+- `D` = down
+- `L` = left
+- `R` = right
+
+When a direction is issued, every robot that has not yet exited behaves as follows:
+
+- If the adjacent cell in that direction is inside the grid and is not a wall, the robot moves there.
+- Otherwise, the robot stays in place.
+
+Robots do **not** block each other; any number of robots may occupy the same cell.
+
+After all robots move for that step, every robot standing on an exit cell disappears immediately.  
+Each exit can be used by any number of robots.
+
+Your task is to choose a command sequence of length at most `T` to evacuate important robots as early as possible.
+
+---
+
+For each robot `i`, a positive weight `w_i` is given.  
+If robot `i` exits at step `t`, it contributes `w_i * t` to the objective.  
+If it has not exited by the end of your sequence, it contributes `w_i * (T + 1)`.
+
+The goal is to **minimize the total weighted evacuation time**.
+
+## Input
+The input consists of one test case:
+
+```text
+H W N M T
+G_1
+G_2
+...
+G_H
+r_1 c_1 w_1
+r_2 c_2 w_2
+...
+r_N c_N w_N
+e_1 f_1
+e_2 f_2
+...
+e_M f_M
+```
+
+### Meaning
+
+- `H`, `W`: grid height and width
+- `N`: number of robots
+- `M`: number of exits
+- `T`: maximum allowed number of commands
+- `G_k`: the `k`-th row of the grid  
+  - `.` = open cell
+  - `#` = wall
+
+Then follow:
+
+- `N` lines describing robots:
+  - robot `i` starts at row `r_i`, column `c_i`, with weight `w_i`
+- `M` lines describing exits:
+  - exit `j` is at row `e_j`, column `f_j`
+
+### Guarantees
+
+- All robot start cells are distinct.
+- All exit cells are distinct.
+- No robot starts on a wall or an exit.
+- Every exit is on an open cell.
+
+Rows and columns are 1-indexed.
+
+## Output
+Output:
+
+```text
+L
+S
+```
+
+- `L` is the number of commands you use, where `0 <= L <= T`.
+- `S` is a string of length exactly `L`, consisting only of the characters `U`, `D`, `L`, `R`.
+
+If `L = 0`, output an empty second line.
+
+### Feasibility requirements
+Your output is considered **invalid** if any of the following holds:
+
+- `L` is not an integer in `[0, T]`
+- `|S| != L`
+- `S` contains characters other than `U`, `D`, `L`, `R`
+
+Invalid outputs receive score `0`.
+
+## Objective
+Let `tau_i` be:
+
+- the first step number `t` (`1 <= t <= L`) at which robot `i` disappears on an exit, if that happens;
+- otherwise `T + 1`.
+
+Your objective value is
+
+```text
+A = sum(w_i * tau_i) for all robots i
+```
+
+Lower is better.
+
+## Scoring
+For each test case, the judge also computes a **baseline** solution as follows:
+
+- Use exactly `T` commands.
+- The commands are the repeating pattern:
+
+```text
+R, D, L, U, R, D, L, U, ...
+```
+
+until length `T`.
+
+Let the baseline objective value be `B`.
+
+Your per-test score is:
+
+```text
+score = floor(1,000,000 * min(10, B / A))
+```
+
+where:
+
+- `A` is your objective value,
+- `B` is the baseline objective value.
+
+Thus:
+
+- matching the baseline gives about `1,000,000`,
+- improving on the baseline gives more than `1,000,000`,
+- worse solutions still get partial credit,
+- the per-test score is capped at `10,000,000`.
+
+The total score is the sum of per-test scores over all test cases.
+
+## Constraints
+- `1 <= H, W <= 80`
+- `1 <= H * W <= 6400`
+- `1 <= N <= 2000`
+- `1 <= M <= 300`
+- `1 <= T <= 5000`
+- `1 <= w_i <= 10^6`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample input
+```text
+4 5 2 2 4
+.....
+.....
+.....
+.....
+4 1 3
+1 5 1
+4 3
+1 3
+```
+
+### Sample output
+```text
+2
+RR
+```
+
+### Explanation
+- Robot 1 starts at `(4,1)` with weight `3`.
+- Robot 2 starts at `(1,5)` with weight `1`.
+- Exits are at `(4,3)` and `(1,3)`.
+
+After the first `R`:
+- Robot 1 moves to `(4,2)`
+- Robot 2 moves to `(1,4)`
+
+After the second `R`:
+- Robot 1 moves to `(4,3)` and exits at step `2`
+- Robot 2 moves to `(1,3)` and exits at step `2`
+
+So the objective is:
+
+```text
+A = 3 * 2 + 1 * 2 = 8
+```
+
+The score is then computed by comparing this value to the baseline objective on the same input.
+```

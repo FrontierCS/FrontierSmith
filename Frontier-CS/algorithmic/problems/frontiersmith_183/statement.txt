@@ -1,0 +1,215 @@
+```markdown
+# Referral Web Forge
+
+## Problem
+UpCoder is planning a full rebuild of its website. The CEO (employee `0`) can directly sponsor any candidate, but every other candidate may only join if the employee who recommended them is also on the project team. In addition, every selected employee can directly supervise only a limited number of their own recommended candidates.
+
+Your task is to choose a feasible team of candidates to maximize the expected quality of the new website, under a salary budget.
+
+There are `m` website capabilities to improve, such as frontend polish, search relevance, payment reliability, analytics, accessibility, and so on. Each candidate contributes to some subset of these capabilities.
+
+A team is **feasible** if all of the following hold:
+
+1. **Budget**: the sum of salaries of selected candidates is at most `B`.
+2. **Referral closure**: if candidate `i` is selected and their recommender is candidate `r_i > 0`, then `r_i` must also be selected.
+3. **Direct supervision limit**: for every selected candidate `u`, at most `c_u` of the selected candidates may have `u` as their recommender.
+4. The CEO is never counted as a selected candidate and has unlimited direct supervision capacity.
+
+For each capability `j`, let `X_j` be the total contribution of the selected team to that capability. The achieved value of capability `j` is
+
+\[
+W_j \cdot \left(1 - e^{-X_j / T_j}\right)
+\]
+
+where:
+- `T_j` is the scale at which that capability starts to saturate,
+- `W_j` is the business importance of that capability.
+
+The total objective is the sum of these achieved values over all capabilities.
+
+Because the value function has diminishing returns, there are many possible trade-offs:
+- spread the budget across many broad contributors,
+- build deep referral chains to unlock specialists,
+- invest heavily in a few very important capabilities,
+- or use managers mainly as “unlockers” for valuable descendants.
+
+Your goal is to output any feasible team.
+
+## Input
+The input consists of a single test case.
+
+- The first line contains three integers:
+
+\[
+n\ m\ B
+\]
+
+where:
+- `1 <= n <= 5000` is the number of candidates,
+- `1 <= m <= 100` is the number of website capabilities,
+- `1 <= B <= 10^9` is the total salary budget.
+
+- The next `m` lines describe the capabilities.  
+  Line `j` contains two integers:
+
+\[
+T_j\ W_j
+\]
+
+where:
+- `1 <= T_j <= 10^6`,
+- `1 <= W_j <= 10^6`.
+
+- The next `n` lines describe candidates `1` through `n` in order.  
+  Each line has the form:
+
+\[
+s_i\ c_i\ r_i\ d_i\ \; cap_{i,1}\ a_{i,1}\ cap_{i,2}\ a_{i,2}\ \dots\ cap_{i,d_i}\ a_{i,d_i}
+\]
+
+where:
+- `1 <= s_i <= 10^6` is the salary of candidate `i`,
+- `0 <= c_i <= n` is the maximum number of selected **direct** children of `i`,
+- `0 <= r_i < i` is the recommender of candidate `i` (`0` means the CEO),
+- `0 <= d_i <= m` is the number of capabilities candidate `i` contributes to,
+- each `cap_{i,t}` is a distinct capability index in `[1, m]`,
+- `1 <= a_{i,t} <= 10^6` is the contribution amount to that capability.
+
+Additional guarantee:
+- the total number of listed `(capability, contribution)` pairs over all candidates is at most `250000`.
+
+## Output
+Output a team selection in the following format:
+
+- First output an integer `q` — the number of selected candidates.
+- Then output `q` distinct integers: the selected candidate IDs.
+
+The integers may be separated by arbitrary whitespace and may span multiple lines.
+
+Your output is considered **invalid** if any of the following occur:
+- `q < 0` or `q > n`,
+- any listed ID is outside `[1, n]`,
+- any listed ID appears more than once,
+- the selected set violates budget, referral closure, or direct supervision limits.
+
+Invalid outputs receive objective value `0`.
+
+## Objective
+For a valid selected set `S`:
+
+- Total salary:
+
+\[
+\text{cost}(S) = \sum_{i \in S} s_i
+\]
+
+- Capability totals:
+
+\[
+X_j(S) = \sum_{i \in S} a_{i,j}
+\]
+
+where missing contributions are treated as `0`.
+
+- Total website quality:
+
+\[
+\text{Obj}(S) = \sum_{j=1}^{m} W_j \cdot \left(1 - e^{-X_j(S)/T_j}\right)
+\]
+
+Your goal is to **maximize** `Obj(S)`.
+
+All computations used by the judge are performed in double precision.
+
+## Scoring
+Let:
+
+- `O` be your objective value on a test case,
+- `G` be the objective value of the **baseline greedy algorithm** defined below,
+- `R` be the objective value of the organizer's fixed reference solution for that test case.
+
+Your score on that test case is:
+
+\[
+100 \cdot \operatorname{clamp}\!\left(\frac{O - G}{R - G},\ 0,\ 1\right)
+\]
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+If `R = G`, then every valid submission receives `100` points on that test case.
+
+The final score is the arithmetic mean of the per-test-case scores over all hidden test cases.
+
+### Baseline greedy algorithm
+The baseline solution is deterministic and must be interpreted exactly as follows:
+
+1. Start with `S = empty`.
+2. A candidate `i` is **currently addable** if:
+   - `i` is not already in `S`,
+   - `r_i = 0` or `r_i in S`,
+   - if `r_i > 0`, then fewer than `c_{r_i}` selected candidates currently have recommender `r_i`,
+   - and `cost(S) + s_i <= B`.
+3. For each currently addable candidate `i`, compute the marginal gain:
+
+\[
+\Delta_i = \text{Obj}(S \cup \{i\}) - \text{Obj}(S)
+\]
+
+4. Among currently addable candidates, choose the one maximizing:
+   - first: `Δ_i / s_i`,
+   - second (tie-break): larger `Δ_i`,
+   - third: smaller `s_i`,
+   - fourth: smaller candidate ID.
+5. If no currently addable candidate exists, stop.
+6. If the chosen candidate has `Δ_i <= 0`, stop. Otherwise add them to `S` and repeat from step 2.
+
+The objective value of the resulting set is `G`.
+
+## Constraints
+- Time limit: 10 seconds
+- Memory limit: 512 MB
+
+## Example
+Sample input
+```text
+5 3 13
+5 100
+4 70
+3 60
+4 2 0 2 1 4 2 1
+3 1 1 2 2 3 3 1
+5 0 1 1 1 3
+4 0 0 2 2 2 3 3
+6 0 4 1 3 4
+```
+
+Sample output
+```text
+3
+1 2 4
+```
+
+Brief explanation:
+
+- Selected team: candidates `{1, 2, 4}`
+- Total salary: `4 + 3 + 4 = 11 <= 13`
+- Referral closure holds:
+  - `1` and `4` are recommended by the CEO,
+  - `2` is recommended by `1`, and `1` is selected.
+- Supervision limits hold:
+  - candidate `1` allows up to `2` direct selected children and has only one (`2`),
+  - candidate `4` has no selected direct children.
+
+Capability totals:
+- Capability 1: `4`
+- Capability 2: `1 + 3 + 2 = 6`
+- Capability 3: `1 + 3 = 4`
+
+Objective:
+\[
+100(1-e^{-4/5}) + 70(1-e^{-6/4}) + 60(1-e^{-4/3})
+\approx 153.634
+\]
+
+So this output achieves objective value approximately `153.634`.
+```

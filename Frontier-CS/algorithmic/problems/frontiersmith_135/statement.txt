@@ -1,0 +1,213 @@
+```markdown
+# Stretch-and-Serve
+
+## Problem
+
+A fulfillment center uses robots that can move only **right** (`R`) or **down** (`D`) on an `n × n` grid.  
+Rows are numbered from `1` to `n` top to bottom, columns from `1` to `n` left to right. Every robot starts in cell `(1, 1)`.
+
+For each robot, an initial move script is given as a non-empty string over `D` and `R`.  
+The script is valid: if executed from `(1, 1)`, the robot never leaves the grid.
+
+You may **stretch** each script before execution:
+
+- for every move occurrence independently, you may replace it by several copies of the same move;
+- equivalently, if the `j`-th character of the script is `D` or `R`, you choose an integer repeat count `a_j ≥ 1`, and that move is executed `a_j` times consecutively.
+
+For robot `i`, the total number of **extra** moves is limited by a budget `b_i`:
+
+\[
+\sum_j (a_j - 1) \le b_i
+\]
+
+The stretched script must still keep the robot inside the grid.
+
+There are `p` customer cells on the grid. Customer `k` is located at `(r_k, c_k)` and has profit `w_k`.
+
+A customer is **served** if at least one robot visits that cell at any time while executing its stretched script.  
+Each customer contributes its profit **at most once**, even if several robots visit the cell.
+
+Your goal is to choose the stretch amounts for all robots to **maximize the total served profit**.
+
+This is an optimization problem: many outputs may be feasible, and better outputs receive higher scores.
+
+---
+
+## Input
+
+The first line contains a single integer `t` — the number of test cases.
+
+Each test case has the following format:
+
+- The first line contains three integers `n`, `m`, `p`
+  - `n` — grid size
+  - `m` — number of robots
+  - `p` — number of customers
+- Then for each robot `i = 1..m`:
+  - one line with integer `b_i` — its extra-move budget
+  - one line with string `s_i` — its initial script
+- Then `p` lines follow, each containing three integers `r_k`, `c_k`, `w_k`
+  - customer position and profit
+
+All customer cells within one test case are distinct.
+
+---
+
+## Output
+
+For each test case, output `m` lines.
+
+For robot `i`, output exactly `|s_i|` non-negative integers:
+
+\[
+x_{i,1}, x_{i,2}, \dots, x_{i,|s_i|}
+\]
+
+where `x_{i,j}` means that the `j`-th move of `s_i` is repeated `1 + x_{i,j}` times in the stretched script.
+
+So for robot `i`:
+
+- the total extra moves are `sum(x_{i,j})`, which must satisfy `sum(x_{i,j}) ≤ b_i`;
+- if `s_i[j] = 'D'`, that occurrence becomes `D` repeated `1 + x_{i,j}` times;
+- if `s_i[j] = 'R'`, that occurrence becomes `R` repeated `1 + x_{i,j}` times.
+
+### Feasibility requirements
+
+For every test case:
+
+1. exactly `m` lines must be printed;
+2. line `i` must contain exactly `|s_i|` integers;
+3. every printed integer must be in the range `[0, 10^{18}]`;
+4. for each robot, the stretched script must satisfy:
+   - `sum(x_{i,j}) ≤ b_i`;
+   - executing the stretched script from `(1,1)` never leaves the grid.
+
+If a test case output is infeasible, its score is `0`.
+
+---
+
+## Objective
+
+For each test case, let `Served` be the set of customers whose cells are visited by at least one robot on its stretched path.
+
+The objective value is
+
+\[
+A = \sum_{k \in Served} w_k
+\]
+
+You must **maximize `A`**.
+
+A robot visits:
+
+- the starting cell `(1,1)`;
+- every intermediate cell traversed by its repeated `D`/`R` moves.
+
+---
+
+## Scoring
+
+For each test case:
+
+- Let `A` be your objective value.
+- Let `B` be the **baseline** objective value obtained by using `x_{i,j} = 0` for every robot and every move, i.e. **no stretching at all**.
+- Let
+
+\[
+U = \sum_{k=1}^{p} w_k
+\]
+
+be the total profit of all customers in the test case.
+
+The per-test score is:
+
+- if the output is infeasible: `0`;
+- else if `U = B`:
+  - score `1000000` if `A = U`,
+  - otherwise score `0`;
+- else:
+
+\[
+\text{score} = 1000000 \cdot \operatorname{clamp}\!\left(\frac{A - B}{U - B},\, 0,\, 1\right)
+\]
+
+where `clamp(z,0,1)=max(0,min(1,z))`.
+
+The score for an input file is the average of its per-test scores.  
+The contest score is the average over all hidden and public input files.
+
+So:
+- matching the baseline gives score `0`,
+- reaching all customers gives score `1000000`,
+- intermediate improvements receive proportional partial credit.
+
+---
+
+## Constraints
+
+- `1 ≤ t ≤ 100`
+- `2 ≤ n ≤ 10^9`
+- `1 ≤ m ≤ 40`
+- `1 ≤ p ≤ 2·10^5`
+- `0 ≤ b_i ≤ 10^9`
+- `1 ≤ |s_i|`
+- each `s_i` consists only of `D` and `R`
+- each initial script is valid in the given grid
+- `1 ≤ r_k, c_k ≤ n`
+- `1 ≤ w_k ≤ 10^9`
+- sum of `p` over all test cases ≤ `2·10^5`
+- sum of all script lengths over all test cases ≤ `2·10^5`
+
+These limits are intentionally large: exact optimization is expected to be computationally intractable in general, so heuristic and approximation methods are encouraged.
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+1
+6 2 6
+3
+RD
+4
+DRR
+1 1 5
+1 3 4
+2 2 7
+2 4 8
+4 3 6
+6 6 10
+```
+
+### Output
+```text
+1 2
+2 0 1
+```
+
+### Explanation
+
+Robot 1 has script `RD` and outputs `1 2`, so it becomes:
+
+- `R` repeated `2` times,
+- `D` repeated `3` times,
+
+thus the path is `RRDDD`.
+
+Robot 2 has script `DRR` and outputs `2 0 1`, so it becomes:
+
+- `D` repeated `3` times,
+- first `R` repeated `1` time,
+- second `R` repeated `2` times,
+
+thus the path is `DDDRR`.
+
+The served customers are those visited by at least one of these two paths.  
+The baseline is obtained from the original scripts `RD` and `DRR` with no stretching.
+
+This sample output is only one feasible solution; better solutions may exist.
+```

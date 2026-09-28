@@ -1,0 +1,154 @@
+```markdown
+# Containment Zone Design
+
+## Problem
+A research facility floor is an `n × m` grid. Each cell is either:
+
+- `0`: already clear, or
+- `1`: blocked by debris.
+
+You may create **containment zones**. A containment zone is an axis-aligned rectangle of grid cells.
+
+If a blocked cell is inside a chosen zone, that cell must be cleaned first, consuming a given cleaning cost. Clear cells cost nothing. You have a total cleaning budget `B`.
+
+Your task is to output any feasible set of containment zones that maximizes total utility.
+
+### Utility
+If a chosen rectangle has area `A`, it contributes `A²` utility.
+
+Large rectangles are therefore disproportionately valuable, but making them may require spending budget to clean blocked cells.
+
+### Feasibility
+A submitted plan is feasible if:
+
+1. Every chosen zone is a valid rectangle inside the grid.
+2. Any two chosen zones are **cell-disjoint**  
+   (touching by edge or corner is allowed, but they may not share a cell).
+3. The sum of cleaning costs of all blocked cells covered by at least one chosen zone is at most `B`.
+
+If the output is infeasible, its objective value is defined to be `0`.
+
+## Input
+The input describes one instance.
+
+- First line: three integers `n m B`
+- Next `n` lines: a binary string of length `m`, the grid
+- Next `n` lines: `m` integers each, the cleaning costs `c[i][j]`
+
+For cells where the grid contains `0`, the corresponding cost is ignored by the judge.
+
+## Output
+On the first line, output an integer `k` — the number of containment zones.
+
+Then output `k` lines, each containing four integers:
+
+`a b c d`
+
+meaning the rectangle with rows `a..c` and columns `b..d` (1-indexed, inclusive).
+
+### Output requirements
+- `0 ≤ k ≤ n·m`
+- `1 ≤ a ≤ c ≤ n`
+- `1 ≤ b ≤ d ≤ m`
+
+You may output any feasible number of rectangles, including `0`.
+
+## Objective
+For each selected rectangle `R`:
+
+- `height(R) = c - a + 1`
+- `width(R) = d - b + 1`
+- `area(R) = height(R) · width(R)`
+
+The objective value of a feasible solution is:
+
+\[
+\text{Obj} = \sum_{R} \text{area}(R)^2
+\]
+
+If the output is infeasible, then:
+
+\[
+\text{Obj} = 0
+\]
+
+All objective calculations use 64-bit signed integers.
+
+## Scoring
+Let:
+
+- `Z` = number of cells that are initially clear (`0`)
+
+A baseline solution is:
+
+- choose every initially clear cell as its own `1 × 1` rectangle,
+- choose no blocked cells.
+
+Its objective value is exactly `Z`.
+
+For each test file, your score is:
+
+\[
+\text{Score}_{test} =
+\min\left(1{,}000{,}000,\;
+\left\lfloor 100{,}000 \cdot \frac{\text{Obj}}{\max(1, Z)} \right\rfloor
+\right)
+\]
+
+So:
+- matching the baseline gives `100000` points,
+- doubling the baseline gives `200000` points,
+- reaching `10 ×` baseline or more gives the full `1000000` points.
+
+If there are multiple test files, the final score is the average of `Score_test` over all test files, rounded down.
+
+## Constraints
+- `1 ≤ n, m ≤ 120`
+- `0 ≤ B ≤ 10^9`
+- Grid characters are only `0` or `1`
+- `0 ≤ c[i][j] ≤ 10^6`
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+## Example
+### Input
+```text
+4 5 5
+00110
+00010
+10000
+00100
+0 0 4 2 0
+0 0 0 3 0
+5 0 0 0 0
+0 0 1 0 0
+```
+
+### Output
+```text
+2
+1 1 2 3
+3 2 4 5
+```
+
+### Explanation
+The first rectangle covers rows `1..2`, columns `1..3`, with area `6`.  
+It includes one blocked cell `(1,3)` of cleaning cost `4`.
+
+The second rectangle covers rows `3..4`, columns `2..5`, with area `8`.  
+It includes one blocked cell `(4,3)` of cleaning cost `1`.
+
+Total cleaning cost: `4 + 1 = 5`, which matches the budget.
+
+Objective:
+- `6² + 8² = 36 + 64 = 100`
+
+The grid has `15` initially clear cells, so the baseline objective is `15`.
+
+Per-test score:
+\[
+\left\lfloor 100{,}000 \cdot \frac{100}{15} \right\rfloor = 666666
+\]
+
+This sample output is feasible but not guaranteed to be optimal.
+```

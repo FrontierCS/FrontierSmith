@@ -1,0 +1,185 @@
+```markdown
+# Budgeted Data Migration on a Swap Network
+
+## Problem
+A data center has `N` servers, numbered `1` through `N`.
+
+- Server `i` initially stores data block `p_i`.
+- The desired final configuration is given by another permutation `q`: server `i` should finally store block `q_i`.
+- Each block `b` has an importance value `w_b`.
+
+There are `M` bidirectional network links.  
+Using link `e`, you may **swap** the blocks currently stored on its two endpoint servers.  
+Each use of link `e` consumes `c_e` units of bandwidth budget.
+
+You may use links in any order, and the same link may be used multiple times.
+
+Your task is to output a sequence of swaps that maximizes the total importance of blocks that end up on their target servers, subject to:
+
+- at most `L` swaps in total, and
+- total bandwidth cost at most `B`.
+
+This is an optimization problem: any feasible sequence is accepted, and better sequences earn higher scores.
+
+---
+
+## Input
+The input consists of a single test case in the following format:
+
+```text
+N M L B
+p_1 p_2 ... p_N
+q_1 q_2 ... q_N
+w_1 w_2 ... w_N
+u_1 v_1 c_1
+u_2 v_2 c_2
+:
+u_M v_M c_M
+```
+
+### Meaning
+
+- `N`: number of servers and blocks
+- `M`: number of available links
+- `L`: maximum allowed number of swaps
+- `B`: maximum allowed total bandwidth cost
+- `p`: initial placement of blocks (`p` is a permutation of `1..N`)
+- `q`: target placement of blocks (`q` is a permutation of `1..N`)
+- `w_b`: importance of block `b`
+- Link `e` connects servers `u_e` and `v_e`, and one use of that link costs `c_e`
+
+For each block `b`, let `target[b]` be the unique server index `i` such that `q_i = b`.
+
+---
+
+## Output
+Output a swap sequence in the following format:
+
+```text
+K
+e_1
+e_2
+:
+e_K
+```
+
+- `K` is the number of swaps you perform.
+- `0 <= K <= L`
+- Each `e_t` must satisfy `1 <= e_t <= M`
+- On step `t`, you swap the blocks currently stored on servers `u_{e_t}` and `v_{e_t}`
+
+### Feasibility
+Your output is **feasible** if all of the following hold:
+
+- the format is valid,
+- `0 <= K <= L`,
+- every `e_t` is a valid link index,
+- the total cost  
+  `c_{e_1} + c_{e_2} + ... + c_{e_K} <= B`.
+
+If the output is infeasible, the submission receives score `0` for that test case.
+
+---
+
+## Objective
+After applying all swaps in order, let the final block on server `i` be `f_i`.
+
+Your objective value is:
+
+```text
+A = sum of w_b over all blocks b such that block b is on server target[b]
+```
+
+Equivalently,
+
+```text
+A = Σ_{i=1..N} [f_i = q_i] * w_{q_i}
+```
+
+where `[condition]` is `1` if the condition is true and `0` otherwise.
+
+You must **maximize** `A`.
+
+---
+
+## Scoring
+For each test case:
+
+- Let `Base` be the objective value of the **empty sequence** (`K = 0`).
+- Let `U = w_1 + w_2 + ... + w_N`.
+- Let `A` be your objective value.
+
+If your output is infeasible, the test case score is `0`.
+
+Otherwise, the test case score is:
+
+- `1,000,000` if `U = Base`
+- otherwise  
+  ```text
+  floor(1,000,000 * max(0, A - Base) / (U - Base))
+  ```
+
+So:
+- matching the baseline gets score `0`,
+- improving on the baseline gives proportionally higher score,
+- reaching all blocks at their targets gives score `1,000,000`.
+
+The total score of a submission is the sum of its scores over all official test cases.
+
+---
+
+## Constraints
+- `2 <= N <= 200000`
+- `1 <= M <= 300000`
+- `0 <= L <= 200000`
+- `0 <= B <= 10^12`
+- `p` is a permutation of `1..N`
+- `q` is a permutation of `1..N`
+- `1 <= w_b <= 10^9`
+- `1 <= u_e, v_e <= N`
+- `u_e != v_e`
+- `1 <= c_e <= 10^6`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample Input
+```text
+4 4 3 3
+2 1 4 3
+1 2 3 4
+5 1 10 1
+1 2 1
+2 3 1
+3 4 1
+1 4 3
+```
+
+### Sample Output
+```text
+2
+1
+3
+```
+
+### Explanation
+Initially, the placement is:
+
+- server 1: block 2
+- server 2: block 1
+- server 3: block 4
+- server 4: block 3
+
+The target placement is `1 2 3 4`.
+
+Using link `1` swaps servers `1` and `2`, and using link `3` swaps servers `3` and `4`.  
+After these two swaps, all blocks are on their target servers.
+
+- Total swaps used: `2 <= L`
+- Total cost: `1 + 1 = 2 <= B`
+- Objective value: `5 + 1 + 10 + 1 = 17`
+
+The baseline (`K = 0`) has objective `0`, so this solution achieves the maximum possible normalized score on this sample.
+```

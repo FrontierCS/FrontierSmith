@@ -1,0 +1,197 @@
+# Convex Dome Layout
+
+## Problem
+
+A museum hall is divided into a `W × H` grid of unit cells. Some cells are blocked by pillars and cannot be used. You must place `n` exhibits, one per free cell.
+
+Exhibit `i` has one of three shapes:
+
+- `S`: a unit square filling its cell,
+- `C`: a circle inscribed in its cell,
+- `T`: an equilateral triangle of side length `1`, placed inside its cell with one side on a cell edge.
+
+For each triangle, you may choose one of four orientations:
+
+- `U`: base on the bottom edge,
+- `D`: base on the top edge,
+- `L`: base on the right edge,
+- `R`: base on the left edge.
+
+Some pairs of exhibits must be connected by cables. The museum also wants to cover all exhibits with a single transparent convex dome. Your task is to choose cells and triangle orientations to minimize:
+
+- the weighted total cable length, and
+- the perimeter of the convex hull of all placed exhibits.
+
+### Geometry used for evaluation
+
+Let the chosen cell of exhibit `i` be `(x_i, y_i)`, where `(0, 0)` is the lower-left cell of the hall.
+
+Define `h = sqrt(3) / 2`.
+
+Each exhibit is represented by the following polygon for hull computation:
+
+- `S`: vertices  
+  `(x, y), (x+1, y), (x+1, y+1), (x, y+1)`
+- `T`:
+  - `U`: `(x, y), (x+1, y), (x+0.5, y+h)`
+  - `D`: `(x, y+1), (x+1, y+1), (x+0.5, y+1-h)`
+  - `L`: `(x+1, y), (x+1, y+1), (x+1-h, y+0.5)`
+  - `R`: `(x, y), (x, y+1), (x+h, y+0.5)`
+- `C`: for evaluation, the circle is replaced by a regular 64-gon centered at `(x+0.5, y+0.5)` with radius `0.5`, with vertices  
+  `(x+0.5 + 0.5 cos(2πk/64), y+0.5 + 0.5 sin(2πk/64))` for `k = 0..63`
+
+The **convex dome perimeter** is the perimeter of the Euclidean convex hull of all polygon vertices of all exhibits.
+
+### Cable endpoints
+
+Each exhibit has a reference point used for cable lengths:
+
+- `S`, `C`: center of the cell, `(x+0.5, y+0.5)`
+- `T`:
+  - `U`: `(x+0.5, y+sqrt(3)/6)`
+  - `D`: `(x+0.5, y+1-sqrt(3)/6)`
+  - `L`: `(x+1-sqrt(3)/6, y+0.5)`
+  - `R`: `(x+sqrt(3)/6, y+0.5)`
+
+For each cable `(u, v, w)`, its cost is
+
+`w × EuclideanDistance(reference_point[u], reference_point[v])`.
+
+Your layout must use distinct free cells for all exhibits.
+
+## Input
+
+The input describes one instance.
+
+```text
+W H n m b λ
+types
+b lines: xb yb
+m lines: u v w
+```
+
+- `W, H`: grid dimensions
+- `n`: number of exhibits
+- `m`: number of cables
+- `b`: number of blocked cells
+- `λ`: nonnegative integer weight of the dome perimeter term
+- `types`: a string of length `n`, using only `S`, `C`, `T`
+- each blocked cell is given by integer coordinates `(xb, yb)`
+- each cable connects exhibits `u` and `v` (`1`-indexed) with positive integer weight `w`
+
+Blocked cells are distinct.
+
+## Output
+
+Output exactly `n` lines.
+
+On line `i`, output:
+
+```text
+xi yi dir
+```
+
+- `(xi, yi)` is the cell chosen for exhibit `i`
+- `dir` is one of `U`, `D`, `L`, `R`
+- for `S` and `C`, `dir` is ignored but must still be present
+
+A submission is **feasible** iff:
+
+- all `(xi, yi)` are integers with `0 ≤ xi < W`, `0 ≤ yi < H`
+- no exhibit is placed on a blocked cell
+- no two exhibits use the same cell
+
+If the output is infeasible, the instance score is `0`.
+
+## Objective
+
+For a feasible output, let:
+
+- `P` = perimeter of the convex hull of all exhibit polygon vertices
+- `L` = sum of all weighted cable lengths
+
+The objective value to **minimize** is:
+
+```text
+O = λ × P + L
+```
+
+The judge computes `O` deterministically using double precision.
+
+## Scoring
+
+For each official test instance, a **baseline layout** is defined as follows:
+
+- list all free cells in row-major order:
+  `(0,0), (1,0), ..., (W-1,0), (0,1), ...`
+- place exhibit `i` in the `i`-th free cell in that order
+- set `dir = U` for every exhibit
+
+Let `B` be the objective value of this baseline, and `O` your objective value.
+
+The score for that instance is:
+
+```text
+score = 200 × B / (B + O)
+```
+
+Properties:
+
+- `0 < score ≤ 200` for feasible outputs
+- baseline gets exactly `100`
+- better-than-baseline solutions score above `100`
+- worse-than-baseline solutions score below `100`
+
+The final score is the average of instance scores over all official test instances.
+
+## Constraints
+
+- `1 ≤ W, H ≤ 80`
+- `1 ≤ n ≤ 2500`
+- `0 ≤ b < W×H`
+- `n ≤ W×H - b`
+- `0 ≤ m ≤ 20000`
+- `0 ≤ λ ≤ 10000`
+- `1 ≤ w ≤ 10000`
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample Input
+```text
+6 4 5 4 2 3
+TSCCT
+1 1
+4 2
+1 2 5
+2 3 7
+3 5 4
+4 5 6
+```
+
+### Sample Output
+```text
+0 0 U
+1 0 U
+2 0 U
+1 2 U
+0 1 R
+```
+
+### Explanation
+
+This output is feasible:
+
+- all 5 exhibits are placed in distinct, unblocked cells
+- exhibit 1 and 5 are triangles with chosen orientations `U` and `R`
+
+The judge computes:
+
+1. the convex hull of all polygon vertices of the 5 placed exhibits,
+2. its perimeter `P`,
+3. the weighted cable sum `L`,
+4. the objective `O = 3 × P + L`,
+5. the score by comparing `O` to the baseline objective `B`.
+
+Different layouts may trade off compact domes against shorter cable connections, so many heuristic approaches are viable.

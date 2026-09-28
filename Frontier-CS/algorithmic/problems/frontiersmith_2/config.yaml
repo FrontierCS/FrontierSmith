@@ -2,6 +2,6 @@ checker: chk.cc
 memory: 1024m
 subtasks:
 - n_cases: 10
-  score: 100
-time: 4s
+  score: 200
+time: 5s
 type: default

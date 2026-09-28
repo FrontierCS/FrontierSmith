@@ -3,173 +3,226 @@
 using namespace std;
 
 typedef long long ll;
-typedef complex<double> cd;
-const double PI = acos(-1.0);
+typedef __int128 lll;
 
-void fft(vector<cd>& a, bool invert) {
-    int n = (int)a.size();
-    for (int i = 1, j = 0; i < n; i++) {
-        int bit = n >> 1;
-        for (; j & bit; bit >>= 1) j ^= bit;
-        j ^= bit;
-        if (i < j) swap(a[i], a[j]);
+bool isPerfectPower(ll v, int c, ll B) {
+    if (v < 1 || v > B) return false;
+    double est = pow((double)v, 1.0 / c);
+    ll klo = max(1LL, (ll)(est - 2));
+    ll khi = (ll)(est + 2);
+    for (ll k = klo; k <= khi; k++) {
+        lll pw = 1;
+        bool overflow = false;
+        for (int i = 0; i < c; i++) {
+            pw *= k;
+            if (pw > (lll)2e18) { overflow = true; break; }
+        }
+        if (!overflow && (ll)pw == v) return true;
     }
-    for (int len = 2; len <= n; len <<= 1) {
-        double ang = 2.0 * PI / len * (invert ? -1 : 1);
-        cd wlen(cos(ang), sin(ang));
-        for (int i = 0; i < n; i += len) {
-            cd w(1);
-            for (int j = 0; j < len / 2; j++) {
-                cd u = a[i+j], v = a[i+j+len/2]*w;
-                a[i+j] = u+v;
-                a[i+j+len/2] = u-v;
-                w *= wlen;
-            }
+    return false;
+}
+
+ll mygcd(ll a, ll b) { while (b) { ll t = a % b; a = b; b = t; } return a; }
+
+lll transformVal(ll xi, ll bj) {
+    ll g = mygcd(xi, bj);
+    lll lcmv = (lll)(xi / g) * bj;
+    return lcmv / g;
+}
+
+lll computeObjective(int N, int K,
+                     const vector<ll>& X, const vector<ll>& W,
+                     const vector<ll>& bvals,
+                     const vector<int>& asgn,
+                     const vector<ll>& F) {
+    lll total = 0;
+    vector<bool> resUsed(K, false);
+    for (int i = 0; i < N; i++) {
+        int ai = asgn[i];
+        if (ai == 0) {
+            total += (lll)W[i] * X[i];
+        } else {
+            lll yval = transformVal(X[i], bvals[ai - 1]);
+            total += (lll)W[i] * yval;
+            resUsed[ai - 1] = true;
         }
     }
-    if (invert) {
-        for (auto& x : a) x /= n;
-    }
-}
-
-vector<ll> cyclic_conv(const vector<int>& fA, const vector<int>& fB, int M) {
-    int n = 1;
-    while (n < 2*M) n <<= 1;
-    vector<cd> fa(n, 0), fb(n, 0);
-    for (int i = 0; i < M; i++) fa[i] = fA[i];
-    for (int i = 0; i < M; i++) fb[i] = fB[i];
-    fft(fa, false);
-    fft(fb, false);
-    for (int i = 0; i < n; i++) fa[i] *= fb[i];
-    fft(fa, true);
-    vector<ll> res(M, 0);
-    for (int i = 0; i < 2*M-1; i++) {
-        res[i % M] += llround(fa[i].real());
-    }
-    return res;
-}
-
-ll compute_objective(const vector<int>& indicators, int M,
-                     const vector<ll>& w,
-                     const vector<ll>& d) {
-    int sizeA = 0;
-    for (int i = 0; i < M; i++) sizeA += indicators[i];
-    if (sizeA == 0 || sizeA == M) return 0LL;
-
-    vector<int> fB(M);
-    for (int i = 0; i < M; i++) fB[i] = 1 - indicators[i];
-
-    vector<ll> c = cyclic_conv(indicators, fB, M);
-
-    ll total = 0;
-    for (int r = 0; r < M; r++) {
-        ll contrib = w[r] * min(c[r], d[r]);
-        total += contrib;
+    for (int j = 0; j < K; j++) {
+        if (resUsed[j]) total += (lll)F[j];
     }
     return total;
 }
 
-// Compute baseline: sort by (cost_i, i) ascending, greedily add while budget allows
-vector<int> compute_baseline(int M, const vector<ll>& cost, ll B) {
-    vector<int> order(M);
-    iota(order.begin(), order.end(), 0);
-    sort(order.begin(), order.end(), [&](int a, int b){
-        return cost[a] < cost[b] || (cost[a] == cost[b] && a < b);
-    });
-    vector<int> base;
-    ll spent = 0;
-    for (int i : order) {
-        if (cost[i] <= B - spent) {
-            base.push_back(i);
-            spent += cost[i];
+// Run the deterministic baseline described in the problem statement
+lll runBaseline(int N, int K, ll B,
+                const vector<ll>& X, const vector<ll>& W,
+                const vector<int>& Cv, const vector<ll>& Uv, const vector<ll>& Fv) {
+    vector<bool> used(N, false);
+    vector<ll> bchosen(K, 1);
+    vector<int> res(N, 0);
+
+    for (int j = 0; j < K; j++) {
+        int c = Cv[j];
+        // Build list of perfect c-th powers in [1, B]
+        vector<ll> Pj;
+        for (ll base = 1; ; base++) {
+            lll pw = 1;
+            bool overflow = false;
+            for (int e = 0; e < c; e++) {
+                pw *= base;
+                if (pw > (lll)B) { overflow = true; break; }
+            }
+            if (overflow) break;
+            Pj.push_back((ll)pw);
+        }
+
+        // Step 2-3: find (i*, b*) with max gain among unassigned crystals
+        ll bestGain = 0;
+        int bestI = -1;
+        ll bestB = 1;
+        for (int i = 0; i < N; i++) {
+            if (used[i]) continue;
+            for (ll b : Pj) {
+                lll yval = transformVal(X[i], b);
+                ll gain = (ll)((lll)W[i] * X[i] - (lll)W[i] * yval);
+                if (gain > bestGain ||
+                    (gain == bestGain && bestI != -1 && (i < bestI || (i == bestI && b < bestB)))) {
+                    bestGain = gain;
+                    bestI = i;
+                    bestB = b;
+                }
+            }
+        }
+
+        // Step 4: if max gain <= 0
+        if (bestGain <= 0) {
+            bchosen[j] = 1;
+            continue;
+        }
+
+        // Step 5: b_j = b*
+        ll bj = bestB;
+        bchosen[j] = bj;
+
+        // Step 6-7: collect unassigned crystals with positive gain for b_j
+        vector<pair<ll, int>> positiveGains;
+        for (int i = 0; i < N; i++) {
+            if (used[i]) continue;
+            lll yval = transformVal(X[i], bj);
+            ll gain = (ll)((lll)W[i] * X[i] - (lll)W[i] * yval);
+            if (gain > 0) {
+                positiveGains.push_back({gain, i});
+            }
+        }
+        // Sort by decreasing gain, tie-break smaller i
+        sort(positiveGains.begin(), positiveGains.end(), [](const pair<ll,int>& a, const pair<ll,int>& b) {
+            return a.first > b.first || (a.first == b.first && a.second < b.second);
+        });
+
+        // Step 8: take min(u_j, m)
+        ll take = min((ll)positiveGains.size(), Uv[j]);
+        ll S = 0;
+        for (ll k = 0; k < take; k++) S += positiveGains[k].first;
+
+        if (S > Fv[j]) {
+            for (ll k = 0; k < take; k++) {
+                int ci = positiveGains[k].second;
+                used[ci] = true;
+                res[ci] = j + 1;
+            }
+        } else {
+            bchosen[j] = 1;
         }
     }
-    return base;
+
+    return computeObjective(N, K, X, W, bchosen, res, Fv);
 }
 
 int main(int argc, char* argv[]) {
     registerTestlibCmd(argc, argv);
 
     // Read input
-    int M = inf.readInt();
+    int N = inf.readInt();
+    int K = inf.readInt();
     ll B = inf.readLong();
 
-    vector<ll> cost(M);
-    for (int i = 0; i < M; i++) cost[i] = inf.readLong();
-
-    vector<ll> w(M), d(M);
-    for (int i = 0; i < M; i++) w[i] = inf.readLong();
-    for (int i = 0; i < M; i++) d[i] = inf.readLong();
-
-    // Compute baseline
-    vector<int> base_sol = compute_baseline(M, cost, B);
-    vector<int> base_ind(M, 0);
-    for (int p : base_sol) base_ind[p] = 1;
-    ll U_base = compute_objective(base_ind, M, w, d);
-
-    // Read participant output
-    int K = ouf.readInt(0, M, "K must be between 0 and M");
-
-    vector<int> ports;
-    ports.reserve(K);
-    for (int i = 0; i < K; i++) {
-        int p = ouf.readInt(0, M-1, "port index out of range [0, M-1]");
-        ports.push_back(p);
+    vector<ll> X(N), W(N);
+    for (int i = 0; i < N; i++) {
+        X[i] = inf.readLong();
+        W[i] = inf.readLong();
+    }
+    vector<int> Cv(K);
+    vector<ll> Uv(K), Fv(K);
+    for (int j = 0; j < K; j++) {
+        Cv[j] = inf.readInt();
+        Uv[j] = inf.readLong();
+        Fv[j] = inf.readLong();
     }
 
-    // *** Strict EOF check: reject trailing garbage ***
-    // readEof() in testlib skips whitespace/newlines and then asserts EOF
+    // Read participant output: Line 1 - K tuning values
+    vector<ll> bvals(K);
+    for (int j = 0; j < K; j++) {
+        bvals[j] = ouf.readLong();
+        if (bvals[j] < 1 || bvals[j] > B) {
+            quitf(_wa, "b[%d] = %lld is out of range [1, %lld]", j + 1, bvals[j], B);
+        }
+        if (!isPerfectPower(bvals[j], Cv[j], B)) {
+            quitf(_wa, "b[%d] = %lld is not a perfect %d-th power", j + 1, bvals[j], Cv[j]);
+        }
+    }
+
+    // Line 2: N assignments
+    vector<int> asgn(N);
+    for (int i = 0; i < N; i++) {
+        asgn[i] = ouf.readInt();
+        if (asgn[i] < 0 || asgn[i] > K) {
+            quitf(_wa, "a[%d] = %d is out of range [0, %d]", i + 1, asgn[i], K);
+        }
+    }
+
+    // Check for extra content (skip whitespace first)
     if (!ouf.seekEof()) {
-        quitf(_wa, "extra output after the %d port indices", K);
+        quitf(_wa, "Extra content found after expected output");
     }
 
-    // Validate strictly increasing order
-    for (int i = 1; i < K; i++) {
-        if (ports[i] <= ports[i-1]) {
-            quitf(_wa, "ports must be strictly increasing (got %d then %d at positions %d,%d)",
-                  ports[i-1], ports[i], i-1, i);
+    // Check capacity constraints
+    vector<int> resCount(K, 0);
+    for (int i = 0; i < N; i++) {
+        if (asgn[i] > 0) {
+            int j = asgn[i] - 1;
+            resCount[j]++;
+            if (resCount[j] > (int)Uv[j]) {
+                quitf(_wa, "Resonator %d exceeds capacity %lld (assigned %d crystals)", j + 1, Uv[j], resCount[j]);
+            }
         }
     }
 
-    // Validate all ports distinct (strictly increasing already guarantees this,
-    // but keep for clarity)
-    {
-        set<int> seen(ports.begin(), ports.end());
-        if ((int)seen.size() != K) {
-            quitf(_wa, "duplicate ports in output");
-        }
-    }
+    // Compute C_out
+    lll Cout = computeObjective(N, K, X, W, bvals, asgn, Fv);
 
-    // Validate budget (overflow-safe)
-    ll total_cost = 0;
-    for (int p : ports) {
-        if (cost[p] > B - total_cost) {
-            quitf(_wa, "total cost exceeds budget B=%lld", B);
-        }
-        total_cost += cost[p];
-    }
+    // Compute C_base
+    lll Cbase = runBaseline(N, K, B, X, W, Cv, Uv, Fv);
 
-    // Compute participant objective
-    vector<int> part_f(M, 0);
-    for (int p : ports) part_f[p] = 1;
-    ll U = compute_objective(part_f, M, w, d);
+    double dCout = (double)Cout;
+    double dCbase = (double)Cbase;
 
-    // Scoring per problem statement:
-    // score = 0                    if U == 0 and U_base == 0
-    // score = 100 * U / (U+U_base) otherwise
-    // We pass ratio in [0,1] to quitp (it multiplies by 100 internally).
     double ratio;
-    if (U == 0 && U_base == 0) {
-        ratio = 0.0;
+    if (Cbase <= 0) {
+        // Degenerate case: baseline is zero or negative; give full score
+        ratio = 1.0;
+    } else if (Cout <= 0) {
+        // Shouldn't happen (W_i >= 1, X_i >= 1, final value >= 1)
+        ratio = 1.0;
     } else {
-        double dU = (double)U;
-        double dBase = (double)U_base;
-        ratio = dU / (dU + dBase);
+        // ratio = min(10, C_base / C_out) / 10, clamped to [0, 1]
+        double r = dCbase / dCout;
+        ratio = min(10.0, r) / 10.0;
+        if (ratio < 0.0) ratio = 0.0;
+        if (ratio > 1.0) ratio = 1.0;
     }
-    if (ratio < 0.0) ratio = 0.0;
-    if (ratio > 1.0) ratio = 1.0;
 
-    quitp(ratio, "U=%lld U_base=%lld Ratio: %.9f", U, U_base, ratio);
+    quitp(ratio, "Feasible. C_out=%.0f, C_base=%.0f, C_base/C_out=%.6f, Ratio: %.6f",
+          dCout, dCbase, (Cout > 0 ? dCbase / dCout : 999.0), ratio);
 
     return 0;
 }

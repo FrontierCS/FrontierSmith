@@ -1,0 +1,185 @@
+```markdown
+# Domino Gallery Layout
+
+## Problem
+
+A museum is preparing a long exhibition of numbered wooden plaques. Each plaque is a domino-like stick: it has a number on its left end and a number on its right end, each in `{0,1,2}`. The plaque also has a physical length and an artistic value.
+
+The museum has `S` horizontal shelves. On each shelf, you may place any number of plaques from left to right, as long as the total length on that shelf does not exceed its capacity. A plaque may be used at most once overall, and it may be **flipped**.
+
+The visual appeal of a shelf comes from:
+
+- the artistic values of all placed plaques,
+- a bonus depending on the **left exposed end** of the first plaque,
+- a bonus depending on the **right exposed end** of the last plaque,
+- a bonus for every adjacent pair of plaques, determined by the touching numbers.
+
+Your task is to output any feasible layout that maximizes the total appeal.
+
+This is an **optimization challenge**: all valid outputs are accepted, but better layouts receive higher scores.
+
+## Input
+
+Each input file contains **one instance**.
+
+- The first line contains two integers `N` and `S` — the number of plaques and the number of shelves.
+- The second line contains `S` integers `C1, C2, ..., CS`, where `Cj` is the capacity of shelf `j`.
+- The third line contains `3` integers `L0, L1, L2`, where `Lx` is the bonus for a non-empty shelf whose first exposed left number is `x`.
+- The fourth line contains `3` integers `R0, R1, R2`, where `Ry` is the bonus for a non-empty shelf whose last exposed right number is `y`.
+- The next `3` lines each contain `3` integers. The value on row `x`, column `y` is `M[x][y]`, the bonus when a plaque with exposed right number `x` is immediately followed by a plaque with exposed left number `y`.
+- Then follow `N` lines. Line `i` contains four integers:
+  - `ai`, `bi` — the left and right numbers of plaque `i` in its original orientation,
+  - `leni` — its length,
+  - `vali` — its artistic value.
+
+### Constraints on the official test data
+
+- `1 <= N <= 3000`
+- `1 <= S <= 50`
+- `1 <= Cj <= 10^9`
+- `0 <= Lx, Ry, M[x][y] <= 10^6`
+- `0 <= ai, bi <= 2`
+- `1 <= leni <= 10^6`
+- `1 <= vali <= 10^6`
+- `leni <= max(C1, ..., CS)` for every plaque
+
+## Output
+
+Output exactly `S` lines.
+
+For shelf `j`, output one line in the following format:
+
+- `kj id1 f1 id2 f2 ... idkj fkj`
+
+where:
+
+- `kj` is the number of plaques placed on shelf `j`,
+- `idt` is the 1-based index of the `t`-th plaque on that shelf, from left to right,
+- `ft` is its orientation:
+  - `0` = original orientation `(left = ai, right = bi)`
+  - `1` = flipped orientation `(left = bi, right = ai)`
+
+### Feasibility requirements
+
+Your output is **feasible** iff all of the following hold:
+
+1. Every `idt` is between `1` and `N`.
+2. Every `ft` is either `0` or `1`.
+3. No plaque index appears more than once in the entire output.
+4. For every shelf `j`, the sum of lengths of its listed plaques is at most `Cj`.
+
+If the output is infeasible, its objective value for that test file is defined to be `0`.
+
+Empty shelves are allowed; output `0` for such a shelf.
+
+## Objective
+
+Let a shelf contain plaques `p1, p2, ..., pk` in that order, after applying the chosen flips.
+
+For plaque `pt`, let its actual left/right numbers on the shelf be `(lt, rt)`.
+
+- If `k = 0`, the shelf contributes `0`.
+- If `k >= 1`, the shelf contributes
+
+\[
+\left(\sum_{t=1}^{k} val_{p_t}\right)
++ L_{l_1}
++ R_{r_k}
++ \sum_{t=1}^{k-1} M[r_t][l_{t+1}]
+\]
+
+The total objective value `V` is the sum of contributions of all shelves.
+
+Your goal is to **maximize `V`**.
+
+## Scoring
+
+For each official test file, the judge also computes a **baseline layout** using the following deterministic algorithm.
+
+### Baseline algorithm
+
+Let plaque `i` precede plaque `j` in the baseline order if:
+
+1. `vali * lenj > valj * leni`, or
+2. `vali * lenj = valj * leni` and `vali > valj`, or
+3. both above are equal and `i < j`.
+
+This is sorting by decreasing `value / length`, then decreasing `value`, then increasing index.
+
+Then process plaques in that order:
+
+1. Place the current plaque onto the **lowest-index shelf** with enough remaining capacity.
+2. If no shelf can fit it, skip it.
+3. The plaque is always appended to the **right end** of that shelf.
+4. Its orientation is chosen greedily:
+   - if the shelf is empty, choose the orientation maximizing `L[left] + R[right]`;
+   - otherwise, if the current last exposed right number on the shelf is `x`, choose the orientation maximizing `M[x][left] + R[right] - R[x]`;
+   - break ties by choosing `f = 0`.
+
+Let the baseline objective value on that file be `B`.
+
+### Per-file score
+
+If your objective value is `V`, then your score for that file is
+
+\[
+\text{score} = \min\left(200,\ 100 \times \frac{V}{B}\right)
+\]
+
+Since all official instances satisfy the constraints above, `B > 0`.
+
+- Matching the baseline gives `100` points on that file.
+- Doing worse gives a proportional score below `100`.
+- Doing better gives a proportional score above `100`, capped at `200`.
+
+### Total score
+
+If the official test set contains multiple files, your final contest score is the **average** of the per-file scores.
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+## Example
+
+### Sample input
+```text
+4 2
+4 4
+1 0 2
+0 2 1
+0 3 1
+2 0 4
+1 5 0
+0 2 2 6
+1 0 2 5
+2 1 2 4
+1 1 1 2
+```
+
+### Sample output
+```text
+2 1 0 3 0
+2 4 0 2 1
+```
+
+### Explanation
+
+- Shelf 1 uses plaque `1` as `0-2` and plaque `3` as `2-1`.
+  - Artistic value: `6 + 4 = 10`
+  - Left exposed bonus: `L[0] = 1`
+  - Adjacency bonus: `M[2][2] = 0`
+  - Right exposed bonus: `R[1] = 2`
+  - Shelf 1 total: `13`
+
+- Shelf 2 uses plaque `4` as `1-1` and plaque `2` flipped to `0-1`.
+  - Artistic value: `2 + 5 = 7`
+  - Left exposed bonus: `L[1] = 0`
+  - Adjacency bonus: `M[1][0] = 2`
+  - Right exposed bonus: `R[1] = 2`
+  - Shelf 2 total: `11`
+
+So the total objective value is `24`.
+
+The score of this output depends on the baseline value `B` for this file, via the scoring formula above.
+```

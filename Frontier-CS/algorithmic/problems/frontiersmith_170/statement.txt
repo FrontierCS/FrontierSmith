@@ -1,0 +1,229 @@
+```markdown
+# Binomial Compression of a Truncated Power
+
+## Problem
+
+Let \(P = 998244353\).
+
+For the input polynomial
+
+\[
+A(x)=a_0+a_1x+\cdots+a_{n-1}x^{n-1}
+\]
+
+define the target polynomial
+
+\[
+T(x) \equiv A(x)^k \pmod{x^n}
+\]
+
+over the finite field \(\mathbb{F}_P\), where \(k\) is a nonnegative integer given in decimal.  
+If \(k=0\), define \(T(x)=1\) for every \(A(x)\).
+
+You do **not** output \(T(x)\) directly.  
+Instead, you must output a **compressed approximation**
+
+\[
+B(x) \equiv s \, x^z \prod_{j=1}^{m}\left(1+c_j x^{d_j}\right) \pmod{x^n},
+\]
+
+where:
+
+- \(0 \le m \le L\),
+- \(0 \le z < n\),
+- \(0 \le s,c_j < P\),
+- \(1 \le d_j < n\).
+
+The judge expands \(B(x)\) modulo \(x^n\) and compares its coefficients with those of \(T(x)\).
+
+Your goal is to choose the representation of \(B(x)\) that best approximates \(T(x)\) while using few factors.
+
+---
+
+## Input
+
+The input contains one test instance.
+
+- The first line contains three integers:
+  \[
+  n,\ L,\ C
+  \]
+- The second line contains the decimal representation of \(k\).
+- The third line contains \(n\) integers:
+  \[
+  a_0,a_1,\dots,a_{n-1}
+  \]
+
+### Meanings
+
+- \(n\): truncation length
+- \(L\): maximum allowed number of binomial factors
+- \(C\): penalty per used factor in the objective
+
+---
+
+## Output
+
+Output any feasible compressed representation.
+
+- The first line must contain three integers:
+  \[
+  m,\ z,\ s
+  \]
+- Then output exactly \(m\) lines.
+- The \(j\)-th of these lines must contain two integers:
+  \[
+  c_j,\ d_j
+  \]
+
+### Feasibility requirements
+
+Your output is feasible iff all of the following hold:
+
+- \(0 \le m \le L\)
+- \(0 \le z < n\)
+- \(0 \le s < P\)
+- for every factor, \(0 \le c_j < P\) and \(1 \le d_j < n\)
+
+If the output is malformed or infeasible, it receives score \(0\) on that test.
+
+---
+
+## Objective
+
+Let
+
+\[
+T(x)=\sum_{i=0}^{n-1} t_i x^i,\qquad
+B(x)=\sum_{i=0}^{n-1} b_i x^i
+\]
+
+after expansion modulo \(x^n\) over \(\mathbb{F}_P\).
+
+For coefficients modulo \(P\), define the circular distance
+
+\[
+\operatorname{dist}_P(u,v)=\min\big((u-v)\bmod P,\ (v-u)\bmod P\big),
+\]
+
+viewed as an integer in \([0,\lfloor P/2\rfloor]\).
+
+Define the weighted approximation error
+
+\[
+E=\sum_{i=0}^{n-1}(n-i)\cdot \operatorname{dist}_P(b_i,t_i).
+\]
+
+The objective value to **minimize** is
+
+\[
+\operatorname{Obj}=E + C\cdot m.
+\]
+
+Lower is better.
+
+---
+
+## Scoring
+
+For each test case, the judge also computes a fixed **baseline** solution:
+
+- If \(T(x)\) is the zero polynomial, the baseline is \(B_0(x)=0\).
+- Otherwise, let
+  \[
+  v=\min\{i \mid t_i \ne 0\}.
+  \]
+  The baseline is the single monomial
+  \[
+  B_0(x)=t_v x^v,
+  \]
+  which corresponds to output \(m=0,\ z=v,\ s=t_v\).
+
+Let \(\operatorname{Base}\) be the objective value of this baseline.
+
+Your per-test score is
+
+\[
+\text{Score}=
+\left\lfloor
+10^6 \cdot \min\left(3,\ \frac{\operatorname{Base}+1}{\operatorname{Obj}+1}\right)
+\right\rfloor.
+\]
+
+### Notes
+
+- The baseline always gets exactly \(1{,}000{,}000\) points.
+- Better-than-baseline solutions get more than \(1{,}000{,}000\).
+- Worse solutions get less.
+- Perfect or near-perfect solutions may hit the cap of \(3{,}000{,}000\).
+
+If a file contains multiple hidden test cases, the final score is the arithmetic mean of the per-test scores, rounded down.
+
+---
+
+## Constraints
+
+- \(2 \le n \le 10^5\)
+- \(0 \le L \le 60\)
+- \(0 \le C \le 10^{15}\)
+- \(0 \le a_i < 998244353\)
+- \(k\) is a decimal integer with length at most \(10^5\)
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample input
+```text
+4 2 1
+2
+1 1 0 0
+```
+
+### Sample output
+```text
+2 0 1
+1 1
+1 1
+```
+
+### Explanation
+
+Here,
+
+\[
+T(x)=(1+x)^2 \bmod x^4 = 1+2x+x^2.
+\]
+
+The submitted output represents
+
+\[
+B(x)=1\cdot x^0 (1+x)(1+x)=1+2x+x^2 \pmod{x^4},
+\]
+
+so the coefficient error is \(0\), and
+
+\[
+\operatorname{Obj}=0 + 1\cdot 2 = 2.
+\]
+
+The baseline is the monomial \(1\), whose weighted error is
+
+\[
+(4-1)\cdot 2 + (4-2)\cdot 1 = 3\cdot 2 + 2\cdot 1 = 8,
+\]
+
+so \(\operatorname{Base}=8\).
+
+Thus the score is
+
+\[
+\left\lfloor 10^6 \cdot \min\left(3,\frac{8+1}{2+1}\right)\right\rfloor
+=
+3{,}000{,}000.
+\]
+
+This is only a tiny example; on real tests, finding a strong compressed approximation is intended to be difficult.
+```

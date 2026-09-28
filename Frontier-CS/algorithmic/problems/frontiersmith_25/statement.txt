@@ -1,0 +1,222 @@
+```markdown
+# Probe Library Design with LCS Capture
+
+## Problem
+
+A laboratory wants to synthesize a small library of DNA probes to capture a collection of known fragments.
+
+Each fragment is a string over the alphabet `A`, `C`, `G`, `T`.  
+Each probe you synthesize must also be a string over `A`, `C`, `G`, `T`, and all probes must have the same fixed length.
+
+A fragment can be assigned to **at most one** probe.  
+Each probe can capture **at most `C` fragments**.
+
+If fragment `S` is assigned to probe `P`, its capture quality is based on the length of their **longest common subsequence**:
+
+\[
+\operatorname{sim}(S,P)=|\operatorname{LCS}(S,P)|
+\]
+
+The value gained from assigning fragment `i` to probe `j` is:
+
+\[
+w_i \cdot \operatorname{sim}(S_i, P_j)^2
+\]
+
+where `w_i` is the importance weight of fragment `i`.
+
+Your task is to output `K` probe strings so that, after the judge computes the **best possible assignment** of fragments to probes under the capacity limits, the total value is as large as possible.
+
+The assignment itself is **not** part of your output; it is computed by the judge.
+
+---
+
+## Input
+
+The first line contains an integer `T`, the number of test cases.
+
+For each test case:
+
+- The first line contains four integers:
+
+\[
+N\ K\ M\ C
+\]
+
+- `N`: number of fragments  
+- `K`: number of probes you must output  
+- `M`: required length of every probe  
+- `C`: maximum number of fragments that may be assigned to a single probe
+
+- The next `N` lines each contain:
+
+\[
+w_i\ S_i
+\]
+
+where:
+
+- `w_i` is the positive integer weight of fragment `i`
+- `S_i` is a non-empty string over `ACGT`
+
+---
+
+## Output
+
+For each test case, output exactly `K` lines.
+
+Each line must be a string of length exactly `M`, consisting only of characters in `ACGT`.
+
+These are your synthesized probes \(P_1, P_2, \dots, P_K\).
+
+### Feasibility rules
+
+For each test case:
+
+- exactly `K` probe strings must be provided
+- each probe must have length exactly `M`
+- each character must be one of `A`, `C`, `G`, `T`
+
+If your output for a test case is invalid, that test case receives objective value `0`.
+
+---
+
+## Objective
+
+For a fixed test case, let your probes be \(P_1,\dots,P_K\).
+
+For every fragment \(i\) and probe \(j\), define
+
+\[
+a_{ij} = |\operatorname{LCS}(S_i, P_j)|
+\]
+\[
+v_{ij} = w_i \cdot a_{ij}^2
+\]
+
+The judge then computes the maximum possible value of
+
+\[
+\sum_{i=1}^{N}\sum_{j=1}^{K} v_{ij} x_{ij}
+\]
+
+over all binary variables \(x_{ij} \in \{0,1\}\) satisfying:
+
+- each fragment is assigned to at most one probe:
+
+\[
+\sum_{j=1}^{K} x_{ij} \le 1 \qquad \forall i
+\]
+
+- each probe captures at most `C` fragments:
+
+\[
+\sum_{i=1}^{N} x_{ij} \le C \qquad \forall j
+\]
+
+Your objective is to **maximize** this value.
+
+---
+
+## Scoring
+
+For each test case, a deterministic **baseline library** is defined as follows.
+
+1. For each nucleotide \(c \in \{A,C,G,T\}\), compute
+
+\[
+F_c = \sum_{i=1}^{N} w_i \cdot \text{count}_c(S_i)
+\]
+
+where \(\text{count}_c(S_i)\) is the number of occurrences of character `c` in \(S_i\).
+
+2. Sort the four nucleotides by decreasing \(F_c\).  
+   Break ties in alphabetical order: `A < C < G < T`.
+
+3. The baseline outputs `K` probes:
+   - probe 1 is the first nucleotide in that order repeated `M` times
+   - probe 2 is the second nucleotide repeated `M` times
+   - probe 3 is the third nucleotide repeated `M` times
+   - probe 4 is the fourth nucleotide repeated `M` times
+   - if `K > 4`, continue cyclically through that same order
+
+Let:
+
+- `OBJ` = your objective value
+- `BASE` = baseline objective value
+
+The per-test score is:
+
+\[
+\text{score} =
+\begin{cases}
+10^6, & \text{if } BASE=0 \text{ and } OBJ>0 \\
+0, & \text{if } BASE=0 \text{ and } OBJ=0 \\
+\left\lfloor 10^6 \cdot \dfrac{OBJ}{OBJ+BASE} \right\rfloor, & \text{otherwise}
+\end{cases}
+\]
+
+So:
+
+- matching the baseline gives exactly `500000`
+- better solutions score above `500000`
+- worse solutions score below `500000`
+
+The final score is the floor of the average per-test score over all test cases.
+
+---
+
+## Constraints
+
+For every test case:
+
+- \(1 \le T \le 5\)
+- \(1 \le N \le 1500\)
+- \(1 \le K \le 12\)
+- \(1 \le M \le 150\)
+- \(1 \le C \le N\)
+- \(1 \le w_i \le 1000\)
+- \(1 \le |S_i| \le 80\)
+- each \(S_i\) uses only `A`, `C`, `G`, `T`
+
+Over the whole input file:
+
+- \(\sum N \le 4000\)
+- \(\sum |S_i| \le 120000\)
+
+These limits are chosen so that exact optimization over all possible probe libraries is infeasible in practice; heuristic methods are expected.
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+1
+5 2 6 2
+5 ACGT
+3 GGGG
+4 TTAC
+6 CCGA
+2 ATAT
+```
+
+### Sample output
+```text
+ACGTAC
+GGGGGG
+```
+
+### Explanation
+
+There are 5 fragments, and you must output 2 probes of length 6.  
+Each probe may capture at most 2 fragments.
+
+The judge computes the LCS length between every fragment and each of your probes, squares those lengths, multiplies by the fragment weight, and then finds the best assignment of fragments to probes under the capacity limit.
+
+For example, fragment `ACGT` matched to probe `ACGTAC` has LCS length `4`, contributing \(5 \cdot 4^2 = 80\).  
+The final objective is the sum over the optimal assignment, not necessarily any assignment you had in mind.
+```

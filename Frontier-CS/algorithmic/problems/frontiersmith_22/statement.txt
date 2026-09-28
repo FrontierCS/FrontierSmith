@@ -1,0 +1,202 @@
+```markdown
+# MySky Gem Catalog
+
+## Problem
+
+The MySky Island mint is launching a catalog of customizable commemorative coins.
+
+Each coin has **exactly `n` gem slots** arranged on a circle, where `n` is odd.  
+Each slot is filled with one of **17 gem colors**, labeled `A` to `Q`.
+
+A tourist request is also a circular arrangement of `n` colors.  
+Because the coin is circular, a customer may rotate the coin when comparing it to their desired pattern, but **may not flip it over**. So only rotations are considered equivalent.
+
+Your task is to publish **up to `K` catalog designs**. Every tourist will buy the catalog design that gives them the highest satisfaction under the best rotation. However, each published design also has a manufacturing cost.
+
+You must choose the catalog designs to **maximize total weighted customer satisfaction minus manufacturing cost**.
+
+### Color similarity
+
+The 17 colors are arranged on a palette circle in the order
+
+`A, B, C, ..., Q, A`.
+
+For two colors `x` and `y`, define their palette distance as
+
+`dist(x, y) = min((id(x)-id(y)) mod 17, (id(y)-id(x)) mod 17)`
+
+where `id(A)=0, id(B)=1, ..., id(Q)=16`.
+
+So `dist` is always in `[0, 8]`.  
+For example, `dist(A, Q) = 1`, `dist(C, Q) = 3`.
+
+A length-9 array `S[0..8]` is given.  
+If a customer wants color `x` at some position and your design uses color `y` there, that position contributes `S[dist(x,y)]` satisfaction.
+
+### Manufacturing risk
+
+A length-9 array `C[0..8]` is also given.  
+For each adjacent pair of gems on one published design (including the edge from the last slot back to the first), placing colors `x` and `y` next to each other costs `C[dist(x,y)]`.
+
+In addition, every published design pays a fixed setup cost `F`.
+
+---
+
+For a customer request string `r` and a design string `d`, both of length `n`, define
+
+`match(r, d) = max over rotations t in [0, n-1] of sum over positions p in [0, n-1] of S[dist(r[p], d[(p+t) mod n])]`
+
+Each customer `i` has weight `w_i`. If your published designs are `d_1, d_2, ..., d_m`, then that customer contributes
+
+`w_i * max(match(r_i, d_1), ..., match(r_i, d_m))`
+
+If `m = 0`, the customer contributes `0`.
+
+The manufacturing cost of one design `d` is
+
+`F + sum over positions p in [0, n-1] of C[dist(d[p], d[(p+1) mod n])]`
+
+where position `n` means position `0`.
+
+Your goal is to choose up to `K` designs maximizing:
+
+`total customer contribution - total manufacturing cost`
+
+---
+
+This is an optimization challenge: exact optimization is expected to be computationally difficult.
+
+## Input
+
+The input file contains:
+
+- Line 1: four integers `N n K F`
+- Line 2: nine integers `S[0], S[1], ..., S[8]`
+- Line 3: nine integers `C[0], C[1], ..., C[8]`
+- Next `N` lines: each contains
+  - an integer `w_i`
+  - a string `r_i` of length `n`, consisting only of characters `A`..`Q`
+
+## Output
+
+Output:
+
+- Line 1: an integer `m` (`0 <= m <= K`), the number of published designs
+- Next `m` lines: one string of length `n` per line, each consisting only of characters `A`..`Q`
+
+### Feasibility requirements
+
+A submission is **feasible** iff:
+
+- `0 <= m <= K`
+- each design string has length exactly `n`
+- each character is in `A`..`Q`
+
+If the output is infeasible, its score for that test is `0`.
+
+Duplicate designs are allowed, but usually not useful.
+
+## Objective
+
+For a feasible output, let:
+
+- `best_i = 0` if `m = 0`
+- otherwise  
+  `best_i = max_j match(r_i, d_j)`
+
+Then
+
+- `Utility = sum over customers i of w_i * best_i`
+- `Cost = sum over published designs d of [F + sum_p C[dist(d[p], d[(p+1) mod n])]]`
+
+The objective value is
+
+`OBJ = Utility - Cost`
+
+Higher is better.
+
+## Scoring
+
+For each test file, let:
+
+- `OBJ` = your objective value
+- `Smax = max(S[0], S[1], ..., S[8])`
+- `UB = n * Smax * sum_i w_i`
+
+This is a valid upper bound because each customer can gain at most `n * Smax`, and all costs are nonnegative.
+
+### Baseline
+
+The baseline solution is defined as follows:
+
+1. Sort all requests by decreasing `w_i`, breaking ties by smaller input index.
+2. Let `m_base = min(N, K)`.
+3. Publish exactly those first `m_base` request strings as designs.
+4. Let `BASE_raw` be the objective value of that solution.
+5. Define `BASE = max(0, BASE_raw)`.
+
+### Per-test score
+
+If your output is infeasible, score `0`.
+
+Otherwise:
+
+`score = floor( 1,000,000 * max(0, OBJ - BASE) / max(1, UB - BASE) )`
+
+and then clamp to `[0, 1,000,000]`.
+
+So:
+
+- matching the baseline gets score `0`
+- beating the baseline increases score continuously
+- reaching the upper bound would get `1,000,000`
+
+### Overall score
+
+If there are multiple test files, the final score is the arithmetic mean of the per-test scores.
+
+## Constraints
+
+- `1 <= N <= 1500`
+- `5 <= n <= 101`
+- `n` is odd
+- `1 <= K <= 20`
+- `0 <= F <= 10^6`
+- `0 <= S[d] <= 10^4` for all `d`
+- `0 <= C[d] <= 10^4` for all `d`
+- `1 <= w_i <= 10^6`
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample Input
+```text
+3 5 2 3
+5 3 1 0 0 0 0 0 0
+0 1 2 4 6 6 4 2 1
+10 ABCDE
+7 BCDEA
+4 AAAAA
+```
+
+### Sample Output
+```text
+2
+ABCDE
+AACDE
+```
+
+### Explanation
+
+- The first published design matches request `ABCDE` perfectly.
+- The second request `BCDEA` is a rotation of `ABCDE`, so it also matches the first design very well.
+- The second published design is not a rotation of the first one; it may improve satisfaction for the third request `AAAAA`, but it also adds setup cost `F` and adjacency manufacturing cost.
+
+The judge computes:
+1. the best rotation-aware match for each request against the published designs,
+2. the weighted sum of those matches,
+3. the total manufacturing cost,
+4. `OBJ = Utility - Cost`,
+5. the score relative to the baseline and upper bound.
+```

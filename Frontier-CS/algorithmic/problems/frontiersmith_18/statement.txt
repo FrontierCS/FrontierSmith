@@ -1,0 +1,182 @@
+```markdown
+# Hex Mask Archive Compression
+
+## Problem
+A data center stores a large multiset of fixed-length hexadecimal IDs.
+
+To compress the archive, you may partition the given ID types into groups.  
+Each group is encoded by **one template**:
+
+- At each position, the template stores a **nonempty set of allowed hexadecimal digits**.
+- Every ID assigned to that group must use, at each position, a digit that belongs to the template's set at that position.
+
+For a fixed group, the best possible template is uniquely determined:
+at each position, its allowed set is exactly the set of digits that appear at that position among the IDs in the group.
+
+Your task is to choose the grouping that minimizes the total encoded size.
+
+### Cost model
+Assume hexadecimal digits are `0`-`9`, `A`-`F`.
+
+Let a group contain some ID types with total frequency `W`.
+
+For each position independently, let `d` be the number of distinct digits appearing in that position among all ID types in the group.
+
+The group contributes:
+
+- **Header cost:** `64` bits
+- **Template description cost for that position:**
+  - `4` bits if `d = 1`
+  - `16` bits if `d >= 2`
+- **Data cost for that position, for each occurrence in the group:**
+  - `0` bits if `d = 1`
+  - `ceil(log2(d))` bits if `d >= 2`
+
+So if a group has total frequency `W`, and at position `j` the distinct-digit count is `d_j`, then its cost is
+
+\[
+64 + \sum_{j=1}^{L} \text{Desc}(d_j) + W \cdot \sum_{j=1}^{L} \text{Data}(d_j),
+\]
+
+where
+
+- `Desc(1) = 4`, `Desc(d) = 16` for `d >= 2`
+- `Data(1) = 0`, `Data(d) = ceil(log2(d))` for `d >= 2`
+
+The total cost of a solution is the sum of the costs of all groups.
+
+You must output a valid partition of the given ID types.
+
+## Input
+The input is given in the following format:
+
+```text
+M L
+S_1 W_1
+S_2 W_2
+...
+S_M W_M
+```
+
+- `M`: number of distinct ID types
+- `L`: length of every hexadecimal ID
+- `S_i`: the `i`-th hexadecimal ID, a string of length `L`
+- `W_i`: frequency of that ID in the archive
+
+All `S_i` are distinct.
+
+## Output
+Output `M` integers:
+
+```text
+g_1 g_2 ... g_M
+```
+
+- `g_i` is the group label assigned to `S_i`
+- `1 <= g_i <= M`
+- Two IDs belong to the same group iff their labels are equal
+
+Any valid partition is accepted.
+
+## Objective
+Minimize the total encoded size in bits, computed as follows.
+
+For each distinct output label `x`, let
+
+- `G_x = { i | g_i = x }`
+- `W_x = sum of W_i over i in G_x`
+
+For each position `j` (`1 <= j <= L`), let
+
+- `D_{x,j} = { S_i[j] | i in G_x }`
+- `d_{x,j} = |D_{x,j}|`
+
+Then the cost of group `x` is
+
+\[
+C_x = 64 + \sum_{j=1}^{L} \text{Desc}(d_{x,j}) + W_x \cdot \sum_{j=1}^{L} \text{Data}(d_{x,j}).
+\]
+
+The objective value of the submission is
+
+\[
+C = \sum_x C_x.
+\]
+
+Lower is better.
+
+## Scoring
+For each test case, define the **baseline solution** as putting every ID type in its own group.
+
+Its cost is therefore
+
+\[
+C_{\text{base}} = M \cdot (64 + 4L).
+\]
+
+Given your solution cost `C`, the score for that test case is
+
+\[
+\text{score} = \min\left(10^9,\ \left\lfloor 10^6 \cdot \frac{C_{\text{base}}}{C} \right\rfloor \right).
+\]
+
+- A baseline-quality solution gets exactly `1,000,000` points.
+- Better solutions get more than `1,000,000`.
+- Worse solutions get fewer.
+- Invalid output gets `0`.
+
+If there are multiple test cases, the final score is the sum of per-test scores.
+
+## Constraints
+- `1 <= M <= 100000`
+- `1 <= L <= 64`
+- `1 <= W_i <= 10^9`
+- Each `S_i` is a hexadecimal string of length `L`
+- All `S_i` are distinct
+- `M * L <= 3 * 10^6`
+
+- Time limit: 5 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample Input
+```text
+4 2
+1A 3
+1B 2
+2A 1
+FF 4
+```
+
+### Sample Output
+```text
+1 1 2 3
+```
+
+### Explanation
+This groups `1A` and `1B` together, and leaves `2A` and `FF` as singletons.
+
+- Group `{1A,1B}` has total frequency `5`
+  - Position 1: digits `{1}` → description `4`, data `0`
+  - Position 2: digits `{A,B}` → description `16`, data `1`
+  - Cost = `64 + (4+16) + 5*(0+1) = 89`
+
+- Each singleton group has cost `64 + 4 + 4 = 72`
+
+Total cost:
+\[
+89 + 72 + 72 = 233
+\]
+
+Baseline cost:
+\[
+4 \cdot (64 + 8) = 288
+\]
+
+So the score for this test would be
+\[
+\left\lfloor 10^6 \cdot \frac{288}{233} \right\rfloor = 1236051.
+\]
+
+This is only one valid solution; better partitions may exist.
+```

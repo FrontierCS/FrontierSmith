@@ -5,100 +5,97 @@ using namespace std;
 int main(int argc, char* argv[]) {
     registerTestlibCmd(argc, argv);
 
-    // ---- Read the input file ----
+    // ── Read input ──────────────────────────────────────────────────────────
     int n = inf.readInt();
-    int K = inf.readInt();
-    long long B = inf.readLong();
+    int m = inf.readInt();
 
-    vector<long long> P(n), X(n), W(n);
-    long long totalW = 0;
-    for (int i = 0; i < n; i++) {
-        P[i] = inf.readLong();
-        X[i] = inf.readLong();
-        W[i] = inf.readLong();
-        totalW += W[i];
-    }
+    vector<vector<int>> a(n, vector<int>(m));
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++)
+            a[i][j] = inf.readInt();
 
-    // ---- Compute baseline: witnesses (0,0),(1,0),...,(K-1,0) ----
-    // Statement guarantees B >= K-1, so all baseline witnesses are valid.
-    long long V_base = 0;
-    {
-        vector<bool> covBase(n, false);
-        for (int j = 0; j < K; j++) {
-            long long Aj = (long long)j;
-            long long Bj = 0LL;
-            for (int i = 0; i < n; i++) {
-                if (!covBase[i]) {
-                    long long am  = Aj % P[i];
-                    long long bm  = Bj % P[i];
-                    long long val = (am * am + bm * bm) % P[i];
-                    if (val == X[i]) {
-                        covBase[i] = true;
-                        V_base += W[i];
-                    }
-                }
+    long long nm = (long long)n * m;
+
+    // ── Read participant output ─────────────────────────────────────────────
+    int k = ouf.readInt(0, (int)nm, "k");
+
+    vector<vector<bool>> covered(n, vector<bool>(m, false));
+    long long A = 0;
+
+    for (int t = 0; t < k; t++) {
+        int i1 = ouf.readInt(1, n, "i1");
+        int j1 = ouf.readInt(1, m, "j1");
+        int i2 = ouf.readInt(1, n, "i2");
+        int j2 = ouf.readInt(1, m, "j2");
+
+        if (i1 > i2)
+            quitf(_wa, "Gallery %d: i1=%d > i2=%d", t + 1, i1, i2);
+        if (j1 > j2)
+            quitf(_wa, "Gallery %d: j1=%d > j2=%d", t + 1, j1, j2);
+
+        // Check for overlap
+        for (int i = i1 - 1; i < i2; i++) {
+            for (int j = j1 - 1; j < j2; j++) {
+                if (covered[i][j])
+                    quitf(_wa,
+                          "Gallery %d overlaps with a previously declared gallery at cell (%d,%d)",
+                          t + 1, i + 1, j + 1);
             }
         }
+
+        // Check label uniqueness inside the rectangle
+        set<int> labels;
+        for (int i = i1 - 1; i < i2; i++) {
+            for (int j = j1 - 1; j < j2; j++) {
+                if (!labels.insert(a[i][j]).second)
+                    quitf(_wa,
+                          "Gallery %d has duplicate label %d (not a clean gallery)",
+                          t + 1, a[i][j]);
+            }
+        }
+
+        // Mark covered
+        for (int i = i1 - 1; i < i2; i++)
+            for (int j = j1 - 1; j < j2; j++)
+                covered[i][j] = true;
+
+        long long area = (long long)(i2 - i1 + 1) * (long long)(j2 - j1 + 1);
+        A += area * area;
     }
 
-    // ---- Read participant output ----
-    int m = ouf.readInt(0, K, "m must be in [0,K]");
-
-    vector<long long> A(m), Bv(m);
-    for (int j = 0; j < m; j++) {
-        A[j]  = ouf.readLong();
-        Bv[j] = ouf.readLong();
-        if (A[j] < 0 || A[j] > B)
-            quitf(_wa, "Witness %d: A=%lld is outside [0,%lld]", j + 1, A[j], B);
-        if (Bv[j] < 0 || Bv[j] > B)
-            quitf(_wa, "Witness %d: B=%lld is outside [0,%lld]", j + 1, Bv[j], B);
-    }
-
-    // ---- Strict end-of-file check: reject any trailing tokens ----
-    // ouf.seekEof() skips whitespace/newlines before checking for EOF,
-    // so well-formed solutions with a trailing newline are accepted.
+    // ── Trailing-data check ─────────────────────────────────────────────────
+    // After all k rectangles have been read, no extra tokens are allowed.
     if (!ouf.seekEof())
-        quitf(_wa, "Extra output found after the %d witness(es)", m);
+        quitf(_wa, "Extra output after the last gallery");
 
-    // ---- Compute participant objective V ----
-    long long V = 0;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            long long am  = A[j]  % P[i];
-            long long bm  = Bv[j] % P[i];
-            long long val = (am * am + bm * bm) % P[i];
-            if (val == X[i]) {
-                V += W[i];
-                break;
-            }
-        }
-    }
+    // ── Scoring ─────────────────────────────────────────────────────────────
+    // B  = n*m   (baseline: every cell is its own 1×1 gallery, score=0)
+    // U  = (n*m)^2  (upper bound, score=100)
+    // score = clamp( (ln(A+1) - ln(B+1)) / (ln(U+1) - ln(B+1)), 0, 1 )
 
-    // ---- Compute score ratio ----
-    // Per statement:
-    //   if U_base == 0: every feasible solution gets 1,000,000 points => ratio = 1.0
-    //   else:  score = floor(10^6 * clamp((U_base - U) / U_base, 0, 1))
-    //          ratio = clamp((V - V_base) / (W - V_base), 0, 1)
-    long long U_base = totalW - V_base;
-    long long U      = totalW - V;
+    long long B = nm;
+    long long U = nm * nm;   // fits in long long for n,m ≤ 400 (max ~25.6e9)
 
-    double ratio;
-    if (U_base == 0) {
-        // Baseline already covers everything; every feasible answer gets full marks.
-        ratio = 1.0;
+    double score;
+    if (nm == 1LL) {
+        // Special case: only one cell, optimum is exactly 1
+        score = (A == 1LL) ? 1.0 : 0.0;
     } else {
-        // ratio = (U_base - U) / U_base = (V - V_base) / (W - V_base)
-        ratio = (double)(U_base - U) / (double)U_base;
-        if (ratio < 0.0) ratio = 0.0;
-        if (ratio > 1.0) ratio = 1.0;
+        double dA = (double)A;
+        double dB = (double)B;
+        double dU = (double)U;
+
+        double num = log(dA + 1.0) - log(dB + 1.0);
+        double den = log(dU + 1.0) - log(dB + 1.0);
+
+        score = num / den;
+        if (score < 0.0) score = 0.0;
+        if (score > 1.0) score = 1.0;
     }
 
-    long long scoreInt = (long long)(1000000.0 * ratio);
-
-    quitp(ratio,
-          "V=%lld V_base=%lld W=%lld U=%lld U_base=%lld "
-          "Ratio: %.9f Score(x1e6): %lld",
-          V, V_base, totalW, U, U_base, ratio, scoreInt);
+    quitp(score,
+          "A=%lld B=%lld U=%lld Ratio: %.9f",
+          A, B, U, score);
 
     return 0;
 }

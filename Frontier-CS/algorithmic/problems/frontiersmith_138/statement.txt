@@ -1,0 +1,154 @@
+```markdown
+# Atomic Anagram Obfuscation
+
+## Problem
+
+You are given a lowercase string `s`. You must output another lowercase string `t` that is a **global anagram** of `s` (that is, `t` contains exactly the same multiset of letters as `s`).
+
+There are `q` weighted window requests. Each request specifies an interval `[l, r]` and a positive weight `w`.
+
+For a query interval `[l, r]`, let:
+
+- `x = s[l..r]`
+- `y = t[l..r]`
+
+We say that the query is **satisfied** if `y` is an **atomic anagram** of `x`, meaning:
+
+1. `x` and `y` are anagrams of each other, and
+2. for every split position `p` with `1 <= p < |x|`, the prefix `x[1..p]` is **not** an anagram of the prefix `y[1..p]`.
+
+Intuitively, inside that window, `t` must preserve the multiset of letters of the original window, but it must do so in a way that cannot be split into two non-empty aligned prefix/suffix parts that already match by multiset.
+
+Your goal is to construct `t` maximizing the total weight of satisfied queries.
+
+### Equivalent characterization
+
+Let `D[i]` be the 26-dimensional vector
+
+- `D[0] = 0`
+- `D[i] = count(t[1..i]) - count(s[1..i])`
+
+Then query `[l, r]` is satisfied iff:
+
+- `D[r] = D[l-1]`, and
+- there is no `j` with `l <= j < r` such that `D[j] = D[l-1]`.
+
+So each satisfied query corresponds to two consecutive equal states of the prefix-difference walk.
+
+## Input
+
+The input contains a single test file.
+
+- The first line contains the string `s` (`1 <= |s| <= 2 * 10^5`), consisting only of lowercase English letters.
+- The second line contains an integer `q` (`1 <= q <= 2 * 10^5`) — the number of queries.
+- Each of the next `q` lines contains three integers `l`, `r`, and `w`  
+  (`1 <= l <= r <= |s|`, `1 <= w <= 10^9`), describing a query interval and its weight.
+
+## Output
+
+Output a single line containing your constructed string `t`.
+
+### Feasibility requirements
+
+Your output is considered **feasible** if all of the following hold:
+
+- `|t| = |s|`
+- `t` consists only of lowercase English letters
+- `t` is an anagram of `s`
+
+If the output is infeasible, its objective value on the test is defined to be `0`.
+
+## Objective
+
+Let `W_sat` be the sum of weights of all satisfied queries.
+
+Your objective is to **maximize `W_sat`**.
+
+The judge will compute query satisfaction exactly as defined above.
+
+## Scoring
+
+For each test file:
+
+- Let `O` be your objective value `W_sat`.
+- Let `B` be the objective value of the **baseline solution** `t = s`.
+- Let `T = sum of all query weights`.
+
+The per-test score is:
+
+- If your output is infeasible: `0`
+- Else if `T = B`:
+  - `1_000_000` if `O = T`
+  - `0` otherwise
+- Else:
+
+\[
+\text{score} = \left\lfloor 1{,}000{,}000 \cdot \frac{\max(0, O - B)}{T - B} \right\rfloor
+\]
+
+The final score is the sum of per-test scores over all test files.
+
+### Baseline notes
+
+For the baseline `t = s`, a query is satisfied exactly when its length is `1`, because any longer window has a proper prefix that matches itself by multiset.
+
+## Constraints
+
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+aabb
+4
+1 1 2
+1 2 3
+1 4 5
+2 3 4
+```
+
+### Output
+```text
+abab
+```
+
+### Explanation
+
+Here `t = "abab"` is a feasible global anagram of `s = "aabb"`.
+
+Queries:
+
+1. `[1,1]`, weight `2`  
+   `s[1..1] = "a"`, `t[1..1] = "a"`  
+   They are anagrams, and there is no split point. Satisfied.
+
+2. `[1,2]`, weight `3`  
+   `s[1..2] = "aa"`, `t[1..2] = "ab"`  
+   Not anagrams. Not satisfied.
+
+3. `[1,4]`, weight `5`  
+   `s[1..4] = "aabb"`, `t[1..4] = "abab"`  
+   They are anagrams, but for prefix length `1`, `"a"` and `"a"` are already anagrams. Not satisfied.
+
+4. `[2,3]`, weight `4`  
+   `s[2..3] = "ab"`, `t[2..3] = "ba"`  
+   They are anagrams, and their only proper prefixes (`"a"` and `"b"`) are not anagrams. Satisfied.
+
+So the objective value is `O = 2 + 4 = 6`.
+
+The baseline `t = s = "aabb"` satisfies only the length-1 query, so `B = 2`.
+
+The total weight is `T = 2 + 3 + 5 + 4 = 14`.
+
+Thus the sample score would be:
+
+\[
+\left\lfloor 1{,}000{,}000 \cdot \frac{6-2}{14-2} \right\rfloor
+=
+333333
+\]
+
+at a high level.
+```

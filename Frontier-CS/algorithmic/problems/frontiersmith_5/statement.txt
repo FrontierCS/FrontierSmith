@@ -1,185 +1,234 @@
 ```markdown
-# Prime Resonance Retuning
+# Ant Transit Design
 
 ## Problem
 
-Yash has built a **prime resonance network** on a rooted tree.
+JOI-kun is redesigning a laboratory for ant experiments.
 
-The network has `n` nodes, rooted at node `1`.  
-Each node `i` stores a non-negative integer `a_i`. A modulus `m` is also given.
+The laboratory is modeled as an undirected weighted graph. Vertices are junctions, and edges are wooden corridors. Some vertices contain ant colonies, and some vertices contain sugar piles.
 
-For every node, only its value modulo `m` matters. Let
+After the laboratory is prepared, JOI-kun will clap once.
 
-- `P = { p | p is prime and 2 <= p < m }`
+When JOI-kun claps:
 
-be the set of prime residues of interest.
+- each ant may walk along corridors,
+- each ant may also use any **activated pheromone tube**,
+- the total travel distance of one ant must be at most `L`,
+- each ant can eat **at most one** sugar cube,
+- each sugar cube can be eaten by **at most one** ant,
+- many ants may use the same corridor or tube; movement does **not** consume edge capacity.
 
-You may install **retuners** on some nodes.  
-A retuner placed on node `v` with shift `d` adds `d` (modulo `m`) to **every node in the subtree of `v`**.
+Before the clap, you may choose which candidate pheromone tubes to activate, subject to a total construction budget `B`.
 
-If a node `u` has several retuners on its ancestors, their shifts add up modulo `m`.
+Your task is to output a set of candidate tubes to activate so that the **maximum possible number of sugar cubes eaten** is as large as possible.
 
-There are `t` observatories. Observatory `j` watches the subtree of node `s_j` and has importance weight `w_j`.
-
-After all chosen retuners are applied, observatory `j` gains credit for every prime residue `p in P` that appears at least once among the final values of nodes in the subtree of `s_j`.
-
-Your task is to choose where to place retuners and what shifts to use.
+This is an optimization challenge: better solutions receive higher scores.
 
 ---
 
-More formally:
+### Formal model
 
-- Let `x_v` be the chosen shift at node `v`:
-  - `x_v = 0` means no retuner is installed at `v`
-  - `x_v in {1,2,...,m-1}` means a retuner with shift `x_v` is installed
-- At most `k` nodes may have `x_v != 0`
-- Final residue of node `u` is
+- The lab has `V` vertices and `E` existing undirected edges.
+- Existing edge `e` connects `u_e` and `v_e` and has travel length `d_e`.
+- There are `P` candidate pheromone tubes.
+- Candidate tube `p` connects `a_p` and `b_p`, has travel length `t_p`, and activation cost `c_p`.
+- There are `C` ant colonies. Colony `i` is at vertex `x_i` and contains `A_i` ants.
+- There are `S` sugar piles. Pile `j` is at vertex `y_j` and contains `H_j` sugar cubes.
 
-  `r_u = (a_u + sum of x_v over all ancestors v of u, including u) mod m`
+After you choose a feasible set of candidate tubes, ants may travel on the graph consisting of:
 
-- For observatory `j`, let
+- all existing edges, and
+- the activated candidate tubes.
 
-  `C_j = number of primes p in P such that there exists a node u in subtree(s_j) with r_u = p`
+An ant from colony `i` can eat a sugar cube from pile `j` if and only if the shortest-path distance from `x_i` to `y_j` in that graph is at most `L`.
 
-- Its penalty is
+The number of sugar cubes eaten is then the maximum value of a bipartite matching-with-capacities:
 
-  `penalty_j = w_j * (|P| - C_j)`
+- colony `i` can supply at most `A_i` ants,
+- pile `j` can receive at most `H_j` ants,
+- flow from colony `i` to pile `j` is allowed iff distance(`x_i`,`y_j`) `<= L`.
 
-- Installing a retuner at node `v` costs `c_v`
-
-Your goal is to **minimize total penalty + total retuner cost**.
+Your objective is to maximize this maximum flow value.
 
 ## Input
 
-The input contains one test instance.
+The input contains a single test case.
 
-- First line: four integers `n`, `m`, `t`, `k`
-  - `n` = number of nodes
-  - `m` = modulus
-  - `t` = number of observatories
-  - `k` = maximum number of retuners you may install
-- Second line: `n` integers `a_1, a_2, ..., a_n`
-- Third line: `n` integers `c_1, c_2, ..., c_n`
-- Next `n-1` lines: edges of the tree, each containing two integers `u`, `v`
-- Next `t` lines: observatories, each containing two integers `s_j`, `w_j`
+```text
+V E P C S B L
+u_1 v_1 d_1
+u_2 v_2 d_2
+...
+u_E v_E d_E
+a_1 b_1 t_1 c_1
+a_2 b_2 t_2 c_2
+...
+a_P b_P t_P c_P
+x_1 A_1
+x_2 A_2
+...
+x_C A_C
+y_1 H_1
+y_2 H_2
+...
+y_S H_S
+```
 
-The tree is rooted at node `1`.
+### Meaning
+
+- `V`: number of vertices
+- `E`: number of existing corridors
+- `P`: number of candidate pheromone tubes
+- `C`: number of ant colonies
+- `S`: number of sugar piles
+- `B`: total budget
+- `L`: maximum travel distance per ant
+
+Then:
+
+- each existing corridor line gives endpoints `u_e, v_e` and length `d_e`,
+- each candidate tube line gives endpoints `a_p, b_p`, travel length `t_p`, and activation cost `c_p`,
+- each colony line gives vertex `x_i` and number of ants `A_i`,
+- each sugar line gives vertex `y_j` and number of sugar cubes `H_j`.
+
+Vertices are numbered from `1` to `V`.
+
+Multiple colonies may be on the same vertex. Multiple sugar piles may be on the same vertex.
 
 ## Output
 
-Output a feasible retuner placement.
+Output any feasible solution in the following format:
 
-- First line: integer `q` — the number of installed retuners
-- Next `q` lines: two integers `v` and `d`
-  - `v` = node index
-  - `d` = shift, with `1 <= d < m`
+```text
+R id_1 id_2 ... id_R
+```
 
-### Feasibility requirements
+- `R` is the number of activated candidate tubes.
+- `id_k` must be distinct integers in `[1, P]`.
+- The total activation cost of the chosen tubes must be at most `B`.
 
-Your output is feasible iff all of the following hold:
+If `R = 0`, output just `0`.
 
-- `0 <= q <= k`
-- all chosen nodes `v` are distinct
-- each shift satisfies `1 <= d < m`
+A submission is **infeasible** if any of the following holds:
 
-If the output is infeasible, the score for the test is `0`.
+- some chosen ID is out of range,
+- some ID appears more than once,
+- the total activation cost exceeds `B`,
+- the output cannot be parsed as integers in the required format.
+
+Infeasible submissions receive score `0`.
 
 ## Objective
 
-Let `S` be the set of chosen retuners.
+For your chosen set of activated tubes:
 
-The objective value is
+1. Build the augmented graph using all existing corridors and the activated tubes.
+2. Compute shortest-path distances between every colony vertex and every sugar-pile vertex.
+3. Create a bipartite graph:
+   - source to colony `i` with capacity `A_i`,
+   - colony `i` to sugar pile `j` with infinite capacity if distance(`x_i`,`y_j`) `<= L`,
+   - sugar pile `j` to sink with capacity `H_j`.
+4. Let `M` be the maximum flow value of this network.
 
-`F = sum over observatories j of [ w_j * (|P| - C_j) ] + sum over (v,d) in S of c_v`
+Your objective is to **maximize `M`**, the total number of sugar cubes that can be eaten.
 
-where `C_j` is the number of distinct prime residues from `P` appearing in the final residues of the subtree of `s_j`.
-
-You must **minimize `F`**.
+All computations use exact integer arithmetic. The objective value fits in signed 64-bit integer range.
 
 ## Scoring
 
-For each test case, define the **baseline solution** as:
+Let:
 
-- install no retuners
+- `M` = your objective value,
+- `M0` = the objective value of the **baseline solution** that activates **no** candidate tubes,
+- `U = min(sum A_i, sum H_j)`.
 
-Let its objective value be `F_base`.
+Since activating extra tubes cannot reduce reachability, any feasible solution satisfies `M >= M0`.
 
-Your score for the test is:
+The score for a test file is:
 
-- if `F_base = 0`:
-  - score = `1,000,000` if `F = 0`
-  - score = `0` otherwise
-- else:
+- if `U = M0`, then the score is `1,000,000`,
+- otherwise
 
-  `score = floor(1,000,000 * max(0, (F_base - F) / F_base))`
+```text
+score = round(1,000,000 × (M - M0) / (U - M0))
+```
 
-So:
+clamped to the range `[0, 1,000,000]`.
 
-- matching the baseline gets score `0`
-- improving on the baseline gives a positive score
-- reaching objective `0` gets score `1,000,000`
+The final contest score is the average of test-file scores.
 
-The final score is the average of test-case scores, rounded down to the nearest integer.
+### Baseline
 
-## Constraints
+The baseline is easy to implement:
 
-- `1 <= n <= 100000`
-- `3 <= m <= 1000`
-- `1 <= t <= 100000`
-- `0 <= a_i <= 10^9`
-- `1 <= c_i <= 10^9`
-- `1 <= w_j <= 10^9`
-- `1 <= k <= n`
+- activate no candidate tubes,
+- compute the resulting objective value `M0`.
+
+A solution identical to the baseline receives score `0` on that test file.
+A solution reaching the upper bound `U` receives score `1,000,000`.
 
 ## Constraints
-- Time limit: 5 seconds
-- Memory limit: 512 MB
+
+- `2 <= V <= 3000`
+- `0 <= E <= 6000`
+- `1 <= P <= 4000`
+- `1 <= C <= 800`
+- `1 <= S <= 800`
+- `1 <= B <= 10^12`
+- `1 <= L <= 10^9`
+- `1 <= u_e, v_e, a_p, b_p, x_i, y_j <= V`
+- `u_e != v_e`
+- `a_p != b_p`
+- `1 <= d_e, t_p, c_p <= 10^9`
+- `1 <= A_i, H_j <= 10^9`
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 1024 MB
 
 ## Example
 
-### Input
+### Sample input
 ```text
-5 10 3 3
-0 1 4 6 9
-5 2 2 1 1
-1 2
+5 4 3 2 2 5 4
+1 2 2
+2 3 2
+3 4 2
+4 5 2
+1 3 1 3
+2 5 1 4
+1 5 1 5
 1 3
-3 4
-3 5
-1 4
-3 3
-4 2
+5 2
+3 2
+4 4
 ```
 
-### Output
+### Sample output
 ```text
-1
-3 3
+1 3
 ```
 
 ### Explanation
 
-Here `m = 10`, so the prime residues are `{2, 3, 5, 7}`.
+Candidate tube `3` connects vertex `1` and vertex `5`, has travel length `1`, and costs `5`, so it fits the budget.
 
-The single retuner `(3, 3)` adds `3` modulo `10` to nodes `3, 4, 5`.
+- Total ants: `3 + 2 = 5`
+- Total sugar: `2 + 4 = 6`
+- Therefore `U = 5`
 
-Final residues become:
+Without activating any tube:
 
-- node 1: `0`
-- node 2: `1`
-- node 3: `7`
-- node 4: `9`
-- node 5: `2`
+- colony at `1` can reach pile at `3` (distance `4`) but not pile at `4`,
+- colony at `5` can reach both piles (`4` and `2` respectively),
 
-Observatory penalties:
+so the baseline value is `M0 = 4`.
 
-- subtree `1` contains prime residues `{2, 7}` → misses 2 primes → penalty `4 * 2 = 8`
-- subtree `3` contains prime residues `{2, 7}` → misses 2 primes → penalty `3 * 2 = 6`
-- subtree `4` contains no prime residue → misses 4 primes → penalty `2 * 4 = 8`
+With tube `3` activated, all 5 ants can be matched to reachable sugar cubes, so `M = 5`.
 
-Retuner cost: `c_3 = 2`
+Thus the score on this file is full score:
 
-So the objective is `F = 8 + 6 + 8 + 2 = 24`.
-
-With no retuners, the objective is `F_base = 36`, so this output improves over baseline.
+```text
+1,000,000 × (5 - 4) / (5 - 4) = 1,000,000
+```
 ```

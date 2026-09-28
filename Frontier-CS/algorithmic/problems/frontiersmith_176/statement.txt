@@ -1,0 +1,208 @@
+```markdown
+# Recursive Rewiring Blueprint
+
+## Problem
+
+You are given an undirected simple graph describing the links that a network designer would like to have.
+
+However, the implementation platform only supports **recursive blueprints** built from single vertices using the following two operations:
+
+- **Separate merge** (`t = 0`): combine two modules and add **no** edges between them.
+- **Mesh merge** (`t = 1`): combine two modules and add **all possible** edges between them.
+
+Starting from `n` single-vertex modules, after exactly `n-1` merges you obtain one final graph on all vertices.
+
+Any graph obtainable in this way is called a **recursive blueprint graph**.
+
+Your task is to output a recursive blueprint whose graph is as close as possible to the given input graph.
+
+For each test case:
+
+- deleting an input edge costs `Cd`,
+- adding a missing edge costs `Ca`.
+
+The goal is to **minimize total rewiring cost**.
+
+This is an optimization problem: any feasible recursive blueprint is accepted, and better solutions receive higher scores.
+
+---
+
+## Input
+
+The first line contains one integer `T`, the number of test cases.
+
+For each test case:
+
+- One line with four integers  
+  `n m Cd Ca`
+  - `n`: number of vertices
+  - `m`: number of edges in the input graph
+  - `Cd`: cost to delete an existing edge
+  - `Ca`: cost to add a missing edge
+- Then `m` lines follow, each containing two integers `u v` (`1 <= u < v <= n`), describing an edge of the input graph.
+
+The input graph is guaranteed to be simple.
+
+---
+
+## Output
+
+For each test case, output:
+
+- One line containing an integer `k`.  
+  For a feasible solution, `k` must equal `n-1`.
+- Then `k` lines, each describing one merge in order:
+  `x y t`
+
+Meaning:
+
+- `x` and `y` are the IDs of two **currently active** modules, `x != y`
+- `t` is either:
+  - `0` for a **Separate merge**
+  - `1` for a **Mesh merge**
+
+The initial active modules are the single vertices with IDs `1..n`.
+
+If the `i`-th merge is valid, it creates a new active module with ID `n + i`, and removes `x` and `y` from the active set.
+
+After all merges, exactly one active module must remain.
+
+### Graph induced by the output
+
+Each active module represents a set of original vertices.
+
+- A single vertex module contains just that vertex.
+- Merging modules `A` and `B` with `t = 0` creates a module whose graph is the union of the two graphs, with **no edges** between a vertex of `A` and a vertex of `B`.
+- Merging modules `A` and `B` with `t = 1` creates a module whose graph is the union of the two graphs, with **all edges** added between every vertex of `A` and every vertex of `B`.
+
+The final module defines your output graph `H`.
+
+### Feasibility
+
+A submission is **feasible** for a test case iff all of the following hold:
+
+- `k = n - 1`
+- every merge uses two distinct currently active module IDs
+- every `t` is `0` or `1`
+- after all merges, exactly one active module remains
+
+If any rule is violated, the solution is infeasible for that test case.
+
+---
+
+## Objective
+
+Let the input graph be `G`, and let your output graph be `H`.
+
+The total rewiring cost is
+
+`Cost = Cd * |E(G) \ E(H)| + Ca * |E(H) \ E(G)|`
+
+That is:
+
+- each input edge missing from `H` costs `Cd`
+- each edge present in `H` but absent from the input costs `Ca`
+
+Your objective is to **minimize `Cost`**.
+
+If a solution is infeasible, its cost is treated as `+∞`.
+
+---
+
+## Scoring
+
+For each test case, define the **baseline cost**:
+
+`B = min(Cd * m, Ca * (n*(n-1)/2 - m))`
+
+This corresponds to taking the better of:
+
+- the empty graph (delete all input edges), or
+- the complete graph (add all missing edges)
+
+Both are always feasible recursive blueprint graphs.
+
+Let your solution cost be `C`.
+
+The per-test score is:
+
+- if `B = 0`:
+  - `100`, if `C = 0`
+  - `0`, otherwise
+- if `B > 0`:
+  - `S = clamp(0, 200, 100 * B / C)`
+  - with the convention that `C = 0` gives `S = 200`
+
+Here `clamp(l, r, x) = max(l, min(r, x))`.
+
+So:
+
+- matching the baseline gets score `100`
+- improving on the baseline gets a score between `100` and `200`
+- worse solutions get a score between `0` and `100`
+- infeasible solutions get score `0`
+
+The final score for a file is the arithmetic mean of its per-test scores.
+
+---
+
+## Constraints
+
+- `1 <= T <= 20`
+- `1 <= n <= 5000`
+- `0 <= m <= min(200000, n*(n-1)/2)`
+- `1 <= Cd, Ca <= 10^6`
+- Sum of `n` over all test cases in one file: at most `20000`
+- Sum of `m` over all test cases in one file: at most `400000`
+
+This optimization problem is intended to be computationally difficult; exact optimization is infeasible on the full input limits.
+
+- Time limit: 10 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+1
+4 3 1 1
+1 2
+2 3
+3 4
+```
+
+### Sample output
+```text
+3
+1 2 1
+3 4 1
+5 6 0
+```
+
+### Explanation
+
+The three merges mean:
+
+1. Merge vertices `1` and `2` with `t = 1` → add edge `(1,2)`
+2. Merge vertices `3` and `4` with `t = 1` → add edge `(3,4)`
+3. Merge those two modules with `t = 0` → add no cross edges
+
+So the output graph has edges `{(1,2), (3,4)}`.
+
+The input graph has edges `{(1,2), (2,3), (3,4)}`, so one edge `(2,3)` is deleted and no new wrong edge is added.
+
+Therefore:
+
+- `Cost = 1`
+
+The baseline compares:
+
+- empty graph: cost `3`
+- complete graph on 4 vertices: also cost `3`
+
+So `B = 3`, and the per-test score is
+
+`clamp(0, 200, 100 * 3 / 1) = 200`.
+```

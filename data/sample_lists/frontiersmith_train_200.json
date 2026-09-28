@@ -1,0 +1,606 @@
+{
+  "name": "FrontierSmith synthetic training set",
+  "num_problems": 200,
+  "problems": [
+    {
+      "problem_id": "frontiersmith_0"
+    },
+    {
+      "problem_id": "frontiersmith_9"
+    },
+    {
+      "problem_id": "frontiersmith_99"
+    },
+    {
+      "problem_id": "frontiersmith_100"
+    },
+    {
+      "problem_id": "frontiersmith_101"
+    },
+    {
+      "problem_id": "frontiersmith_102"
+    },
+    {
+      "problem_id": "frontiersmith_103"
+    },
+    {
+      "problem_id": "frontiersmith_104"
+    },
+    {
+      "problem_id": "frontiersmith_105"
+    },
+    {
+      "problem_id": "frontiersmith_106"
+    },
+    {
+      "problem_id": "frontiersmith_107"
+    },
+    {
+      "problem_id": "frontiersmith_108"
+    },
+    {
+      "problem_id": "frontiersmith_10"
+    },
+    {
+      "problem_id": "frontiersmith_109"
+    },
+    {
+      "problem_id": "frontiersmith_110"
+    },
+    {
+      "problem_id": "frontiersmith_111"
+    },
+    {
+      "problem_id": "frontiersmith_112"
+    },
+    {
+      "problem_id": "frontiersmith_113"
+    },
+    {
+      "problem_id": "frontiersmith_114"
+    },
+    {
+      "problem_id": "frontiersmith_115"
+    },
+    {
+      "problem_id": "frontiersmith_116"
+    },
+    {
+      "problem_id": "frontiersmith_117"
+    },
+    {
+      "problem_id": "frontiersmith_118"
+    },
+    {
+      "problem_id": "frontiersmith_11"
+    },
+    {
+      "problem_id": "frontiersmith_119"
+    },
+    {
+      "problem_id": "frontiersmith_120"
+    },
+    {
+      "problem_id": "frontiersmith_121"
+    },
+    {
+      "problem_id": "frontiersmith_122"
+    },
+    {
+      "problem_id": "frontiersmith_123"
+    },
+    {
+      "problem_id": "frontiersmith_124"
+    },
+    {
+      "problem_id": "frontiersmith_125"
+    },
+    {
+      "problem_id": "frontiersmith_126"
+    },
+    {
+      "problem_id": "frontiersmith_127"
+    },
+    {
+      "problem_id": "frontiersmith_128"
+    },
+    {
+      "problem_id": "frontiersmith_12"
+    },
+    {
+      "problem_id": "frontiersmith_129"
+    },
+    {
+      "problem_id": "frontiersmith_130"
+    },
+    {
+      "problem_id": "frontiersmith_131"
+    },
+    {
+      "problem_id": "frontiersmith_132"
+    },
+    {
+      "problem_id": "frontiersmith_133"
+    },
+    {
+      "problem_id": "frontiersmith_134"
+    },
+    {
+      "problem_id": "frontiersmith_135"
+    },
+    {
+      "problem_id": "frontiersmith_136"
+    },
+    {
+      "problem_id": "frontiersmith_137"
+    },
+    {
+      "problem_id": "frontiersmith_138"
+    },
+    {
+      "problem_id": "frontiersmith_13"
+    },
+    {
+      "problem_id": "frontiersmith_139"
+    },
+    {
+      "problem_id": "frontiersmith_140"
+    },
+    {
+      "problem_id": "frontiersmith_141"
+    },
+    {
+      "problem_id": "frontiersmith_142"
+    },
+    {
+      "problem_id": "frontiersmith_143"
+    },
+    {
+      "problem_id": "frontiersmith_144"
+    },
+    {
+      "problem_id": "frontiersmith_145"
+    },
+    {
+      "problem_id": "frontiersmith_146"
+    },
+    {
+      "problem_id": "frontiersmith_147"
+    },
+    {
+      "problem_id": "frontiersmith_148"
+    },
+    {
+      "problem_id": "frontiersmith_14"
+    },
+    {
+      "problem_id": "frontiersmith_149"
+    },
+    {
+      "problem_id": "frontiersmith_150"
+    },
+    {
+      "problem_id": "frontiersmith_151"
+    },
+    {
+      "problem_id": "frontiersmith_152"
+    },
+    {
+      "problem_id": "frontiersmith_153"
+    },
+    {
+      "problem_id": "frontiersmith_154"
+    },
+    {
+      "problem_id": "frontiersmith_155"
+    },
+    {
+      "problem_id": "frontiersmith_156"
+    },
+    {
+      "problem_id": "frontiersmith_157"
+    },
+    {
+      "problem_id": "frontiersmith_158"
+    },
+    {
+      "problem_id": "frontiersmith_15"
+    },
+    {
+      "problem_id": "frontiersmith_159"
+    },
+    {
+      "problem_id": "frontiersmith_160"
+    },
+    {
+      "problem_id": "frontiersmith_161"
+    },
+    {
+      "problem_id": "frontiersmith_162"
+    },
+    {
+      "problem_id": "frontiersmith_163"
+    },
+    {
+      "problem_id": "frontiersmith_164"
+    },
+    {
+      "problem_id": "frontiersmith_165"
+    },
+    {
+      "problem_id": "frontiersmith_166"
+    },
+    {
+      "problem_id": "frontiersmith_167"
+    },
+    {
+      "problem_id": "frontiersmith_168"
+    },
+    {
+      "problem_id": "frontiersmith_16"
+    },
+    {
+      "problem_id": "frontiersmith_169"
+    },
+    {
+      "problem_id": "frontiersmith_170"
+    },
+    {
+      "problem_id": "frontiersmith_171"
+    },
+    {
+      "problem_id": "frontiersmith_172"
+    },
+    {
+      "problem_id": "frontiersmith_173"
+    },
+    {
+      "problem_id": "frontiersmith_174"
+    },
+    {
+      "problem_id": "frontiersmith_175"
+    },
+    {
+      "problem_id": "frontiersmith_176"
+    },
+    {
+      "problem_id": "frontiersmith_177"
+    },
+    {
+      "problem_id": "frontiersmith_178"
+    },
+    {
+      "problem_id": "frontiersmith_17"
+    },
+    {
+      "problem_id": "frontiersmith_179"
+    },
+    {
+      "problem_id": "frontiersmith_180"
+    },
+    {
+      "problem_id": "frontiersmith_181"
+    },
+    {
+      "problem_id": "frontiersmith_182"
+    },
+    {
+      "problem_id": "frontiersmith_183"
+    },
+    {
+      "problem_id": "frontiersmith_184"
+    },
+    {
+      "problem_id": "frontiersmith_185"
+    },
+    {
+      "problem_id": "frontiersmith_186"
+    },
+    {
+      "problem_id": "frontiersmith_187"
+    },
+    {
+      "problem_id": "frontiersmith_188"
+    },
+    {
+      "problem_id": "frontiersmith_18"
+    },
+    {
+      "problem_id": "frontiersmith_189"
+    },
+    {
+      "problem_id": "frontiersmith_190"
+    },
+    {
+      "problem_id": "frontiersmith_191"
+    },
+    {
+      "problem_id": "frontiersmith_192"
+    },
+    {
+      "problem_id": "frontiersmith_193"
+    },
+    {
+      "problem_id": "frontiersmith_194"
+    },
+    {
+      "problem_id": "frontiersmith_195"
+    },
+    {
+      "problem_id": "frontiersmith_196"
+    },
+    {
+      "problem_id": "frontiersmith_197"
+    },
+    {
+      "problem_id": "frontiersmith_198"
+    },
+    {
+      "problem_id": "frontiersmith_1"
+    },
+    {
+      "problem_id": "frontiersmith_19"
+    },
+    {
+      "problem_id": "frontiersmith_199"
+    },
+    {
+      "problem_id": "frontiersmith_20"
+    },
+    {
+      "problem_id": "frontiersmith_21"
+    },
+    {
+      "problem_id": "frontiersmith_22"
+    },
+    {
+      "problem_id": "frontiersmith_23"
+    },
+    {
+      "problem_id": "frontiersmith_24"
+    },
+    {
+      "problem_id": "frontiersmith_25"
+    },
+    {
+      "problem_id": "frontiersmith_26"
+    },
+    {
+      "problem_id": "frontiersmith_27"
+    },
+    {
+      "problem_id": "frontiersmith_28"
+    },
+    {
+      "problem_id": "frontiersmith_2"
+    },
+    {
+      "problem_id": "frontiersmith_29"
+    },
+    {
+      "problem_id": "frontiersmith_30"
+    },
+    {
+      "problem_id": "frontiersmith_31"
+    },
+    {
+      "problem_id": "frontiersmith_32"
+    },
+    {
+      "problem_id": "frontiersmith_33"
+    },
+    {
+      "problem_id": "frontiersmith_34"
+    },
+    {
+      "problem_id": "frontiersmith_35"
+    },
+    {
+      "problem_id": "frontiersmith_36"
+    },
+    {
+      "problem_id": "frontiersmith_37"
+    },
+    {
+      "problem_id": "frontiersmith_38"
+    },
+    {
+      "problem_id": "frontiersmith_3"
+    },
+    {
+      "problem_id": "frontiersmith_39"
+    },
+    {
+      "problem_id": "frontiersmith_40"
+    },
+    {
+      "problem_id": "frontiersmith_41"
+    },
+    {
+      "problem_id": "frontiersmith_42"
+    },
+    {
+      "problem_id": "frontiersmith_43"
+    },
+    {
+      "problem_id": "frontiersmith_44"
+    },
+    {
+      "problem_id": "frontiersmith_45"
+    },
+    {
+      "problem_id": "frontiersmith_46"
+    },
+    {
+      "problem_id": "frontiersmith_47"
+    },
+    {
+      "problem_id": "frontiersmith_48"
+    },
+    {
+      "problem_id": "frontiersmith_4"
+    },
+    {
+      "problem_id": "frontiersmith_49"
+    },
+    {
+      "problem_id": "frontiersmith_50"
+    },
+    {
+      "problem_id": "frontiersmith_51"
+    },
+    {
+      "problem_id": "frontiersmith_52"
+    },
+    {
+      "problem_id": "frontiersmith_53"
+    },
+    {
+      "problem_id": "frontiersmith_54"
+    },
+    {
+      "problem_id": "frontiersmith_55"
+    },
+    {
+      "problem_id": "frontiersmith_56"
+    },
+    {
+      "problem_id": "frontiersmith_57"
+    },
+    {
+      "problem_id": "frontiersmith_58"
+    },
+    {
+      "problem_id": "frontiersmith_5"
+    },
+    {
+      "problem_id": "frontiersmith_59"
+    },
+    {
+      "problem_id": "frontiersmith_60"
+    },
+    {
+      "problem_id": "frontiersmith_61"
+    },
+    {
+      "problem_id": "frontiersmith_62"
+    },
+    {
+      "problem_id": "frontiersmith_63"
+    },
+    {
+      "problem_id": "frontiersmith_64"
+    },
+    {
+      "problem_id": "frontiersmith_65"
+    },
+    {
+      "problem_id": "frontiersmith_66"
+    },
+    {
+      "problem_id": "frontiersmith_67"
+    },
+    {
+      "problem_id": "frontiersmith_68"
+    },
+    {
+      "problem_id": "frontiersmith_6"
+    },
+    {
+      "problem_id": "frontiersmith_69"
+    },
+    {
+      "problem_id": "frontiersmith_70"
+    },
+    {
+      "problem_id": "frontiersmith_71"
+    },
+    {
+      "problem_id": "frontiersmith_72"
+    },
+    {
+      "problem_id": "frontiersmith_73"
+    },
+    {
+      "problem_id": "frontiersmith_74"
+    },
+    {
+      "problem_id": "frontiersmith_75"
+    },
+    {
+      "problem_id": "frontiersmith_76"
+    },
+    {
+      "problem_id": "frontiersmith_77"
+    },
+    {
+      "problem_id": "frontiersmith_78"
+    },
+    {
+      "problem_id": "frontiersmith_7"
+    },
+    {
+      "problem_id": "frontiersmith_79"
+    },
+    {
+      "problem_id": "frontiersmith_80"
+    },
+    {
+      "problem_id": "frontiersmith_81"
+    },
+    {
+      "problem_id": "frontiersmith_82"
+    },
+    {
+      "problem_id": "frontiersmith_83"
+    },
+    {
+      "problem_id": "frontiersmith_84"
+    },
+    {
+      "problem_id": "frontiersmith_85"
+    },
+    {
+      "problem_id": "frontiersmith_86"
+    },
+    {
+      "problem_id": "frontiersmith_87"
+    },
+    {
+      "problem_id": "frontiersmith_88"
+    },
+    {
+      "problem_id": "frontiersmith_8"
+    },
+    {
+      "problem_id": "frontiersmith_89"
+    },
+    {
+      "problem_id": "frontiersmith_90"
+    },
+    {
+      "problem_id": "frontiersmith_91"
+    },
+    {
+      "problem_id": "frontiersmith_92"
+    },
+    {
+      "problem_id": "frontiersmith_93"
+    },
+    {
+      "problem_id": "frontiersmith_94"
+    },
+    {
+      "problem_id": "frontiersmith_95"
+    },
+    {
+      "problem_id": "frontiersmith_96"
+    },
+    {
+      "problem_id": "frontiersmith_97"
+    },
+    {
+      "problem_id": "frontiersmith_98"
+    }
+  ]
+}

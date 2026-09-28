@@ -1,0 +1,218 @@
+```markdown
+# Chronomancer's Retuning
+
+## Problem
+
+A chronomancer is testing a branching magic array across many alternate timelines.
+
+There are `N` hubs. Each hub must hold exactly one of the five elements:
+
+- `0` = Metal
+- `1` = Water
+- `2` = Wood
+- `3` = Fire
+- `4` = Earth
+
+They follow the cycle
+
+`Metal -> Water -> Wood -> Fire -> Earth -> Metal`
+
+so, in numeric form:
+
+- **generates**: `b = a + 1 (mod 5)`
+- **overcomes**: `b = a + 2 (mod 5)`
+
+There are `S` timeline states, arranged as a rooted tree with root `1`.
+
+For each state:
+
+- it has a parent state (except the root),
+- it contains several **local spells**,
+- the element assignment of every hub is inherited from its parent state.
+
+You are allowed to **retune** some hubs on some states:
+
+- a retune `(state, hub, element)` sets that hub to the given element in that state,
+- descendants inherit this changed value unless they retune that hub again,
+- the total number of retunes is limited by `B`.
+
+Each local spell belongs to exactly one state and is checked only in that state.
+
+A local spell has:
+
+- two hubs `u, v`,
+- a type `t`,
+- a positive weight `w`.
+
+It is satisfied in that state if:
+
+- `t = 1`: hub `u` **generates** hub `v`, i.e. `elem[v] = elem[u] + 1 (mod 5)`
+- `t = 2`: hub `u` **overcomes** hub `v`, i.e. `elem[v] = elem[u] + 2 (mod 5)`
+
+Your task is to output:
+
+1. the root assignment of all hubs in state `1`,
+2. up to `B` retunes on non-root states,
+
+to maximize the total weight of satisfied spells over all states.
+
+---
+
+## Input
+
+The first line contains three integers:
+
+`N S B`
+
+- `N`: number of hubs
+- `S`: number of states
+- `B`: maximum number of retunes you may output
+
+Then for each state `i = 1..S`:
+
+- one line with two integers `p_i, c_i`
+  - `p_1 = 0`
+  - for `i > 1`, `1 <= p_i < i`, meaning `p_i` is the parent of state `i`
+  - `c_i` is the number of local spells in state `i`
+
+Then follow `c_i` lines, each containing:
+
+`u v t w`
+
+- `1 <= u, v <= N`, `u != v`
+- `t` is `1` or `2`
+- `w` is the spell weight
+
+---
+
+## Output
+
+Your output must be:
+
+- Line 1: `N` integers `a_1 ... a_N`, where `a_u` is the element of hub `u` in the root state `1`
+- Line 2: one integer `R` — the number of retunes you output
+- Next `R` lines: `s u e`
+  - `2 <= s <= S`
+  - `1 <= u <= N`
+  - `0 <= e <= 4`
+
+### Feasibility requirements
+
+Your output is **feasible** if all of the following hold:
+
+- `0 <= R <= B`
+- every retune line is within range
+- no pair `(s, u)` appears more than once among your retunes
+
+If your output is not feasible, your objective value for that test file is `0`.
+
+### How the judge evaluates your output
+
+Let `val[i][u]` be the element of hub `u` in state `i`.
+
+- In root state `1`, `val[1][u] = a_u`
+- For each non-root state `i`, start from the values of its parent:
+  - `val[i][u] = val[p_i][u]` for all `u`
+  - then apply all retunes you output for state `i`
+
+After that, every local spell of state `i` is checked using `val[i]`.
+
+---
+
+## Objective
+
+Maximize
+
+\[
+\text{OBJ} = \sum_{\text{all local spells}} w \cdot [\text{spell is satisfied in its state}]
+\]
+
+where `[condition]` is `1` if true and `0` otherwise.
+
+Equivalently, `OBJ` is the total weight of satisfied spells over all states.
+
+---
+
+## Scoring
+
+For each test file:
+
+- Let `W` be the sum of weights of **all** local spells in the input.
+- Let `OBJ_base` be the objective value of the following baseline solution:
+  - assign every hub element `0` in the root,
+  - output `R = 0` retunes.
+
+Your score for that test file is:
+
+\[
+\text{score} =
+\begin{cases}
+1000000, & \text{if } W = OBJ_{base} \\
+1000000 \cdot \max\left(0,\min\left(1,\frac{OBJ - OBJ_{base}}{W - OBJ_{base}}\right)\right), & \text{otherwise}
+\end{cases}
+\]
+
+The final score is the arithmetic mean of test-file scores, rounded down to the nearest integer.
+
+### Notes on the baseline
+
+Because all hubs are assigned the same element in the baseline, it usually satisfies very few spells. It is included so every contestant has a guaranteed, easy-to-implement reference solution.
+
+---
+
+## Constraints
+
+- `1 <= N <= 100000`
+- `1 <= S <= 100000`
+- `0 <= B <= 30000`
+- `0 <= c_i`
+- `1 <= w <= 10^9`
+- `sum(c_i) <= 300000`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+3 3 1
+0 1
+1 2 1 5
+1 1
+2 3 1 4
+1 2
+1 3 2 6
+2 1 2 2
+```
+
+### Output
+```text
+0 1 2
+1
+3 2 3
+```
+
+### Explanation
+
+Root assignment:
+
+- hub 1 = Metal (`0`)
+- hub 2 = Water (`1`)
+- hub 3 = Wood (`2`)
+
+State `1`:
+- spell `(1,2,generate,5)` is satisfied
+
+State `2` inherits the root assignment:
+- spell `(2,3,generate,4)` is satisfied
+
+State `3` inherits the root assignment, then retunes hub `2` to Fire (`3`):
+- `(1,3,overcomes,6)` is satisfied because `2 = 0 + 2 (mod 5)`
+- `(2,1,overcomes,2)` is satisfied because `0 = 3 + 2 (mod 5)`
+
+So the total objective is `5 + 4 + 6 + 2 = 17`, which is the maximum possible here.
+
+The baseline has objective `0`, and the total spell weight is also `17`, so this output gets full score on this test.
+```

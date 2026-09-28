@@ -2,145 +2,198 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+typedef long long ll;
+
 int main(int argc, char* argv[]) {
     registerTestlibCmd(argc, argv);
 
-    // ---- read input ----
-    int n = inf.readInt();
-    int e = inf.readInt();
+    int t = inf.readInt();
 
-    vector<int> eu(e+1), ev(e+1), ea(e+1), eb(e+1), ec(e+1);
-    vector<vector<pair<int,int>>> adj(n+1);
+    double sum_ratio = 0.0;
 
-    for (int j = 1; j <= e; j++) {
-        eu[j] = inf.readInt();
-        ev[j] = inf.readInt();
-        ea[j] = inf.readInt();
-        eb[j] = inf.readInt();
-        ec[j] = inf.readInt();
-        adj[eu[j]].push_back({ev[j], j});
-        adj[ev[j]].push_back({eu[j], j});
-    }
+    for (int tc = 0; tc < t; tc++) {
+        // --- read problem parameters from inf ---
+        int n = inf.readInt();
+        int q = inf.readInt();
+        int k = inf.readInt();
+        ll  m = inf.readLong();
 
-    int m = inf.readInt();
-    vector<int> day_r(m), day_L(m);
-    vector<vector<int>> depot_island(m), depot_val(m);
+        vector<int> p(q);
+        vector<char> ctype(q);
+        vector<ll> b(q), w(q), d(q);
 
-    long long B = 0;
-    for (int i = 0; i < m; i++) {
-        day_r[i] = inf.readInt();
-        day_L[i] = inf.readInt();
-        depot_island[i].resize(day_r[i]);
-        depot_val[i].resize(day_r[i]);
-        for (int t = 0; t < day_r[i]; t++) {
-            depot_island[i][t] = inf.readInt();
-            depot_val[i][t] = inf.readInt();
-            B += depot_val[i][t];
+        for (int j = 0; j < q; j++) {
+            p[j] = inf.readInt();
+            string cs = inf.readToken();
+            ctype[j] = cs[0];
+            b[j] = inf.readLong();
+            w[j] = inf.readLong();
+            d[j] = inf.readLong();
         }
-    }
 
-    // ---- read participant output ----
+        // --- reward helper ---
+        auto reward_val = [&](int j, ll pred) -> ll {
+            ll diff = pred - b[j];
+            if (diff < 0) diff = -diff;
+            if (diff > d[j]) return 0LL;
+            return w[j] * (d[j] + 1 - diff);
+        };
 
-    int x = ouf.readInt(0, e, "number of rigged bridges x");
-
-    vector<bool> is_rigged(e+1, false);
-    long long InstallCost = 0;
-
-    {
-        set<int> seen;
-        for (int i = 0; i < x; i++) {
-            int bid = ouf.readInt(1, e, "rigged bridge ID");
-            if (seen.count(bid))
-                quitf(_wa, "Duplicate rigged bridge ID: %d", bid);
-            seen.insert(bid);
-            is_rigged[bid] = true;
-            InstallCost += ea[bid];
-        }
-    }
-
-    // detonation counts over the whole campaign
-    vector<int> det_count(e+1, 0);
-
-    long long BlastCost = 0;
-    long long Harvested = 0;
-
-    // BFS reuse structures
-    vector<bool> visited(n+1, false);
-    vector<bool> edge_removed(e+1, false);
-
-    for (int i = 0; i < m; i++) {
-        int d = ouf.readInt(0, day_L[i], "number of detonations on day");
-
-        vector<int> today_det;
-        {
-            set<int> seen_today;
-            for (int k = 0; k < d; k++) {
-                int bid = ouf.readInt(1, e, "detonated bridge ID");
-                if (seen_today.count(bid))
-                    quitf(_wa, "Duplicate detonated bridge ID %d on day %d", bid, i+1);
-                seen_today.insert(bid);
-
-                if (!is_rigged[bid])
-                    quitf(_wa, "Bridge %d detonated on day %d but not rigged", bid, i+1);
-
-                today_det.push_back(bid);
-                det_count[bid]++;
-
-                // Check per-bridge detonation limit
-                if (det_count[bid] > ec[bid])
-                    quitf(_wa, "Bridge %d detonated %d times but limit is %d",
-                          bid, det_count[bid], ec[bid]);
-
-                BlastCost += eb[bid];
-                edge_removed[bid] = true;
+        // --- compute baseline B ---
+        // helper: given prefix sums pr[1..n] and suffix sums su[1..n], compute best obj
+        auto compute_obj = [&](vector<ll>& pr, vector<ll>& su) -> ll {
+            ll obj = 0;
+            for (int j = 0; j < q; j++) {
+                if (ctype[j] == 'P') {
+                    obj += reward_val(j, pr[p[j]]);
+                } else if (ctype[j] == 'S') {
+                    obj += reward_val(j, su[p[j]]);
+                } else {
+                    ll rP = reward_val(j, pr[p[j]]);
+                    ll rS = reward_val(j, su[p[j]]);
+                    obj += max(rP, rS);
+                }
             }
+            return obj;
+        };
+
+        // Zero array
+        ll B = 0;
+        {
+            vector<ll> pr(n + 1, 0), su(n + 1, 0);
+            B = max(B, compute_obj(pr, su));
         }
 
-        // BFS from node 1 over non-removed edges
-        if (day_r[i] > 0) {
-            vector<int> reached;
-            queue<int> bfs;
-            bfs.push(1);
-            visited[1] = true;
-            reached.push_back(1);
-            while (!bfs.empty()) {
-                int u = bfs.front(); bfs.pop();
-                for (auto [w, eid] : adj[u]) {
-                    if (!visited[w] && !edge_removed[eid]) {
-                        visited[w] = true;
-                        reached.push_back(w);
-                        bfs.push(w);
+        // Single-spike arrays: a[x] = +m or -m, rest zero
+        for (int x = 1; x <= n; x++) {
+            for (int sign = -1; sign <= 1; sign += 2) {
+                ll v = (ll)sign * m;
+                // pref[i] = 0 if i < x, else v
+                // suff[i] = 0 if i > x, else v
+                ll obj = 0;
+                for (int j = 0; j < q; j++) {
+                    ll predP = (p[j] >= x) ? v : 0LL;
+                    ll predS = (p[j] <= x) ? v : 0LL;
+                    if (ctype[j] == 'P') {
+                        obj += reward_val(j, predP);
+                    } else if (ctype[j] == 'S') {
+                        obj += reward_val(j, predS);
+                    } else {
+                        ll rP = reward_val(j, predP);
+                        ll rS = reward_val(j, predS);
+                        obj += max(rP, rS);
                     }
                 }
+                B = max(B, obj);
             }
-            for (int t = 0; t < day_r[i]; t++) {
-                int isl = depot_island[i][t];
-                int val = depot_val[i][t];
-                if (visited[isl]) {
-                    Harvested += val;
-                }
-            }
-            // reset visited
-            for (int node : reached) visited[node] = false;
         }
 
-        // reset edge_removed for today's detonations
-        for (int bid : today_det) edge_removed[bid] = false;
+        // --- read participant output ---
+        // We'll compute OBJ; on any feasibility violation, OBJ=0 for this test case
+        ll OBJ = 0;
+        bool feasible = true;
+        string feasibility_reason = "";
+
+        vector<ll> a(n + 1, 0);
+        for (int i = 1; i <= n; i++) {
+            if (ouf.seekEof()) {
+                feasible = false;
+                feasibility_reason = "premature EOF reading array";
+                break;
+            }
+            a[i] = ouf.readLong();
+        }
+
+        string o_str = "";
+        if (feasible) {
+            if (ouf.seekEof()) {
+                feasible = false;
+                feasibility_reason = "premature EOF reading directions";
+            } else {
+                o_str = ouf.readToken();
+            }
+        }
+
+        if (feasible) {
+            // Check |a_i| <= m
+            for (int i = 1; i <= n && feasible; i++) {
+                if (a[i] < -m || a[i] > m) {
+                    feasible = false;
+                    feasibility_reason = "a[i] out of range";
+                }
+            }
+        }
+
+        if (feasible) {
+            // Check non-zero count
+            int nz = 0;
+            for (int i = 1; i <= n; i++) if (a[i] != 0) nz++;
+            if (nz > k) {
+                feasible = false;
+                feasibility_reason = "too many non-zero cells";
+            }
+        }
+
+        if (feasible) {
+            // Check direction string length
+            if ((int)o_str.size() != q) {
+                feasible = false;
+                feasibility_reason = "direction string wrong length";
+            }
+        }
+
+        if (feasible) {
+            // Check direction characters and fixed constraints
+            for (int j = 0; j < q && feasible; j++) {
+                char oc = o_str[j];
+                if (oc != 'P' && oc != 'S') {
+                    feasible = false;
+                    feasibility_reason = "invalid direction char";
+                } else if (ctype[j] == 'P' && oc != 'P') {
+                    feasible = false;
+                    feasibility_reason = "fixed P reading assigned S";
+                } else if (ctype[j] == 'S' && oc != 'S') {
+                    feasible = false;
+                    feasibility_reason = "fixed S reading assigned P";
+                }
+            }
+        }
+
+        if (feasible) {
+            // Compute prefix and suffix sums
+            vector<ll> pref(n + 2, 0), suff(n + 2, 0);
+            for (int i = 1; i <= n; i++) pref[i] = pref[i-1] + a[i];
+            for (int i = n; i >= 1; i--) suff[i] = suff[i+1] + a[i];
+
+            for (int j = 0; j < q; j++) {
+                ll pred;
+                if (o_str[j] == 'P') pred = pref[p[j]];
+                else pred = suff[p[j]];
+                OBJ += reward_val(j, pred);
+            }
+        } else {
+            // Infeasible: OBJ = 0
+            OBJ = 0;
+        }
+
+        // Compute per-test-case ratio: floor(1e6 * min(5, (OBJ+1)/(B+1))) / 1e6
+        // Then as a fraction of 1: divide by 5 since cap is 5x
+        double raw = (double)(OBJ + 1) / (double)(B + 1);
+        if (raw > 5.0) raw = 5.0;
+        if (raw < 0.0) raw = 0.0;
+        // Per problem: score = floor(1_000_000 * min(5, raw)) / 1_000_000
+        // Normalized to [0,1]: raw/5
+        double ratio = raw / 5.0;
+        if (ratio < 0.0) ratio = 0.0;
+        if (ratio > 1.0) ratio = 1.0;
+        sum_ratio += ratio;
     }
 
-    // Require end-of-file: reject extra trailing tokens
-    if (!ouf.seekEof())
-        quitf(_wa, "Extra output after the last day line");
+    double final_ratio = sum_ratio / (double)t;
+    if (final_ratio < 0.0) final_ratio = 0.0;
+    if (final_ratio > 1.0) final_ratio = 1.0;
 
-    long long F = InstallCost + BlastCost + Harvested;
+    quitp(final_ratio, "Ratio: %.9f", final_ratio);
 
-    // Score formula: Score_test = min(1000, 100 * B / max(1, F))
-    double score_1000 = min(1000.0, 100.0 * (double)B / (double)max(1LL, F));
-    double ratio = score_1000 / 1000.0;
-
-    quitp(ratio,
-          "OK. InstallCost=%lld BlastCost=%lld Harvested=%lld F=%lld B=%lld "
-          "Score=%.4f Ratio: %.6f",
-          InstallCost, BlastCost, Harvested, F, B,
-          score_1000, ratio);
+    return 0;
 }

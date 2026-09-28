@@ -1,0 +1,231 @@
+```markdown
+# Resilient Backbone Planner
+
+## Problem
+
+A telecom operator has an undirected network with `n` sites and `m` existing links.  
+During the next `q` events, some existing links will be shut down for maintenance, and some customer pairs will require **high-reliability service**.
+
+A customer request `(x, y)` is considered served if, at that moment, the current network contains **two edge-disjoint paths** between `x` and `y`.  
+The two paths may share vertices, but they must not share any edge.
+
+Before the first event happens, you may spend a limited budget to improve the network in two ways:
+
+1. **Fortify existing links**: a fortified existing link stays available even if a maintenance event tries to shut it down.
+2. **Build optional backup links**: these links are added to the network before the first event and remain available forever.
+
+Your task is to choose which existing links to fortify and which backup links to build, so as to maximize the total weight of served customer requests over the whole event sequence.
+
+This is an optimization problem: any feasible solution is accepted, and better solutions receive higher scores.
+
+---
+
+## Input
+
+The input describes a single test instance.
+
+```text
+n m c q K
+u1 v1 hf1
+u2 v2 hf2
+...
+um vm hfm
+a1 b1 cb1
+a2 b2 cb2
+...
+ac bc cbc
+event1
+event2
+...
+eventq
+```
+
+- `n` — number of vertices.
+- `m` — number of existing links.
+- `c` — number of candidate backup links.
+- `q` — number of events.
+- `K` — total budget.
+
+### Existing links
+
+For each `i = 1..m`, line `i+1` contains:
+
+- `ui, vi` — endpoints of existing edge `i`
+- `hfi` — cost to fortify this existing edge
+
+Existing edges are numbered `1..m` in input order.
+
+### Candidate backup links
+
+For each `j = 1..c`, the next line contains:
+
+- `aj, bj` — endpoints of candidate edge `j`
+- `cbj` — cost to build this candidate edge
+
+Candidate edges are numbered `1..c` in input order.
+
+### Events
+
+Each event is one of the following:
+
+- `Z i`  
+  A maintenance shutdown attempts to remove existing edge `i`.
+
+  - If edge `i` was **not fortified**, it is removed from the network (if still present).
+  - If edge `i` **was fortified**, nothing happens.
+
+- `P x y w`  
+  A customer request of weight `w`.
+  If the current network contains two edge-disjoint paths between vertices `x` and `y`, then `w` is added to your objective value.
+
+---
+
+## Output
+
+Output exactly two lines.
+
+### Line 1
+A binary string `S` of length `m`.
+
+- `S[i] = '1'` means you fortify existing edge `i`.
+- `S[i] = '0'` means you do not fortify existing edge `i`.
+
+### Line 2
+A binary string `T` of length `c`.
+
+- `T[j] = '1'` means you build candidate edge `j`.
+- `T[j] = '0'` means you do not build candidate edge `j`.
+
+### Feasibility
+
+Let
+
+- `HF = sum of hfi over all fortified existing edges`
+- `CB = sum of cbj over all built candidate edges`
+
+Your output is **feasible** iff `HF + CB <= K`.
+
+If the output is infeasible, the score for this test is `0`.
+
+---
+
+## Objective
+
+Let the initial network consist of:
+
+- all `m` existing edges, and
+- all candidate edges that you chose to build.
+
+Then process the `q` events in order.
+
+- A `Z i` event removes existing edge `i` unless it was fortified.
+- A `P x y w` event contributes `w` if the current graph contains two edge-disjoint paths between `x` and `y`.
+
+Your objective value `O` is the sum of weights of all served `P` events.
+
+---
+
+## Scoring
+
+For each test instance:
+
+- Let `O` be your objective value.
+- Let `B` be the objective value of the **baseline solution**:
+  - fortify no existing edge,
+  - build no candidate edge.
+- Let `U` be the sum of weights of **all** `P` events in the instance.
+
+The per-test score is:
+
+- `0`, if your output is infeasible;
+- `1,000,000`, if `U = B`;
+- otherwise
+
+```text
+score = floor(1,000,000 * max(0, O - B) / (U - B))
+```
+
+So:
+
+- matching the baseline gets score `0`,
+- reaching the theoretical upper bound `U` gets score `1,000,000`,
+- intermediate improvements receive proportionally intermediate scores.
+
+If there are multiple hidden test files, the final contest score is the arithmetic mean of per-test scores.
+
+---
+
+## Constraints
+
+- `2 <= n <= 100000`
+- `1 <= m, c, q <= 200000`
+- `1 <= K <= 10^12`
+- `1 <= hfi, cbj <= 10^9`
+- `1 <= w <= 10^6`
+- `1 <= ui, vi, aj, bj, x, y <= n`
+- `ui != vi`
+- `aj != bj`
+- `x != y`
+- No self-loops.
+- All existing and candidate undirected edges are pairwise distinct.
+- Each existing edge appears in **at most one** `Z` event.
+
+### Limits
+- Time limit: 8 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+4 4 2 5 2
+1 2 3
+2 3 3
+3 4 3
+4 1 3
+1 3 2
+2 4 2
+P 1 3 5
+Z 1
+P 1 3 5
+Z 3
+P 1 3 5
+```
+
+### Output
+```text
+0000
+10
+```
+
+### Explanation
+
+- No existing edge is fortified.
+- Candidate edge `1` (`1-3`) is built for cost `2`, which matches the budget.
+
+Event sequence:
+
+1. `P 1 3 5`  
+   The network has two edge-disjoint paths between `1` and `3`, so gain `5`.
+2. `Z 1`  
+   Existing edge `1-2` is removed.
+3. `P 1 3 5`  
+   Still two edge-disjoint paths exist (`1-3` and `1-4-3`), so gain `5`.
+4. `Z 3`  
+   Existing edge `3-4` is removed.
+5. `P 1 3 5`  
+   Now only one path remains, so gain `0`.
+
+Total objective: `O = 10`.
+
+Baseline (`0000` and `00`) would score only the first request, so `B = 5`.  
+Also, `U = 15` since the total request weight is `5 + 5 + 5`.
+
+Therefore:
+
+```text
+score = floor(1,000,000 * (10 - 5) / (15 - 5)) = 500000
+```
+```

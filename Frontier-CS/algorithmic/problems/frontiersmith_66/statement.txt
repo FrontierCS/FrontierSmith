@@ -1,0 +1,159 @@
+```markdown
+# Graph-Smooth Rearrangement
+
+## Problem
+
+You manage a network of `n` display panels connected by cables.  
+Panel `i` has a desired brightness `a_i`.
+
+You also have `n` interchangeable light modules. Module `j` has fixed brightness `b_j`.  
+Each panel must receive exactly one module, and each module must be used exactly once.
+
+However, neighboring panels should not differ too much in brightness.  
+The cable network is an undirected weighted graph with `m` edges.  
+For an edge `(u, v, w)`, assigning brightnesses `x` and `y` to panels `u` and `v` incurs a cable penalty of:
+
+`w * |x - y|`
+
+Your task is to output a permutation of the modules that minimizes the total cost.
+
+Formally, if panel `i` receives module `p_i`, then the assigned brightness at panel `i` is `b_{p_i}`, and the total cost is:
+
+\[
+C = \sum_{i=1}^{n} |a_i - b_{p_i}| \;+\; \sum_{(u,v,w)} w \cdot |b_{p_u} - b_{p_v}|
+\]
+
+The first term rewards matching each panel's desired brightness.  
+The second term rewards smoothness across the graph.
+
+This is an optimization problem: lower cost is better.
+
+## Input
+
+The first line contains an integer `t` — the number of test cases.
+
+Each test case has the following format:
+
+- The first line contains two integers `n` and `m` — the number of panels/modules and the number of edges.
+- The second line contains `n` integers `a_1, a_2, ..., a_n` — desired brightnesses.
+- The third line contains `n` integers `b_1, b_2, ..., b_n` — module brightnesses.
+- The next `m` lines each contain three integers `u, v, w` — an undirected edge between panels `u` and `v` with weight `w`.
+
+Panels are numbered from `1` to `n`.  
+Modules are also numbered from `1` to `n`.
+
+## Output
+
+For each test case, output one line with `n` integers:
+
+`p_1 p_2 ... p_n`
+
+where `p_i` is the index of the module assigned to panel `i`.
+
+### Feasibility requirements
+
+Your output for a test case is **feasible** iff:
+
+- each `p_i` is an integer between `1` and `n`,
+- every module index from `1` to `n` appears exactly once.
+
+If the output for a test case is infeasible, that test case receives score `0`.
+
+## Objective
+
+For a feasible assignment `p`, define:
+
+\[
+C(p) = \sum_{i=1}^{n} |a_i - b_{p_i}| \;+\; \sum_{(u,v,w)} w \cdot |b_{p_u} - b_{p_v}|
+\]
+
+Your goal is to **minimize** `C(p)`.
+
+The judge computes the value exactly using 64-bit signed integers.
+
+## Scoring
+
+For each test case, let:
+
+- `C` be the cost of your feasible output,
+- `B` be the cost of the following deterministic baseline solution.
+
+### Baseline solution
+
+1. Sort panel indices by `(a_i, i)` in nondecreasing order.
+2. Sort module indices by `(b_j, j)` in nondecreasing order.
+3. For every `k = 1..n`, assign the `k`-th module in the sorted module list to the `k`-th panel in the sorted panel list.
+
+This baseline minimizes the first term alone, but ignores the graph structure.
+
+### Per-test score
+
+If your output is infeasible, the score for that test case is `0`.
+
+Otherwise, the score is:
+
+\[
+\text{score} = \min\left(100,\; 50 \cdot \frac{B + 1}{C + 1}\right)
+\]
+
+Properties:
+
+- matching the baseline gives exactly `50` points,
+- improving on the baseline gives more than `50`,
+- doing worse gives less than `50`,
+- much better solutions can approach `100`.
+
+### Total score
+
+Your final score is the arithmetic mean of the per-test scores over all test cases.
+
+## Constraints
+
+- `1 ≤ t ≤ 200`
+- `1 ≤ n ≤ 2 · 10^5`
+- `0 ≤ m ≤ 4 · 10^5`
+- `1 ≤ a_i, b_i ≤ 10^6`
+- `1 ≤ u, v ≤ n`, `u ≠ v`
+- `1 ≤ w ≤ 10^3`
+- Sum of `n` over all test cases does not exceed `2 · 10^5`
+- Sum of `m` over all test cases does not exceed `4 · 10^5`
+
+- Time limit: 3 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Sample input
+```text
+1
+3 2
+5 1 4
+2 6 3
+1 2 2
+2 3 1
+```
+
+### Sample output
+```text
+3 1 2
+```
+
+### Explanation
+
+The output means:
+
+- panel `1` gets module `3` (brightness `3`)
+- panel `2` gets module `1` (brightness `2`)
+- panel `3` gets module `2` (brightness `6`)
+
+So the total cost is:
+
+- panel mismatch cost: `|5-3| + |1-2| + |4-6| = 2 + 1 + 2 = 5`
+- edge smoothness cost:
+  - edge `(1,2,2)`: `2 * |3-2| = 2`
+  - edge `(2,3,1)`: `1 * |2-6| = 4`
+
+Total: `5 + 2 + 4 = 11`.
+
+The baseline for this test case has cost `12`, so this output scores slightly above `50`.
+```

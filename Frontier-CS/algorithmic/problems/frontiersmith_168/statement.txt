@@ -1,0 +1,245 @@
+```markdown
+# Smart Basket Calibration
+
+## Problem
+
+The basketball teacher has upgraded the gym with **smart baskets**.
+
+There are `n` basketballs, numbered `1..n`. Ball `i` has an integer label `x_i` written on it.  
+There are `m` smart baskets, numbered `1..m`.
+
+Basket `j` is configured by six integers:
+
+- `P_j` — its modulus
+- `B_j` — its bias
+- `T_j` — its target display value
+- `W_j` — its importance weight
+- `L_j`, `U_j` — the minimum and maximum number of balls that must be shot into it
+
+Initially, the display of every basket is `1`.
+
+If ball `i` is shot into basket `j`, and the current display is `v`, then the new display becomes
+
+\[
+v' = (v \cdot r_{i,j} + B_j) \bmod P_j
+\]
+
+where
+
+\[
+r_{i,j} = ((x_i \bmod P_j) + P_j) \bmod P_j
+\]
+
+That is, the ball label is interpreted modulo the basket's modulus.
+
+You must decide, for every basket, **which balls are assigned to it and in what order**.
+
+A solution is **feasible** if:
+
+- every ball is used exactly once;
+- basket `j` receives between `L_j` and `U_j` balls inclusive.
+
+The goal is to make the final displays of the baskets as close as possible to their targets.
+
+---
+
+### Circular distance
+
+For basket `j`, after all its assigned balls are processed, suppose its final display is `V_j`.
+
+Its distance to the target is the circular distance on the ring modulo `P_j`:
+
+\[
+D_j = \min\big((V_j - T_j)\bmod P_j,\ (T_j - V_j)\bmod P_j\big)
+\]
+
+The total error is
+
+\[
+E = \sum_{j=1}^{m} W_j \cdot D_j
+\]
+
+You must **minimize** `E`.
+
+This is an optimization challenge: exact optimality is not expected.
+
+## Input
+
+A single test file contains one instance.
+
+- The first line contains two integers `n` and `m`.
+- The second line contains `n` integers `x_1, x_2, ..., x_n`.
+- Then follow `m` lines.  
+  Line `j` contains six integers:
+
+\[
+P_j\ \ B_j\ \ T_j\ \ W_j\ \ L_j\ \ U_j
+\]
+
+It is guaranteed that at least one feasible assignment exists.
+
+## Output
+
+Output exactly `m` lines.
+
+On line `j`, print:
+
+- an integer `k_j` — the number of balls assigned to basket `j`,
+- followed by `k_j` distinct ball indices, in the exact order they are shot into basket `j`.
+
+### Feasibility requirements
+
+Your output is feasible iff all of the following hold:
+
+- `L_j <= k_j <= U_j` for every basket `j`;
+- every printed index is between `1` and `n`;
+- each ball index appears exactly once across all `m` lines.
+
+If the output is infeasible, the solution receives score `0` on that test file.
+
+## Objective
+
+For each basket `j`:
+
+1. Start with `v = 1`.
+2. Process the listed balls for that basket in the printed order.
+3. For each assigned ball `i`, update
+
+\[
+v \leftarrow (v \cdot r_{i,j} + B_j) \bmod P_j
+\]
+
+where
+
+\[
+r_{i,j} = ((x_i \bmod P_j) + P_j) \bmod P_j
+\]
+
+4. Let the final value be `V_j = v`.
+5. Compute
+
+\[
+D_j = \min\big((V_j - T_j)\bmod P_j,\ (T_j - V_j)\bmod P_j\big)
+\]
+
+The objective value is
+
+\[
+E = \sum_{j=1}^{m} W_j \cdot D_j
+\]
+
+Smaller `E` is better.
+
+## Scoring
+
+For each hidden test file, the judge also computes a **baseline solution** with the following deterministic algorithm.
+
+### Baseline algorithm
+
+Process balls in input order `1, 2, ..., n`.
+
+Maintain for each basket `j`:
+
+- current display `v_j` (initially `1`);
+- current assigned count `c_j` (initially `0`).
+
+When processing ball `i`, basket `j` is considered **available** if:
+
+- `c_j < U_j`, and
+- after assigning ball `i` to `j`, the remaining number of balls is still enough to satisfy all remaining lower bounds, i.e.
+
+\[
+n - i \ge \sum_{k=1}^{m} \max(0,\ L_k - c_k')
+\]
+
+where `c_k'` is `c_k` for `k != j` and `c_j' = c_j + 1`.
+
+Among all available baskets, choose the one minimizing the **immediate weighted distance**
+
+\[
+W_j \cdot \min\big((v_j' - T_j)\bmod P_j,\ (T_j - v_j')\bmod P_j\big)
+\]
+
+where
+
+\[
+v_j' = (v_j \cdot r_{i,j} + B_j) \bmod P_j
+\]
+
+Break ties by:
+
+1. smaller `c_j`,
+2. smaller basket index.
+
+Assign ball `i` to that basket, append it to the end of that basket's sequence, and update `v_j, c_j`.
+
+Let the baseline error be `E_base`.
+
+### Score formula
+
+If your output is infeasible, your score on that file is `0`.
+
+Otherwise, let your error be `E`. Your score on that file is
+
+\[
+\text{Score} = \min\left(2{,}000{,}000,\ \left\lfloor 1{,}000{,}000 \cdot \frac{E_{base}+1}{E+1} \right\rfloor \right)
+\]
+
+So:
+
+- matching the baseline gives exactly `1,000,000` points;
+- improving on the baseline gives more than `1,000,000`;
+- doing worse gives less than `1,000,000`.
+
+The final score is the sum over all hidden test files.
+
+## Constraints
+
+- `1 <= m <= 60`
+- `m <= n <= 2000`
+- `-10^9 <= x_i <= 10^9`
+- `2 <= P_j <= 10^9+7`
+- `0 <= B_j, T_j < P_j`
+- `1 <= W_j <= 10^6`
+- `1 <= L_j <= U_j <= n`
+- `\sum_{j=1}^{m} L_j <= n <= \sum_{j=1}^{m} U_j`
+
+## Constraints
+- Time limit: 2 seconds
+- Memory limit: 512 MB
+
+## Example
+
+Sample input
+```text
+5 2
+2 -3 5 4 -1
+17 1 7 3 2 3
+19 2 4 1 2 3
+```
+
+Sample output
+```text
+3 1 3 5
+2 2 4
+```
+
+Brief explanation:
+
+- Basket `1` receives balls `1, 3, 5`:
+  - start `v=1`
+  - after ball `1` (`2`): `v=(1*2+1) mod 17 = 3`
+  - after ball `3` (`5`): `v=(3*5+1) mod 17 = 16`
+  - after ball `5` (`-1 ≡ 16 mod 17`): `v=(16*16+1) mod 17 = 2`
+  - target distance: `min((2-7) mod 17, (7-2) mod 17)=5`
+  - weighted contribution: `3*5=15`
+
+- Basket `2` receives balls `2, 4`:
+  - start `v=1`
+  - after ball `2` (`-3 ≡ 16 mod 19`): `v=(1*16+2) mod 19 = 18`
+  - after ball `4` (`4`): `v=(18*4+2) mod 19 = 17`
+  - target distance to `4` is `6`
+  - weighted contribution: `1*6=6`
+
+Total error: `E = 15 + 6 = 21`.
+```

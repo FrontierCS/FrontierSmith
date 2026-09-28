@@ -1,0 +1,276 @@
+```markdown
+# Front-Coded Page Layout
+
+## Problem
+
+You are designing a storage layout for a dictionary of distinct lowercase strings.
+
+The dictionary will be split into exactly \(K\) pages.  
+Inside each page, strings are stored in an **order chosen by you**.
+
+Two effects determine the quality of a layout:
+
+1. **Front-coding storage cost** inside each page  
+   Consecutive strings on the same page can share a common prefix, reducing storage cost.
+
+2. **Navigation cost** for observed transition requests  
+   Historical logs contain weighted requests of the form “after string \(u\), users often jump to string \(v\)”.  
+   If two such strings are placed on the same page and close to each other, navigation is cheaper.
+
+Your task is to output any feasible page layout that minimizes the total cost.
+
+### Longest common prefix
+
+For two strings \(A\) and \(B\), let \(\operatorname{lcp}(A,B)\) be the length of their longest common prefix.
+
+### Page storage cost
+
+Suppose page \(j\) contains the ordered string indices
+
+\[
+P_j=(p_{j,1},p_{j,2},\dots,p_{j,t_j}).
+\]
+
+Its front-coding cost is:
+
+- \(0\), if \(t_j=0\);
+- otherwise
+
+\[
+\operatorname{Front}(P_j)
+=
+|S_{p_{j,1}}|
++
+\sum_{r=2}^{t_j}
+\left(
+|S_{p_{j,r}}|-\operatorname{lcp}(S_{p_{j,r-1}},S_{p_{j,r}})
+\right).
+\]
+
+### Request navigation cost
+
+There are \(m\) weighted requests.  
+Request \(h\) is a triple \((u_h,v_h,w_h)\), meaning a transition from string \(u_h\) to string \(v_h\) with weight \(w_h\).
+
+Let string \(u_h\) be placed at position \(x\) in its page, and string \(v_h\) be placed at position \(y\) in its page.
+
+- If they are on the **same page**, the request costs
+
+\[
+w_h \cdot (1+|x-y|).
+\]
+
+- If they are on **different pages**, the request costs
+
+\[
+w_h \cdot (G+x+y).
+\]
+
+Here \(G\) is a given non-negative integer.
+
+### Total cost
+
+Let \(F\) be a given non-negative integer.
+
+The total cost of your layout is
+
+\[
+\operatorname{Cost}
+=
+F \cdot \sum_{j=1}^{K}\operatorname{Front}(P_j)
++
+\sum_{h=1}^{m}\operatorname{Move}_h.
+\]
+
+You must minimize this value.
+
+---
+
+Each page also has a **raw-capacity** limit:  
+if page \(j\) contains indices \(P_j\), then it must satisfy
+
+\[
+\sum_{x \in P_j} |S_x| \le B.
+\]
+
+Note that this capacity uses the original string lengths, **not** the front-coded size.
+
+## Input
+
+The first line contains 6 integers:
+
+\[
+n\;\; m\;\; K\;\; B\;\; G\;\; F
+\]
+
+- \(n\): number of strings
+- \(m\): number of weighted requests
+- \(K\): number of pages
+- \(B\): raw-capacity limit of each page
+- \(G\): inter-page navigation constant
+- \(F\): storage-cost multiplier
+
+The next \(n\) lines contain the strings \(S_1,S_2,\dots,S_n\).
+
+The next \(m\) lines each contain 3 integers:
+
+\[
+u_h\;\; v_h\;\; w_h
+\]
+
+describing a request from \(S_{u_h}\) to \(S_{v_h}\) with weight \(w_h\).
+
+## Output
+
+Output exactly \(K\) lines.
+
+For page \(j\), output one line in the format
+
+\[
+t_j\;\; p_{j,1}\;\; p_{j,2}\;\; \dots \;\; p_{j,t_j}
+\]
+
+where:
+
+- \(t_j\) is the number of strings on page \(j\),
+- \(p_{j,1},\dots,p_{j,t_j}\) are distinct indices in the chosen order for that page.
+
+### Feasibility requirements
+
+Your output is **feasible** iff all of the following hold:
+
+1. Every index from \(1\) to \(n\) appears exactly once across the \(K\) lines.
+2. For every page \(j\),
+
+\[
+\sum_{r=1}^{t_j} |S_{p_{j,r}}| \le B.
+\]
+
+If the output is infeasible or cannot be parsed, the score for that test is 0.
+
+Empty pages are allowed; output `0` on that line.
+
+## Objective
+
+Minimize the total cost
+
+\[
+\operatorname{Cost}
+=
+F \cdot \sum_{j=1}^{K}\operatorname{Front}(P_j)
++
+\sum_{h=1}^{m}\operatorname{Move}_h.
+\]
+
+Lower is better.
+
+## Scoring
+
+For each test file:
+
+1. The judge computes your feasible solution cost \(C_{\text{sub}}\).
+2. The judge also computes a deterministic baseline cost \(C_{\text{base}}\) using the following algorithm:
+
+### Baseline layout
+
+- Sort all string indices by lexicographic order of their strings.
+- Traverse this order from left to right.
+- Start with page 1.
+- Append each string to the current page if doing so keeps the page's raw-length sum \(\le B\).
+- Otherwise, move to the next page and append it there.
+- Since the input guarantees feasibility, this process never needs more than \(K\) pages.
+- Any remaining pages are empty.
+
+### Per-test score
+
+If your output is infeasible, the per-test score is 0.
+
+Otherwise,
+
+\[
+\text{Score}_{\text{test}}
+=
+\left\lfloor
+10^6 \cdot \min\!\left(2,\frac{C_{\text{base}}}{C_{\text{sub}}}\right)
+\right\rfloor.
+\]
+
+So:
+
+- matching the baseline gives about \(10^6\) points,
+- improving on the baseline gives more,
+- worse solutions still receive partial credit,
+- the per-test score is capped at \(2 \times 10^6\).
+
+### Total score
+
+If the official test set contains \(T\) files, the final score is
+
+\[
+\left\lfloor
+\frac{1}{T}\sum_{t=1}^{T}\text{Score}_{t}
+\right\rfloor.
+\]
+
+## Constraints
+
+- \(1 \le n \le 4 \times 10^4\)
+- \(1 \le m \le 2 \times 10^5\)
+- \(1 \le K \le n\)
+- \(1 \le B \le 2 \times 10^5\)
+- \(0 \le G \le 10^6\)
+- \(0 \le F \le 10^6\)
+- \(1 \le w_h \le 10^6\)
+- All strings are distinct, non-empty, and consist only of lowercase English letters
+- \(\sum_{i=1}^{n} |S_i| \le 2 \times 10^5\)
+- \(|S_i| \le B\) for every \(i\)
+- \(\sum_{i=1}^{n} |S_i| \le K \cdot B\)
+
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample input
+```text
+5 4 2 6 5 3
+a
+ab
+b
+ba
+bb
+1 2 10
+3 4 8
+4 5 5
+2 5 4
+```
+
+### Sample output
+```text
+2 1 2
+3 3 4 5
+```
+
+### Explanation
+
+Page 1 stores strings \(1,2\): `a`, `ab`  
+Page 2 stores strings \(3,4,5\): `b`, `ba`, `bb`
+
+Both pages respect the raw-capacity limit \(B=6\).
+
+- Front-coding cost:
+  - Page 1: \(1 + (2 - \operatorname{lcp}(\text{a},\text{ab})) = 1 + (2-1)=2\)
+  - Page 2: \(1 + (2-1) + (2-1)=3\)
+  - Total front cost = \(5\)
+  - Storage contribution = \(F \cdot 5 = 3 \cdot 5 = 15\)
+
+- Request costs:
+  - \((1,2,10)\): same page, positions \(1,2\) \(\Rightarrow 10 \cdot (1+1)=20\)
+  - \((3,4,8)\): same page, positions \(1,2\) \(\Rightarrow 16\)
+  - \((4,5,5)\): same page, positions \(2,3\) \(\Rightarrow 10\)
+  - \((2,5,4)\): different pages, positions \(2,3\) \(\Rightarrow 4 \cdot (5+2+3)=40\)
+
+Total cost = \(15 + 20 + 16 + 10 + 40 = 101\).
+
+This may or may not be optimal; in this challenge, any feasible layout is accepted and scored by its cost.
+```

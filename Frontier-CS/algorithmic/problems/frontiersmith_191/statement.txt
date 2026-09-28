@@ -1,0 +1,191 @@
+```markdown
+# Prime Firewall Hardening
+
+## Problem
+A network has `N` devices. Device `i` currently carries an integer signature `A_i`.
+
+Two connected devices are considered **safe together** if their final signatures are coprime. Otherwise, they still share at least one prime vulnerability.
+
+You may patch devices before deployment.
+
+For each device `i`, choose a **removal divisor** `R_i` such that:
+
+- `R_i` is a positive divisor of `A_i`
+- `R_i ≤ K`
+
+After patching, the device signature becomes:
+
+- `B_i = A_i / R_i`
+
+Removing factors has a budget cost. The cost of `R_i` is:
+
+- `cost(R_i) = Ω(R_i)`
+
+where `Ω(x)` is the total number of prime factors of `x` counted with multiplicity.  
+Examples:
+
+- `Ω(1) = 0`
+- `Ω(12) = Ω(2^2 · 3) = 3`
+- `Ω(18) = Ω(2 · 3^2) = 3`
+
+The total budget over all devices must not exceed `S`.
+
+The network has `M` undirected weighted links.  
+A link `(u, v, w)` contributes `w` points **iff** `gcd(B_u, B_v) = 1`.
+
+Your goal is to choose the divisors `R_i` to maximize the total weight of safe links.
+
+---
+
+## Input
+The first line contains a single integer `T` — the number of test cases.
+
+Each test case has the following format:
+
+- One line with four integers  
+  `N M K S`
+- One line with `N` integers  
+  `A_1 A_2 ... A_N`
+- `M` following lines, each with three integers  
+  `u v w`  
+  describing an undirected link between devices `u` and `v` with weight `w`
+
+### Input constraints
+- `1 ≤ T ≤ 5`
+- `1 ≤ N ≤ 100000`
+- `0 ≤ M ≤ 200000`
+- `1 ≤ A_i ≤ 10^9`
+- `1 ≤ K ≤ 10^9`
+- `0 ≤ S ≤ 300000`
+- `1 ≤ u, v ≤ N`, `u ≠ v`
+- `1 ≤ w ≤ 10^6`
+
+Additional global limits:
+
+- Sum of `N` over all test cases ≤ `100000`
+- Sum of `M` over all test cases ≤ `200000`
+
+Multiple edges between the same pair of devices may appear; each is scored independently.
+
+---
+
+## Output
+For each test case, output **one line** containing exactly `N` integers:
+
+`R_1 R_2 ... R_N`
+
+Your output for a test case is **feasible** iff all of the following hold:
+
+- `R_i` is an integer for every `i`
+- `1 ≤ R_i ≤ K`
+- `R_i` divides `A_i`
+- `sum(cost(R_i)) ≤ S`
+
+If your output for a test case is infeasible, that test case receives score `0`.
+
+---
+
+## Objective
+For a feasible output, define:
+
+- `B_i = A_i / R_i`
+
+The objective value for the test case is
+
+\[
+V = \sum_{(u,v,w)} w \cdot [\gcd(B_u, B_v) = 1]
+\]
+
+where `[condition]` is `1` if the condition is true and `0` otherwise.
+
+You must **maximize** `V`.
+
+---
+
+## Scoring
+For each test case:
+
+- Let `BASE` be the objective value of the baseline solution:
+  - `R_i = 1` for all `i`
+- Let `UPPER = sum of all edge weights`
+- Let `V` be your objective value if feasible, otherwise `V = -∞` and the test score is `0`
+
+### Per-test score
+If your output is infeasible:
+- `score = 0`
+
+Otherwise, if `UPPER = BASE`:
+- `score = 1,000,000`
+
+Else:
+\[
+score = 1{,}000{,}000 \cdot \frac{V - BASE}{UPPER - BASE}
+\]
+
+The score is then clamped to the range `[0, 1,000,000]`.
+
+### Total score
+Your final score is the arithmetic mean of the per-test scores.
+
+This means:
+
+- Matching the baseline gets score `0` on that test
+- Improving beyond the baseline increases score smoothly
+- Reaching the theoretical maximum `UPPER` gets score `1,000,000`
+
+---
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+### Sample input
+```text
+1
+4 4 10 3
+6 10 15 21
+1 2 5
+2 3 7
+3 4 4
+1 4 3
+```
+
+### Sample output
+```text
+2 2 3 1
+```
+
+### Explanation
+Chosen divisors:
+
+- `R = [2, 2, 3, 1]`
+- Costs: `Ω(2)+Ω(2)+Ω(3)+Ω(1) = 1+1+1+0 = 3`, so the budget is respected
+
+Final signatures:
+
+- `B = [3, 5, 5, 21]`
+
+Link evaluation:
+
+- `(1,2,5)`: `gcd(3,5)=1` → contributes `5`
+- `(2,3,7)`: `gcd(5,5)=5` → contributes `0`
+- `(3,4,4)`: `gcd(5,21)=1` → contributes `4`
+- `(1,4,3)`: `gcd(3,21)=3` → contributes `0`
+
+So `V = 9`.
+
+Baseline (`R_i = 1` for all `i`) gives final signatures `[6,10,15,21]`, and no edge is coprime, so `BASE = 0`.
+
+Also, `UPPER = 5+7+4+3 = 19`.
+
+Therefore the sample output receives
+
+\[
+1{,}000{,}000 \cdot \frac{9-0}{19-0} \approx 473684.21
+\]
+
+for this test case.
+```

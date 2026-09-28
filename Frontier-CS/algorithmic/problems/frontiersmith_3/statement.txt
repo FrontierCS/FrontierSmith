@@ -1,171 +1,221 @@
 ```markdown
-# Metallic Pink Resonator Layout
+# Resonator Tuning
 
 ## Problem
-The Martians have built a circular relay with ports labeled `0,1,…,M-1`.  
-Some ports will be equipped with **pink emitters**; the rest remain **plain reflectors**.
+Chef has found a hall of unstable number-crystals. Crystal `i` currently stores the positive integer `X_i` and has importance weight `W_i`.
 
-If port `a` is an emitter and port `b` is a reflector, then together they can generate the frequency
+There are `K` resonators. Resonator `j` has:
+- an exponent `c_j`,
+- a capacity `u_j`,
+- an activation cost `F_j`.
 
+Before using resonator `j`, you must choose a **tuning value** `b_j` such that:
+- `1 ≤ b_j ≤ B`,
+- `b_j` is a perfect `c_j`-th power.
+
+Any crystal assigned to resonator `j` is transformed **once** by:
 \[
-(a+b)\bmod M.
+Y_i=\frac{\mathrm{lcm}(X_i,b_j)}{\gcd(X_i,b_j)}
 \]
 
-For each frequency `r`, the Martians know:
+A crystal may also be left unassigned, in which case its final value remains `X_i`.
 
-- a **value** `w_r` gained for each successful generating pair producing `r`,
-- a **saturation limit** `d_r`: once `d_r` pairs producing `r` exist, extra pairs for `r` give no additional benefit.
+Each crystal may be assigned to **at most one** resonator.  
+Each resonator `j` may receive **at most** `u_j` assigned crystals.
 
-You must choose which ports become emitters, subject to a budget.
+If at least one crystal is assigned to resonator `j`, you must pay its activation cost `F_j`.
 
-Let `A` be the set of chosen emitters, and `B = {0,1,…,M-1} \ A` be the reflectors.  
-For each residue `r`, define
-
+Your goal is to minimize the total instability:
 \[
-c_r = |\{(a,b)\in A\times B : (a+b)\bmod M = r\}|,
+\sum_i W_i \cdot \text{finalValue}_i \;+\; \sum_{j \text{ used}} F_j
 \]
 
-where pairs are **ordered**: choosing emitter `a` and reflector `b` is one pair.
-
-The contribution of residue `r` is
-
-\[
-w_r \cdot \min(c_r, d_r).
-\]
-
-Your task is to output any feasible emitter set maximizing the total contribution.
+You may output **any feasible solution**; better solutions receive better scores.
 
 ---
 
 ## Input
 A single test file contains one instance.
 
-- The first line contains two integers `M` and `B` — the number of ports and the total budget.
-- The second line contains `M` integers `cost_0, cost_1, …, cost_{M-1}` — the cost of installing an emitter at each port.
-- The third line contains `M` integers `w_0, w_1, …, w_{M-1}` — the value of each residue.
-- The fourth line contains `M` integers `d_0, d_1, …, d_{M-1}` — the saturation limit of each residue.
+The first line contains three integers:
+- `N` — number of crystals
+- `K` — number of resonators
+- `B` — maximum allowed tuning value
 
-All residue arithmetic is modulo `M`.
+The next `N` lines each contain two integers:
+- `X_i` — initial value of crystal `i`
+- `W_i` — weight of crystal `i`
+
+The next `K` lines each contain three integers:
+- `c_j` — exponent of resonator `j`
+- `u_j` — capacity of resonator `j`
+- `F_j` — activation cost of resonator `j`
 
 ---
 
 ## Output
-Output any feasible solution.
+Output exactly two lines.
 
-- The first line must contain one integer `K` — the number of chosen emitter ports.
-- The second line must contain `K` distinct integers `p_1, p_2, …, p_K` in increasing order, each between `0` and `M-1`, denoting the emitter ports.
+### Line 1
+`K` integers:
+\[
+b_1\; b_2\; \dots\; b_K
+\]
+where each `b_j` must satisfy:
+- `1 ≤ b_j ≤ B`
+- `b_j` is a perfect `c_j`-th power
 
-A solution is **feasible** if:
+### Line 2
+`N` integers:
+\[
+a_1\; a_2\; \dots\; a_N
+\]
+where:
+- `a_i = 0` means crystal `i` is left unassigned,
+- `1 ≤ a_i ≤ K` means crystal `i` is assigned to resonator `a_i`.
 
-1. all listed ports are distinct,
-2. all listed ports are valid indices in `[0, M-1]`,
-3. \(\sum_{i=1}^{K} cost_{p_i} \le B\).
+### Feasibility requirements
+Your output is feasible iff all of the following hold:
+1. Every `b_j` is valid.
+2. Every `a_i` is in `[0, K]`.
+3. For every resonator `j`, at most `u_j` indices `i` satisfy `a_i = j`.
 
-If your output is infeasible or malformed, your objective value is `0`.
-
-If `K = 0`, you may omit the second line.
+If your output is infeasible, the score for that test file is `0`.
 
 ---
 
 ## Objective
-For your chosen emitter set `A` and reflector set `B = [0, M-1] \ A`, compute for each residue `r`:
+For a feasible output, define the final value of crystal `i` as:
+- `X_i`, if `a_i = 0`;
+- \[
+  \frac{\mathrm{lcm}(X_i,b_{a_i})}{\gcd(X_i,b_{a_i})}
+  \]
+  otherwise.
 
+The objective value to **minimize** is:
 \[
-c_r = |\{(a,b)\in A\times B : (a+b)\bmod M = r\}|.
+C = \sum_{i=1}^{N} W_i \cdot \text{finalValue}_i \;+\; \sum_{j:\exists i,\ a_i=j} F_j
 \]
 
-Your objective value is
-
-\[
-U = \sum_{r=0}^{M-1} w_r \cdot \min(c_r, d_r).
-\]
-
-Higher is better.
+The judge computes this value exactly.
 
 ---
 
 ## Scoring
-For each official test instance, the judge also computes a deterministic **baseline** solution:
+Let:
+- `C_out` be your objective value,
+- `C_base` be the objective value of the deterministic baseline algorithm below.
 
-1. Sort all ports by `(cost_i, i)` ascending.
-2. Traverse this order once.
-3. Add port `i` to the emitter set iff doing so keeps the total cost at most `B`.
-
-Let the baseline objective value be `U_base`, and your objective value be `U`.
-
-The score for that test is:
-
-- `0`, if `U = 0` and `U_base = 0`;
-- otherwise
-
+Your score on a test file is:
 \[
-100 \cdot \frac{U}{U + U_{base}}.
+\text{score} = 10^6 \cdot \min\left(10,\ \frac{C_{\text{base}}}{C_{\text{out}}}\right)
 \]
 
-So:
-- matching the baseline gives `50`,
-- worse than the baseline gives less than `50`,
-- better than the baseline gives more than `50`,
-- the score approaches `100` as `U` becomes much larger than `U_base`.
+If your output is infeasible, the score is `0`.
 
-Your final score is the arithmetic mean of your per-test scores over all official test instances.
+The final score is the arithmetic mean of scores over all test files.
+
+### Baseline algorithm
+The baseline processes resonators in order `1, 2, ..., K`.
+
+Maintain the set of currently unassigned crystals.
+
+For resonator `j`:
+
+1. Let `P_j` be the sorted list of all perfect `c_j`-th powers in `[1, B]`.
+2. For every currently unassigned crystal `i` and every `b ∈ P_j`, compute the **gain**
+   \[
+   G(i,b,j)=W_i\cdot\left(X_i-\frac{\mathrm{lcm}(X_i,b)}{\gcd(X_i,b)}\right)
+   \]
+3. Find the pair `(i*, b*)` with maximum `G(i,b,j)`.
+   - Break ties by smaller `i`,
+   - then by smaller `b`.
+4. If the maximum gain is `≤ 0`, set `b_j = 1` and assign no crystal to resonator `j`.
+5. Otherwise, set `b_j = b*`.
+6. For every currently unassigned crystal `i` with `G(i,b_j,j) > 0`, compute that gain.
+7. Sort those crystals by decreasing gain, breaking ties by smaller `i`.
+8. Take the first `min(u_j, m)` crystals in that order, where `m` is the number of positive-gain crystals.
+   - Let `S` be the sum of their gains.
+   - If `S > F_j`, assign all of them to resonator `j`.
+   - Otherwise, assign none to resonator `j` and reset `b_j = 1`.
+
+All crystals still unassigned after the last resonator remain unassigned.
 
 ---
 
 ## Constraints
-- `2 ≤ M ≤ 200000`
-- `1 ≤ cost_i ≤ 10^9`
-- `1 ≤ w_i ≤ 10^6`
-- `1 ≤ d_i ≤ M`
-- `1 ≤ B ≤ 10^18`
-- At least one port satisfies `cost_i ≤ B`
+- `1 ≤ N ≤ 1500`
+- `1 ≤ K ≤ 60`
+- `1 ≤ B ≤ 10^9`
+- `1 ≤ X_i ≤ 10^9`
+- `1 ≤ W_i ≤ 1000`
+- `2 ≤ c_j ≤ 9`
+- `1 ≤ u_j ≤ N`
+- `0 ≤ F_j ≤ 10^{12}`
 
-The search space is exponential in `M`; exact optimization is not expected.
+The exact optimization problem is intentionally too large for brute force: the number of valid tunings and assignments is enormous, and the assignment/tuning interaction creates a hard combinatorial search space.
 
-- Time limit: 8 seconds
-- Memory limit: 1024 MB
+- Time limit: 3 seconds
+- Memory limit: 512 MB
 
 ---
 
 ## Example
-Input
+### Sample input
 ```text
-6 5
-3 2 2 4 1 3
-5 1 4 2 3 6
-1 2 1 1 2 1
+4 2 100
+20 1
+27 1
+50 1
+18 2
+2 3 3
+3 2 1
 ```
 
-Output
+### Sample output
 ```text
-3
-1 2 4
+100 27
+1 2 1 2
 ```
 
-Brief explanation:
+### Explanation
+This is one feasible solution.
 
-- Chosen emitters: `{1,2,4}`
-- Total cost: `2 + 2 + 1 = 5`, so the solution is feasible.
-- Reflectors: `{0,3,5}`
+- Resonator `1`: `b_1 = 100 = 10^2`
+- Resonator `2`: `b_2 = 27 = 3^3`
 
-Ordered emitter-reflector pairs generate residues with counts:
+Assignments:
+- Crystal `1` (`20`) → resonator `1`:
+  \[
+  \frac{\mathrm{lcm}(20,100)}{\gcd(20,100)}=\frac{100}{20}=5
+  \]
+- Crystal `2` (`27`) → resonator `2`:
+  \[
+  \frac{\mathrm{lcm}(27,27)}{\gcd(27,27)}=1
+  \]
+- Crystal `3` (`50`) → resonator `1`:
+  \[
+  \frac{\mathrm{lcm}(50,100)}{\gcd(50,100)}=\frac{100}{50}=2
+  \]
+- Crystal `4` (`18`) → resonator `2`:
+  \[
+  \frac{\mathrm{lcm}(18,27)}{\gcd(18,27)}=\frac{54}{9}=6
+  \]
 
-- residue `0`: 1 pair
-- residue `1`: 3 pairs
-- residue `2`: 1 pair
-- residue `3`: 1 pair
-- residue `4`: 2 pairs
-- residue `5`: 1 pair
-
-After applying saturation limits `d = [1,2,1,1,2,1]`, the objective is:
-
+Weighted crystal cost:
 \[
-5\cdot1 + 1\cdot2 + 4\cdot1 + 2\cdot1 + 3\cdot2 + 6\cdot1 = 25.
+1\cdot5 + 1\cdot1 + 1\cdot2 + 2\cdot6 = 20
 \]
 
-For this instance, the baseline picks the same set, so `U = U_base = 25`, and the test score is
-
+Both resonators are used, so activation cost is:
 \[
-100 \cdot \frac{25}{25+25} = 50.
+3 + 1 = 4
 \]
+
+Total objective:
+\[
+C = 20 + 4 = 24
+\]
+
+A lower objective yields a higher score.
 ```

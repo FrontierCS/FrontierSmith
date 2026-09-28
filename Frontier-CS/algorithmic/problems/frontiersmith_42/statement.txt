@@ -1,0 +1,175 @@
+```markdown
+# Jealous Payment Schedule
+
+## Problem
+
+Pari will buy chocolate from Arya on **m** different days.  
+On day `j`, the exact price is `p_j`, so Pari must give Arya a set of her coins whose values sum to exactly `p_j`.
+
+Pari owns `n` coins. Coin `i` has value `c_i`. Each coin can be used **at most once total** over all days, or left unused.
+
+Arya keeps every received coin in one drawer. After all `m` days, let `U` be the multiset of all coins that Pari has paid. For every amount `x` from `0` to `P = p_1 + p_2 + ... + p_m`, define:
+
+- `reachable(x) = 1` if Arya can choose some subset of the coins in `U` whose sum is exactly `x`,
+- `reachable(x) = 0` otherwise.
+
+Different amounts matter differently to Arya's shop, so each amount `x` has a demand weight `w_x`.
+
+Pari wants to choose her payments so that Arya's overall usefulness is as small as possible.
+
+You are also given an already-feasible **baseline payment plan** prepared by Pari's assistant. Your task is to output any feasible payment plan, ideally better than the baseline.
+
+---
+
+## Input
+
+The input contains:
+
+- Line 1: two integers `n` and `m`
+- Line 2: `m` integers `p_1, p_2, ..., p_m`
+- Line 3: `n` integers `c_1, c_2, ..., c_n`
+- Line 4: `P + 1` integers `w_0, w_1, ..., w_P`, where `P = sum(p_j)`
+- Line 5: `n` integers `b_1, b_2, ..., b_n` describing the baseline plan
+
+### Meaning of the baseline plan
+
+For each coin `i`:
+
+- `b_i = 0` means coin `i` is unused in the baseline,
+- `b_i = j` ( `1 <= j <= m` ) means coin `i` is used on day `j` in the baseline.
+
+It is guaranteed that the baseline is feasible, i.e. for every day `j`,
+
+\[
+\sum_{i : b_i = j} c_i = p_j
+\]
+
+So every test case is guaranteed to have at least one feasible solution.
+
+---
+
+## Output
+
+Output exactly `n` integers `a_1, a_2, ..., a_n`.
+
+For each coin `i`:
+
+- `a_i = 0` means coin `i` is unused,
+- `a_i = j` ( `1 <= j <= m` ) means coin `i` is paid on day `j`.
+
+### Feasibility requirements
+
+Your output is **feasible** iff:
+
+1. `a_i` is an integer in `[0, m]` for every `i`,
+2. each coin is assigned at most once (already enforced by the format),
+3. for every day `j`,
+
+\[
+\sum_{i : a_i = j} c_i = p_j
+\]
+
+If your output is infeasible, the objective is considered invalid and your score for that test case is `0`.
+
+---
+
+## Objective
+
+Let `U = { i | a_i > 0 }` be the multiset of coins used in your plan.
+
+For each `x` from `0` to `P`, let:
+
+- `reachable(x) = 1` if some subset of the used coins has sum `x`,
+- `reachable(x) = 0` otherwise.
+
+Your objective is to **minimize** the weighted exposure:
+
+\[
+E = \sum_{x=0}^{P} w_x \cdot reachable(x)
+\]
+
+Lower `E` is better.
+
+The baseline exposure `E_base` is computed the same way from the given baseline assignment `b`.
+
+---
+
+## Scoring
+
+For each test case:
+
+- if your output is infeasible, `score = 0`,
+- otherwise,
+
+\[
+score = \min\left(2{,}000{,}000,\; 1{,}000{,}000 \cdot \frac{E_{base}}{E}\right)
+\]
+
+So:
+
+- matching the baseline gives `1,000,000`,
+- doing better than the baseline gives more than `1,000,000`,
+- doing worse gives less than `1,000,000`.
+
+The final score is the arithmetic mean of the per-test-case scores.
+
+---
+
+## Constraints
+
+- `1 <= n <= 2000`
+- `1 <= m <= 40`
+- `1 <= p_j <= 5000`
+- `1 <= c_i <= 5000`
+- `P = sum(p_j) <= 50000`
+- `1 <= w_x <= 1000` for all `0 <= x <= P`
+- the baseline plan is feasible
+
+The optimization problem is intentionally hard: even finding a best feasible payment schedule is intractable in general, so heuristic and metaheuristic approaches are expected.
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+7 2
+6 7
+1 2 3 4 5 6 7
+1 1 1 1 1 1 1 1 1 1 1 1 1 1
+1 1 1 0 0 0 2
+```
+
+### Output
+```text
+0 0 2 2 0 1 0
+```
+
+### Explanation
+
+Here `P = 13`.
+
+- Day 1 price is `6`, paid using coin `6`.
+- Day 2 price is `7`, paid using coins `3` and `4`.
+
+So the used coins are `{3, 4, 6}`.
+
+Their reachable subset sums are:
+
+`0, 3, 4, 6, 7, 9, 10, 13`
+
+So the exposure is `E = 8` because all weights are `1`.
+
+The baseline uses coins `{1, 2, 3, 7}`, whose reachable sums are all values from `0` to `13`, so `E_base = 14`.
+
+Therefore the score for this test case is:
+
+\[
+1{,}000{,}000 \cdot \frac{14}{8} = 1{,}750{,}000
+\]
+
+which is better than the baseline.
+```

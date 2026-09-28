@@ -1,0 +1,203 @@
+# Neon Cube Lexicon
+
+## Problem
+A museum is building a giant 3D word sculpture from the edge-cubes of many intersecting cube frames.
+
+After construction, there are `m` visible unit cubes. Each visible cube contains a display that must show exactly one character from the alphabet
+
+`0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz`
+
+The curator also selected `s` **beams**.  
+Each beam is an ordered list of visible cube IDs lying on one straight edge segment of the sculpture.  
+Reading the characters on a beam from its first cube to its last gives a string. Since visitors may stand at either end, a beam is considered successful if **either** its forward string **or its reverse** is a dictionary word.
+
+You are given a weighted dictionary of meaningful words. Your task is to choose one character for every visible cube to maximize the total beauty of all beams.
+
+For a beam:
+
+- let `F` be its forward string,
+- let `R = reverse(F)`.
+
+If `F` is in the dictionary with weight `w(F)`, and/or `R` is in the dictionary with weight `w(R)`, then the beam contributes:
+
+- `max(w(F), w(R))` if at least one of them exists,
+- `0` otherwise.
+
+The total objective is the sum of contributions over all beams.
+
+All comparisons are **case-sensitive**.
+
+---
+
+## Input
+The first line contains three integers:
+
+`n m s`
+
+- `n`: number of dictionary words
+- `m`: number of visible cubes
+- `s`: number of beams
+
+The next `n` lines each contain:
+
+`word_i weight_i`
+
+- `word_i` is a non-empty string over the allowed 62-character alphabet
+- `weight_i` is a positive integer
+
+The next `s` lines describe the beams.  
+Each beam is given as:
+
+`len_i id_{i,1} id_{i,2} ... id_{i,len_i}`
+
+meaning this beam uses visible cubes `id_{i,1}, id_{i,2}, ..., id_{i,len_i}` in that order.
+
+### Additional guarantees
+- All dictionary words are distinct.
+- `3 <= |word_i| <= 10`
+- `3 <= len_i <= 10`
+- `1 <= id_{i,j} <= m`
+- Within one beam, all cube IDs are distinct.
+
+---
+
+## Output
+Output a single line containing a string `ans` of length exactly `m`.
+
+For each `1 <= k <= m`, `ans[k]` is the character shown on visible cube `k`.
+
+### Validity
+A submission is **valid** if:
+
+- exactly one line is printed,
+- its length is exactly `m`,
+- every character belongs to the allowed 62-character alphabet.
+
+If the output is invalid, its objective value for that test file is `0`.
+
+---
+
+## Objective
+For each beam `i`, let its length be `len_i`, and let
+
+`F_i = ans[id_{i,1}] ans[id_{i,2}] ... ans[id_{i,len_i}]`
+
+Let `R_i` be the reverse of `F_i`.
+
+Define the contribution of beam `i` as:
+
+- `max(weight(F_i), weight(R_i))` if at least one of `F_i`, `R_i` is a dictionary word,
+- `0` otherwise.
+
+Here `weight(X)` is defined only when `X` is in the dictionary.
+
+Your objective value is:
+
+`Obj = sum of contributions of all beams`
+
+Higher is better.
+
+---
+
+## Scoring
+For each test file, the judge computes:
+
+- `Obj`: your objective value
+- `U`: an upper bound
+- `B`: the baseline objective value
+
+### Upper bound `U`
+For each beam, its contribution can never exceed the maximum dictionary weight among words of that beam's length. Therefore,
+
+`U = sum over all beams i of bestWeight[len_i]`
+
+where `bestWeight[L]` is the maximum weight of any dictionary word of length `L`, or `0` if no such word exists.
+
+### Baseline `B`
+The baseline assignment is constructed deterministically as follows.
+
+For each length `L` that appears in the dictionary, define its **representative word** `rep[L]`:
+
+- maximum weight among dictionary words of length `L`
+- if tied, lexicographically smallest using the alphabet order  
+  `0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz`
+
+For each visible cube `v`, maintain a score counter for each character in the alphabet, initially `0`.
+
+For every beam `i` of length `L`:
+- if `rep[L]` does not exist, do nothing
+- otherwise, for each position `p` in this beam (`1 <= p <= L`), let `v = id_{i,p}` and add `weight(rep[L])` to:
+  - character `rep[L][p]`
+  - character `rep[L][L+1-p]`
+
+After processing all beams:
+- each cube `v` receives the character with maximum counter,
+- ties are broken by the fixed alphabet order above,
+- if all counters are `0`, cube `v` receives character `0`.
+
+The objective value of this assignment is `B`.
+
+### Per-file score
+If `U = B`:
+
+- score is `1000000` if `Obj = U`
+- score is `0` otherwise
+
+If `U > B`:
+
+`score = floor(1000000 * max(0, Obj - B) / (U - B))`
+
+and then clamped to `[0, 1000000]`.
+
+### Final score
+Your final contest score is the average of per-file scores over all test files, rounded down to an integer.
+
+---
+
+## Constraints
+- `1 <= n <= 100000`
+- `1 <= m <= 30000`
+- `1 <= s <= 20000`
+- `3 <= |word_i| <= 10`
+- `3 <= len_i <= 10`
+- `1 <= weight_i <= 10^9`
+- `sum(len_i) <= 200000`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample input
+```text
+4 5 2
+CAT 10
+TAR 7
+CAR 6
+RAT 5
+3 1 2 3
+3 3 4 5
+```
+
+### Sample output
+```text
+CATAR
+```
+
+### Explanation
+The output assigns:
+
+- cube 1 = `C`
+- cube 2 = `A`
+- cube 3 = `T`
+- cube 4 = `A`
+- cube 5 = `R`
+
+So the two beams read:
+
+- beam 1: `CAT` → dictionary word, contributes `10`
+- beam 2: `TAR` → dictionary word, contributes `7`
+
+Total objective value: `17`.
+
+The official score for this file is then computed from `Obj = 17`, together with the judge's deterministic baseline `B` and upper bound `U`.

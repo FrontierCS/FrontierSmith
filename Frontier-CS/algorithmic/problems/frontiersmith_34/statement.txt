@@ -1,0 +1,173 @@
+```markdown
+# Digit Tape Balancing
+
+## Problem
+
+Vasya again has a long ribbon of decimal digits. This time, instead of listing every possible expression, he wants to **cut the ribbon into numbers** and **distribute those numbers among several blackboards**.
+
+You are given:
+
+- a digit string `s` of length `n`,
+- an integer `m` — the number of blackboards,
+- a maximum allowed length `D` for every number,
+- target sums `T_1, T_2, ..., T_m`,
+- importance weights `W_1, W_2, ..., W_m`,
+- cut costs `C_1, C_2, ..., C_{n-1}`, where `C_i` is paid if you cut **between** positions `i` and `i+1`.
+
+Your task is to partition the string into contiguous non-empty chunks, each of length at most `D`.  
+Each chunk is interpreted as a decimal integer (leading zeros are allowed and simply ignored in the numeric value), and each chunk must be assigned to exactly one blackboard.
+
+If the chunks assigned to blackboard `j` have total value `S_j`, then blackboard `j` contributes a penalty of:
+
+`W_j * |S_j - T_j|`
+
+The total objective is the sum of all blackboard penalties plus the costs of all chosen cuts.
+
+You should output **any feasible partition and assignment**. Better solutions receive better scores.
+
+## Input
+
+The input contains a single test instance.
+
+- The first line contains three integers  
+  `n m D`
+- The second line contains a string `s` of length `n`, consisting only of digits `0`–`9`
+- The third line contains `m` integers  
+  `T_1 T_2 ... T_m`
+- The fourth line contains `m` integers  
+  `W_1 W_2 ... W_m`
+- The fifth line contains `n-1` integers  
+  `C_1 C_2 ... C_{n-1}`
+
+## Output
+
+Output a feasible solution in the following format:
+
+- The first line contains one integer `q` — the number of chunks.
+- The second line contains `q` integers  
+  `r_1 r_2 ... r_q`
+- The third line contains `q` integers  
+  `a_1 a_2 ... a_q`
+
+These define the chunks as:
+
+- chunk `1` = substring `s[1..r_1]`
+- chunk `2` = substring `s[r_1+1..r_2]`
+- ...
+- chunk `q` = substring `s[r_{q-1}+1..r_q]`
+
+where indexing is 1-based.
+
+Feasibility requirements:
+
+- `1 <= r_1 < r_2 < ... < r_q = n`
+- every chunk has length between `1` and `D`, inclusive
+- each assignment `a_i` satisfies `1 <= a_i <= m`
+
+The numeric value of a chunk is its usual decimal value. For example, `"000" = 0`, `"08" = 8`, `"105" = 105`.
+
+If the output is invalid, the submission receives score `0` on that test.
+
+## Objective
+
+For your output, let:
+
+- `v_i` be the value of chunk `i`
+- `S_j = sum of v_i over all chunks i with a_i = j`
+
+Let the chosen cut positions be all `r_i` for `1 <= i < q`.  
+Cutting after position `p` costs `C_p`.
+
+Your objective value is:
+
+`Obj = sum_{j=1..m} W_j * |S_j - T_j| + sum_{i=1..q-1} C_{r_i}`
+
+Lower is better.
+
+## Scoring
+
+Each test is scored independently.
+
+Let `Obj` be your objective value, and let `Base` be the objective value of the following deterministic baseline solution:
+
+1. Partition `s` from left to right into the minimum possible number of chunks, each of length exactly `D` except possibly the last one.  
+   In other words, the chunks are:
+   - `s[1..D]`
+   - `s[D+1..2D]`
+   - ...
+   - the final remaining suffix
+2. Process these chunks in order.  
+   Maintain current blackboard sums `S_j`, initially all `0`.
+3. For each chunk of value `v`, assign it to the blackboard `j` that minimizes the increase
+   in weighted deviation:
+   
+   `W_j * ( |(S_j + v) - T_j| - |S_j - T_j| )`
+   
+   Break ties by choosing the smallest `j`.
+
+Then the per-test score is:
+
+- if `Base = 0`:
+  - score = `1_000_000` if `Obj = 0`
+  - score = `0` otherwise
+- if `Base > 0`:
+  - score = `1_000_000 * Base / (Base + Obj)`
+
+The final score is the arithmetic mean of per-test scores over all test files.
+
+## Constraints
+
+- `1 <= n <= 100000`
+- `1 <= m <= 50`
+- `1 <= D <= 18`
+- `0 <= T_j <= 10^18`
+- `1 <= W_j <= 10^6`
+- `0 <= C_i <= 10^12`
+
+The judge uses exact integer arithmetic when evaluating objectives.
+
+- Time limit: 3 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+6 2 3
+105072
+80 97
+1 1
+2 4 2 4 2
+```
+
+### Output
+```text
+2
+3 6
+2 1
+```
+
+### Explanation
+The output creates two chunks:
+
+- `s[1..3] = "105"` with value `105`, assigned to blackboard `2`
+- `s[4..6] = "072"` with value `72`, assigned to blackboard `1`
+
+So:
+
+- `S_1 = 72`
+- `S_2 = 105`
+
+Weighted deviation:
+
+- blackboard 1: `|72 - 80| = 8`
+- blackboard 2: `|105 - 97| = 8`
+
+There is one cut, after position `3`, costing `C_3 = 2`.
+
+Hence:
+
+`Obj = 8 + 8 + 2 = 18`
+
+This is only one feasible solution; better solutions may exist.
+```

@@ -1,0 +1,174 @@
+```markdown
+# A-Stencil Library
+
+## Problem
+
+An ancient workshop must reproduce a collection of lowercase inscriptions.
+
+The letter **`a`** is special: the stone already contains that groove, so writing a single `a` costs **0**.
+
+For every other character, writing it directly costs **1**.
+
+Before writing any inscription, you may manufacture a shared library of reusable **stencils**. A stencil is a nonempty lowercase string that is **not** equal to `a`. Each stencil must be a contiguous substring of at least one inscription in the same test case.
+
+If you manufacture a stencil `p`:
+
+- manufacturing cost: **`B + |p|`**
+- each time you apply it while writing any inscription: **1**
+- applying it writes the whole string `p` at once
+
+A single test case contains several inscriptions, and the same stencil library is shared by all of them.
+
+Your task is to choose up to `K` stencils so that the **total cost** is as small as possible.
+
+You only output the stencil library. The judge will automatically compute the cheapest possible way to write every inscription using your library.
+
+---
+
+For a fixed library `D`, an inscription `s` is written from left to right using any sequence of commands that exactly covers the string:
+
+1. **Free-`a`**: if the next character is `a`, write it at cost `0`
+2. **Literal**: write the next single character at cost `1`
+3. **Stencil `p`**: if `p ∈ D` matches the next characters of `s`, write all of `p` at cost `1`
+
+The judge chooses the minimum possible writing cost for each inscription.
+
+## Input
+
+The first line contains a single integer `T` — the number of test cases.
+
+For each test case:
+
+- the first line contains three integers `M`, `K`, and `B`
+  - `M` — number of inscriptions
+  - `K` — maximum number of stencils you may submit
+  - `B` — fixed manufacturing overhead per stencil
+- the next `M` lines each contain one lowercase string
+
+## Output
+
+For each test case, output:
+
+- one line containing an integer `D` — the number of stencils you submit
+- then `D` lines, each containing one stencil
+
+A submission for a test case is **feasible** iff all of the following hold:
+
+- `0 ≤ D ≤ K`
+- all submitted stencils are distinct
+- each stencil consists only of lowercase Latin letters
+- each stencil is nonempty
+- no stencil is exactly `a`
+- each stencil occurs as a contiguous substring of at least one inscription of that test case
+- the sum of stencil lengths in that test case does not exceed the total length of all inscriptions in that test case
+
+If any condition is violated, that test case receives score `0`.
+
+## Objective
+
+For a feasible stencil set `D` in one test case, define:
+
+- **build cost**
+  \[
+  \text{Build}(D)=\sum_{p\in D}(B+|p|)
+  \]
+
+- **encoding cost** of an inscription `s`, denoted `enc_D(s)`, as the minimum possible total command cost to write `s` using:
+  - free single `a`
+  - literal single character
+  - any submitted stencil
+
+- **total cost**
+  \[
+  C(D)=\text{Build}(D)+\sum_{i=1}^{M} enc_D(s_i)
+  \]
+
+Your goal is to **minimize** `C(D)`.
+
+## Scoring
+
+For each test case, let
+
+\[
+C_{\text{base}} = \sum_{i=1}^{M} \#\{\text{characters of } s_i \text{ that are not } a\}
+\]
+
+This is the cost of the baseline solution that submits no stencils and writes every non-`a` character literally.
+
+If your output for the test case is feasible and has total cost `C(D)`, then the test-case score is
+
+\[
+\text{Score} = 10^6 \cdot \min\left(2,\; \frac{C_{\text{base}}+1}{C(D)+1}\right)
+\]
+
+If your output is infeasible, the test-case score is `0`.
+
+The final score is the sum of test-case scores over all hidden and public tests.
+
+Notes:
+
+- Submitting no stencils always gives exactly `1,000,000` points on that test case.
+- Better compression gives a higher score, up to `2,000,000` points per test case.
+- Worse-than-baseline feasible solutions still receive a positive score below `1,000,000`.
+
+## Constraints
+
+- `1 ≤ T ≤ 200`
+- `1 ≤ M ≤ 2·10^5`
+- `1 ≤ K ≤ 80`
+- `1 ≤ B ≤ 20`
+- each inscription consists only of lowercase Latin letters
+- each inscription length is between `1` and `2·10^5`
+- the sum of inscription lengths over all test cases does not exceed `3·10^5`
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+1
+1 1 1
+bbbbaabbbb
+```
+
+### Output
+```text
+1
+bbbb
+```
+
+### Explanation
+The submitted library contains one stencil: `bbbb`.
+
+- Build cost: `(B + |bbbb|) = 1 + 4 = 5`
+- The inscription `bbbbaabbbb` can be written as:
+  - stencil `bbbb` (cost `1`)
+  - `a` (cost `0`)
+  - `a` (cost `0`)
+  - stencil `bbbb` (cost `1`)
+
+So the encoding cost is `2`, and the total cost is:
+
+\[
+C(D)=5+2=7
+\]
+
+The baseline cost is the number of non-`a` characters, which is `8`.
+
+Therefore the score for this test case is
+
+\[
+10^6 \cdot \min\left(2,\frac{8+1}{7+1}\right)
+= 10^6 \cdot \frac{9}{8}
+= 1{,}125{,}000
+\]
+
+At a high level, this challenge asks you to trade off:
+
+- short cheap stencils vs. long expensive ones
+- frequent local patterns vs. rarer global patterns
+- overlapping candidate substrings
+- build cost vs. total reuse across many inscriptions
+```

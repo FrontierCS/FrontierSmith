@@ -1,0 +1,154 @@
+```markdown
+# K-Lane Stable Sorting
+
+## Problem
+A warehouse receives `N` packages with distinct priorities `1..N` in the arrival order
+
+`A1, A2, ..., AN`
+
+where `A` is a permutation of `1..N`.
+
+You have `K` output lanes, numbered `1..K`. As each package arrives, you must assign it to exactly one lane. Inside each lane, packages keep their original arrival order.
+
+After all assignments are done, the warehouse empties the lanes in the fixed order `1, 2, ..., K`, taking all packages from lane `1`, then all packages from lane `2`, and so on. This produces a final permutation `B`.
+
+Your task is to choose the lane of every package so that `B` is as sorted as possible.
+
+---
+
+Formally, if package `Ai` is assigned to lane `Ci`, then `B` is obtained by stably sorting the packages by lane number:
+- all elements with `Ci = 1`, in their original order,
+- then all elements with `Ci = 2`, in their original order,
+- ...
+- then all elements with `Ci = K`, in their original order.
+
+Every lane must receive at least one package.
+
+## Input
+The first line contains two integers:
+
+`N K`
+
+The second line contains `N` integers:
+
+`A1 A2 ... AN`
+
+## Output
+Print one line with `N` integers:
+
+`C1 C2 ... CN`
+
+where:
+- `1 <= Ci <= K`
+- every value `1,2,...,K` appears at least once
+
+`Ci` is the lane chosen for package `Ai`.
+
+If your output is invalid, the test case score is `0`.
+
+## Objective
+Let `B` be the final permutation produced by your lane assignment.
+
+Define its **sortedness** as the number of increasing pairs:
+\[
+G(B)=|\{(p,q)\mid 1\le p<q\le N,\ B_p<B_q\}|
+\]
+
+Since `B` is a permutation, this is equal to:
+- the number of pairs already in increasing order in `B`,
+- or \(\binom{N}{2}\) minus the number of inversions in `B`.
+
+You must **maximize** `G(B)`.
+
+The maximum possible value is achieved by the fully sorted permutation `(1,2,...,N)`:
+\[
+U=\frac{N(N-1)}{2}
+\]
+
+## Scoring
+For each test case, define the **baseline assignment**:
+\[
+C_i^{(0)} = \min\left(K,\left\lfloor\frac{(i-1)K}{N}\right\rfloor+1\right)
+\]
+This splits the arrival sequence into `K` non-empty contiguous blocks and keeps them in the same order, so the resulting permutation is exactly `A`.
+
+Therefore the baseline objective is:
+\[
+G_0 = G(A)
+\]
+
+Your score for a valid output on this test case is:
+\[
+\left\lfloor 10^6 \cdot \frac{\max(0,\ G(B)-G_0)}{U-G_0} \right\rfloor
+\]
+
+Notes:
+- Because the input permutation is guaranteed not to be already sorted, `U - G0 > 0`.
+- If `G(B) <= G0`, your score for the test case is `0`.
+- Reaching the fully sorted permutation gives score `1,000,000` on that test case.
+
+The total score of a submission is the sum of its scores over all test cases.
+
+## Constraints
+- `5 <= N <= 5 * 10^5`
+- `2 <= K <= min(N-1, 5000)`
+- `A` is a permutation of `1..N`
+- `A` is not equal to `1,2,...,N`
+
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+## Example
+**Sample input**
+```text
+7 3
+5 3 7 1 2 6 4
+```
+
+**Sample output**
+```text
+2 2 3 1 1 3 2
+```
+
+**Explanation**
+
+The lane contents are:
+- lane `1`: `(1, 2)`
+- lane `2`: `(5, 3, 4)`
+- lane `3`: `(7, 6)`
+
+So the final permutation is:
+```text
+B = (1, 2, 5, 3, 4, 7, 6)
+```
+
+Its sortedness is:
+\[
+G(B)=18
+\]
+
+The baseline keeps the sequence unchanged:
+```text
+A = (5, 3, 7, 1, 2, 6, 4)
+```
+so
+\[
+G_0 = G(A)=10
+\]
+
+Also,
+\[
+U=\binom{7}{2}=21
+\]
+
+Hence the test case score is:
+\[
+\left\lfloor 10^6 \cdot \frac{18-10}{21-10} \right\rfloor
+=
+\left\lfloor 10^6 \cdot \frac{8}{11} \right\rfloor
+=
+727272
+\]
+
+A trivial contiguous assignment scores `0`, while better lane assignments obtain larger scores.
+```

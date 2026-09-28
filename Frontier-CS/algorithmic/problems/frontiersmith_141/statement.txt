@@ -1,0 +1,196 @@
+```markdown
+# Monotone XOR Relay Tuning
+
+## Problem
+A relay line must carry a non-decreasing sequence of 60-bit unsigned integers.
+
+You are given a mandatory backbone sequence
+
+- `a1 ≤ a2 ≤ ... ≤ an`
+
+and you must insert exactly one relay value between every two consecutive backbone values.
+
+Your output defines integers `x1, x2, ..., x(n-1)` and the final sequence `b` of length `2n-1` is
+
+- `b1 = a1`
+- `b2 = x1`
+- `b3 = a2`
+- `b4 = x2`
+- ...
+- `b(2n-2) = x(n-1)`
+- `b(2n-1) = an`
+
+The final sequence must be non-decreasing, so for every `i`:
+
+- `ai ≤ xi ≤ a(i+1)`
+
+A monitoring system issues weighted parity requests.  
+Each request is a tuple `(l, r, p, t, w)` meaning:
+
+- consider the XOR of the segment `b_l, b_(l+1), ..., b_r`
+- look at bit `p` of that XOR (`0` = least significant bit)
+- the request is satisfied iff that bit equals `t`
+- satisfying it earns weight `w`
+
+Your goal is to choose the inserted relay values to maximize the total earned weight.
+
+---
+
+## Input
+The first line contains two integers:
+
+- `n` — number of backbone values
+- `m` — number of parity requests
+
+The second line contains `n` integers:
+
+- `a1, a2, ..., an`
+
+Each of the next `m` lines contains five integers:
+
+- `l r p t w`
+
+describing one request.
+
+---
+
+## Output
+Output exactly `n-1` integers:
+
+- `x1 x2 ... x(n-1)`
+
+A submission is **feasible** iff all of the following hold:
+
+1. exactly `n-1` integers are printed;
+2. for every `i`, `ai ≤ xi ≤ a(i+1)`.
+
+If the output is infeasible, its objective value is defined to be `0`.
+
+---
+
+## Objective
+Let `b` be the sequence formed from `a` and your chosen `x`.
+
+For each request `(l, r, p, t, w)`:
+
+1. compute  
+   `y = b_l xor b_(l+1) xor ... xor b_r`
+2. let  
+   `bit = (y >> p) & 1`
+3. the request contributes:
+   - `w`, if `bit = t`
+   - `0`, otherwise
+
+The objective value `V` is the sum of weights of all satisfied requests.
+
+You must **maximize `V`**.
+
+---
+
+## Scoring
+For each test file:
+
+- `V` = your objective value
+- `W` = sum of all request weights in that file
+- `V_base` = objective value of the baseline solution defined by  
+  `xi = ai` for all `1 ≤ i < n`
+
+The per-file score is:
+
+- if `W = V_base`:
+  - `1,000,000` if `V = W`
+  - `0` otherwise
+- else:
+
+\[
+\text{score} =
+\left\lfloor
+1{,}000{,}000 \cdot
+\operatorname{clamp}\!\left(
+\frac{V - V_{\text{base}}}{W - V_{\text{base}}},
+0, 1
+\right)
+\right\rfloor
+\]
+
+where
+
+\[
+\operatorname{clamp}(z,0,1)=\min(1,\max(0,z)).
+\]
+
+So:
+
+- matching the baseline gets score `0`;
+- satisfying all requests gets score `1,000,000`;
+- partial improvement over the baseline receives proportional partial credit.
+
+If the full test set contains multiple files, the final score is the arithmetic mean of per-file scores, rounded down.
+
+---
+
+## Constraints
+- `2 ≤ n ≤ 2000`
+- `1 ≤ m ≤ 200000`
+- `0 ≤ ai ≤ 2^60 - 1`
+- `ai ≤ a(i+1)`
+- `1 ≤ l ≤ r ≤ 2n-1`
+- `0 ≤ p < 60`
+- `t ∈ {0,1}`
+- `1 ≤ w ≤ 10^9`
+
+All calculations fit in signed 64-bit integers except the score formula, which should be understood mathematically.
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+### Input
+```text
+3 4
+1 4 6
+1 5 0 1 8
+2 4 0 0 3
+2 2 1 1 4
+4 4 0 1 5
+```
+
+### Output
+```text
+3 5
+```
+
+### Explanation
+The output gives:
+
+- `x1 = 3`
+- `x2 = 5`
+
+So the final sequence is:
+
+- `b = [1, 3, 4, 5, 6]`
+
+All four requests are satisfied, so:
+
+- `V = 8 + 3 + 4 + 5 = 20`
+
+The total weight is also `W = 20`.
+
+The baseline uses `x1 = a1 = 1`, `x2 = a2 = 4`, giving:
+
+- `b_base = [1, 1, 4, 4, 6]`
+
+In this example the baseline satisfies none of the requests, so:
+
+- `V_base = 0`
+
+Therefore the score for this file is:
+
+\[
+1{,}000{,}000 \cdot \frac{20-0}{20-0} = 1{,}000{,}000
+\]
+
+This is only an example; on hidden tests, finding strong solutions is expected to require heuristic optimization.
+```

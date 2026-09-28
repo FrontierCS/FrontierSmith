@@ -1,0 +1,155 @@
+```markdown
+# Circular Backbone Leasing
+
+## Problem
+A company wants to deploy communication backbones between `n` coastal stations placed at the vertices of a regular polygon, numbered `1..n` in counter-clockwise order.
+
+A backbone segment is a straight line segment between two stations. Segment `(i, j)` may be **forbidden** or may have a positive construction cost. All built segments lie in the same plane, so **no two built segments may intersect at a point that is not a station**, even if they use different channels.
+
+Each built segment must be assigned exactly one of `K` frequency channels. A client can use only a single channel: a client is considered **served** if all of its required stations belong to one connected component of the graph formed by segments of the same channel.
+
+Your task is to output any feasible set of colored segments that maximizes total client profit minus total construction cost.
+
+This is an optimization problem: better feasible solutions receive higher scores.
+
+## Input
+The first line contains three integers:
+
+- `n` — number of stations
+- `K` — number of available channels
+- `m` — number of clients
+
+Then follow `n` lines, each containing `n` integers `c[i][j]`:
+
+- `c[i][i] = 0`
+- `c[i][j] = c[j][i]`
+- `c[i][j] = -1` means segment `(i, j)` is forbidden
+- otherwise `1 <= c[i][j] <= 10^6` is the construction cost of segment `(i, j)`
+
+Then follow `m` client descriptions.  
+Each client is given on one line as:
+
+- `p_t s_t v_1 v_2 ... v_{s_t}`
+
+where:
+
+- `p_t` is the profit earned if client `t` is served
+- `s_t` is the number of required stations
+- `v_1, ..., v_{s_t}` are distinct station indices
+
+A client is served if there exists a channel `ch` such that all required stations of that client are in the same connected component of the graph consisting only of built segments assigned to `ch`.
+
+## Output
+Output a feasible solution in the following format:
+
+- First line: integer `e` — the number of built segments
+- Next `e` lines: `u v ch`
+
+where:
+
+- `1 <= u < v <= n`
+- `1 <= ch <= K`
+
+### Feasibility requirements
+Your output is feasible iff all of the following hold:
+
+1. Every listed segment `(u, v)` is allowed: `c[u][v] != -1`
+2. No unordered pair `(u, v)` appears more than once
+3. Every segment has exactly one valid channel
+4. No two built segments intersect at any point other than a station
+
+If the output is infeasible, the test score for that test case is `0`.
+
+### Segment intersection
+Stations are vertices of a regular polygon in counter-clockwise order.  
+Two segments are considered intersecting illegally if their interiors intersect.
+
+Sharing an endpoint is allowed.
+
+## Objective
+For a feasible solution:
+
+- Let `Cost` be the sum of construction costs of all built segments.
+- For each client `t`, let `Served_t = 1` if all its required stations are connected using only segments of a single channel, otherwise `0`.
+- Let `Profit = sum(p_t * Served_t)` over all clients.
+
+Your objective value is:
+
+`Objective = Profit - Cost`
+
+Note that the empty solution (`e = 0`) is always feasible and has objective `0`.
+
+## Scoring
+For each test case `x`:
+
+- Let `O_x` be your objective value
+- Let `B_x` be the objective of the **baseline solution**
+- Let `R_x` be the objective of the organizer's reference solution
+
+The baseline solution is:
+
+- build every allowed polygon side `(1,2), (2,3), ..., (n-1,n), (n,1)` on channel `1`
+- or build nothing  
+- `B_x` is the better objective of these two choices
+
+Your score on test case `x` is:
+
+- `0`, if your output is infeasible
+- `100`, if `R_x = B_x` and `O_x >= B_x`
+- `100 * clamp((O_x - B_x) / (R_x - B_x), 0, 1)`, otherwise
+
+where `clamp(z, 0, 1) = max(0, min(1, z))`.
+
+The final score is the average of test-case scores.
+
+Beating the reference solution does not give more than `100` points on a test.
+
+## Constraints
+- `3 <= n <= 250`
+- `1 <= K <= 6`
+- `1 <= m <= 4000`
+- `2 <= s_t <= 10`
+- `1 <= p_t <= 10^6`
+- `c[i][j] = -1` or `1 <= c[i][j] <= 10^6` for `i != j`
+- `c[i][j] = c[j][i]`
+- The sum of all `s_t` over clients in one test file is at most `30000`
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+Input
+```text
+5 2 3
+0 2 3 5 2
+2 0 2 -1 4
+3 2 0 2 3
+5 -1 2 0 2
+2 4 3 2 0
+10 3 1 2 3
+9 3 3 4 5
+8 2 1 5
+```
+
+Sample Output
+```text
+4
+1 2 1
+2 3 1
+3 4 2
+4 5 2
+```
+
+In this solution:
+
+- channel `1` connects stations `{1,2,3}`, so the first client is served
+- channel `2` connects stations `{3,4,5}`, so the second client is served
+- stations `1` and `5` are not connected on a single channel, so the third client is not served
+
+Objective:
+- profit = `10 + 9 = 19`
+- cost = `2 + 2 + 2 + 2 = 8`
+- objective = `11`
+
+This may or may not be optimal.
+```

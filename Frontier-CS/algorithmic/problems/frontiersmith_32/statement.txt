@@ -1,0 +1,193 @@
+```markdown
+# Leapfront Garrisons
+
+## Problem
+
+The kingdom of Aster has many towns scattered across a mountainous frontier. Some cells are impassable cliffs, while the remaining cells are towns with strategic values.
+
+You may deploy any number of garrison columns. Each column follows a **strictly southward leap pattern**:
+
+- A column starts at any town.
+- It then visits a sequence of towns.
+- Between consecutive visited towns, it must make one legal leap.
+- A legal leap from `(r, c)` is to any of:
+  - `(r + R, c + C)`
+  - `(r + R, c - C)`
+  - `(r + C, c + R)`
+  - `(r + C, c - R)`
+- Coordinates must stay inside the grid, and the destination must be a town.
+- Rows must strictly increase at every leap, so a column never moves upward or stays on the same row.
+
+A town may be **visited by at most one column**.
+
+Each visited town acts as a local supply base. A town is considered **secured** if it is reachable from at least one visited town by a path of length at most `D` using only 4-neighbor moves (up, down, left, right) through towns. Cliffs block this local spread.
+
+You do **not** need to secure every town. Unsecured towns remain hostile and incur penalties.
+
+Your task is to output any feasible set of columns that minimizes the total campaign cost.
+
+---
+
+## Input
+
+The first line contains seven integers:
+
+`M N R C D S P`
+
+- `M`, `N`: grid dimensions
+- `R`, `C`: leap parameters
+- `D`: local supply radius
+- `S`: fixed deployment cost per column
+- `P`: cost per leap
+
+The next `M` lines each contain a string of length `N`:
+
+- `.` = town
+- `x` = cliff
+
+The next `M` lines each contain `N` integers `V[i][j]`:
+
+- If cell `(i, j)` is a town, then `1 <= V[i][j] <= 1000`
+- If cell `(i, j)` is a cliff, then `V[i][j] = 0`
+
+Rows and columns are 1-indexed.
+
+---
+
+## Output
+
+On the first line, output a single integer `K`: the number of columns.
+
+Then output `K` lines.  
+For each column, output:
+
+`L r1 c1 r2 c2 ... rL cL`
+
+where:
+
+- `L >= 1` is the number of visited towns in this column
+- `(r1, c1), ..., (rL, cL)` are the visited towns in order
+
+### Feasibility requirements
+
+Your output is feasible iff all of the following hold:
+
+1. Every listed coordinate is inside the grid and is a town.
+2. No town appears more than once in the entire output.
+3. For every consecutive pair in a column, the second town is reached by one legal leap from the first.
+4. The row index strictly increases at every leap.
+
+If the output is infeasible, the submission receives `0` score for that test case.
+
+You may output `K = 0`.
+
+---
+
+## Objective
+
+Let:
+
+- `K` = number of columns you output
+- `L_total` = total number of leaps across all columns  
+  (`L_total = sum(L_i - 1)`)
+
+A town is **secured** if it is within town-only 4-neighbor distance at most `D` from at least one visited town.
+
+Let `U` be the sum of values of all **unsecured** towns.
+
+The total campaign cost is:
+
+`Cost = U + S * K + P * L_total`
+
+Your goal is to **minimize** `Cost`.
+
+---
+
+## Scoring
+
+For each test case, let:
+
+- `C_you` = your cost
+- `C_base` = the cost of the following deterministic baseline solution
+
+### Baseline: Greedy Singleton Garrisons
+
+The baseline uses only columns of length `1`.
+
+1. Initially, no towns are secured.
+2. Repeatedly consider every town `t` that has not already been chosen as a singleton column.
+3. Let `gain(t)` be the total value of currently unsecured towns that would become secured if a singleton column were placed at `t`.
+4. If the maximum `gain(t) - S` is **positive**, choose the town with maximum `gain(t) - S`.
+   - Break ties by smaller row, then smaller column.
+5. Mark the towns secured by that singleton.
+6. Stop when no positive-gain singleton remains.
+
+The baseline cost is:
+
+`C_base = (sum of values of towns still unsecured) + S * (# chosen singleton columns)`
+
+Since all baseline columns have length `1`, they pay no leap cost.
+
+### Per-test score
+
+If your output is infeasible, the score for that test is `0`.
+
+Otherwise:
+
+`score = 1,000,000 * min(2, C_base / C_you)`
+
+### Final score
+
+The final score is the arithmetic mean of per-test scores over all test files.
+
+---
+
+## Constraints
+
+- `1 <= M, N <= 80`
+- `1 <= R, C <= 10`
+- `0 <= D <= 6`
+- `1 <= S, P <= 10^6`
+- At least one town exists in the grid
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+3 4 1 2 0 5 1
+....
+.x..
+....
+4 6 5 3
+2 0 7 1
+8 4 6 2
+```
+
+### Sample output
+```text
+1
+2 1 2 2 4
+```
+
+### Explanation
+
+The single column visits `(1, 2)` and `(2, 4)`, which is a legal leap of `(R, C) = (1, 2)`.
+
+Here `D = 0`, so only visited towns are secured. Their total value is `6 + 1 = 7`.
+
+The total value of all towns is `48`, so the unsecured value is `41`.
+
+- `K = 1`
+- `L_total = 1`
+
+Therefore:
+
+`Cost = 41 + 5 * 1 + 1 * 1 = 47`
+
+This sample output is only an example; it is not guaranteed to be optimal.
+```

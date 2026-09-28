@@ -1,0 +1,223 @@
+```markdown
+# Wear-Limited Modular Beacon Scheduling
+
+## Problem
+
+A legacy communication array contains `n` programmable beacons.  
+When beacon `i` is fired during a transmission window, it contributes an unsigned 64-bit value `b_i` to the emitted signature.
+
+If, during window `j`, you fire a set of beacons `S_j`, the emitted signature is
+
+\[
+y_j = \left(\sum_{i \in S_j} b_i \right) \bmod 2^{64}.
+\]
+
+There are `m` requested transmission windows.  
+For window `j`, the desired signature is `t_j`, its importance is `w_j`, and at most `\ell_j` beacons may be fired in that window.
+
+However, beacon `i` has limited lifetime: it may be used in at most `u_i` different windows over the whole schedule.
+
+Your task is to choose which beacons to fire in each window so that the emitted signatures are as close as possible to the requested ones on the 64-bit ring.
+
+### Circular error
+
+For a produced signature `y` and target `t`, define the circular error as the shorter distance on the ring of size `2^64`:
+
+\[
+d(y,t) = \min\left((y-t)\bmod 2^{64},\ (t-y)\bmod 2^{64}\right).
+\]
+
+Equivalently, if `delta = (y - t) mod 2^64`, then
+
+\[
+d(y,t) = \min(\delta,\ 2^{64}-\delta).
+\]
+
+This value is always between `0` and `2^63`.
+
+## Input
+
+The first line contains two integers:
+
+\[
+n\ m
+\]
+
+Then follow `n` lines, one per beacon:
+
+\[
+b_i\ u_i
+\]
+
+- `b_i` is the beacon's 64-bit contribution
+- `u_i` is the maximum number of windows in which beacon `i` may be used
+
+Then follow `m` lines, one per transmission window:
+
+\[
+t_j\ w_j\ \ell_j
+\]
+
+- `t_j` is the desired 64-bit signature
+- `w_j` is the importance weight of the window
+- `\ell_j` is the maximum number of beacons that may be fired in this window
+
+## Output
+
+Output exactly `m` lines.
+
+For window `j`, output one line in the form
+
+\[
+k\ i_1\ i_2\ \dots\ i_k
+\]
+
+where:
+
+- `0 <= k <= \ell_j`
+- `1 <= i_1 < i_2 < ... < i_k <= n`
+
+This means that in window `j` you fire beacons `i_1, i_2, ..., i_k`.
+
+### Feasibility requirements
+
+Your output is **feasible** iff all of the following hold:
+
+1. Each line has valid format.
+2. For every window `j`, the chosen indices are distinct and strictly increasing.
+3. For every window `j`, the number of chosen beacons satisfies `k <= \ell_j`.
+4. For every beacon `i`, the number of windows in which `i` appears is at most `u_i`.
+
+If your output is infeasible, your score for that test is `0`.
+
+An empty transmission is allowed by printing `0`.
+
+## Objective
+
+For each window `j`:
+
+1. Compute
+
+\[
+y_j = \left(\sum_{i \in S_j} b_i \right) \bmod 2^{64}
+\]
+
+2. Compute its circular error `d(y_j, t_j)`.
+
+The total penalty is
+
+\[
+P = \sum_{j=1}^{m} w_j \cdot d(y_j, t_j).
+\]
+
+Your goal is to **minimize** `P`.
+
+The judge uses exact integer arithmetic for all computations.
+
+## Scoring
+
+For each test file, let:
+
+- `P` = your total penalty
+- `B` = the baseline penalty defined below
+
+Your score for that test file is
+
+\[
+\text{score} = \min\left(200,\ 100 \cdot \frac{B+1}{P+1}\right).
+\]
+
+So:
+
+- matching the baseline gives score `100`
+- doing better than the baseline gives more than `100`
+- doing worse gives less than `100`
+- infeasible output gives `0`
+
+The overall score is the arithmetic mean of per-test scores.
+
+### Baseline
+
+The baseline is computed greedily in input order of windows.
+
+For each window `j`, among the following options:
+
+- the empty set
+- any singleton set `{i}` such that beacon `i` still has remaining lifetime and `\ell_j >= 1`
+
+the baseline chooses the option that minimizes `d(y_j, t_j)`.
+
+Tie-breaking for the baseline:
+
+1. smaller circular error
+2. fewer chosen beacons
+3. lexicographically smaller index list
+
+After choosing a singleton `{i}`, the remaining lifetime of beacon `i` decreases by `1`.
+
+This baseline is intentionally simple and is provided so every contestant can reproduce the reference score.
+
+## Constraints
+
+- `1 <= n <= 120`
+- `1 <= m <= 500`
+- `1 <= b_i < 2^64`
+- `1 <= u_i <= m`
+- `0 <= t_j < 2^64`
+- `1 <= w_j <= 10^6`
+- `0 <= \ell_j <= 12`
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Input
+```text
+4 3
+10 1
+23 2
+40 1
+70 2
+33 5 2
+80 3 1
+63 4 2
+```
+
+### Output
+```text
+2 1 2
+1 4
+2 2 3
+```
+
+### Explanation
+
+- Window 1: use beacons `1` and `2`  
+  `y = (10 + 23) mod 2^64 = 33`, so error is `0`
+- Window 2: use beacon `4`  
+  `y = 70`, target is `80`, so error is `10`
+- Window 3: use beacons `2` and `3`  
+  `y = 23 + 40 = 63`, so error is `0`
+
+Beacon usages are:
+
+- beacon 1: `1` time
+- beacon 2: `2` times
+- beacon 3: `1` time
+- beacon 4: `1` time
+
+which respects lifetimes `(1, 2, 1, 2)`.
+
+Total penalty:
+
+\[
+P = 5 \cdot 0 + 3 \cdot 10 + 4 \cdot 0 = 30.
+\]
+
+The baseline for this instance has penalty `108`, so this output scores
+
+\[
+\min\left(200,\ 100 \cdot \frac{108+1}{30+1}\right) = 200.
+\]
+
+```

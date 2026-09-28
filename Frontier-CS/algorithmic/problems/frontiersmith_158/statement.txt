@@ -1,0 +1,223 @@
+# Cold-Start Recovery Scheduling
+
+## Problem
+
+A mining workstation has just recovered from an accidental power outage.
+
+There are `n` tasks waiting in the original queue order `1..n`, and `k` CPUs are available to resume work.  
+Task `i` has a unique urgency `a_i`; the sequence `a` is guaranteed to be a permutation of `1..n` (larger value = more urgent).
+
+You must assign every task to exactly one CPU.
+
+Each CPU processes **its assigned tasks in increasing index order**.  
+Unlike a simple partition, a CPU may receive multiple disjoint batches from the queue.
+
+Your assignment creates three kinds of cost:
+
+1. **Cold-start cost**  
+   A **run** is a maximal contiguous segment of tasks assigned to the same CPU.  
+   Every run costs `R`.
+
+2. **Transfer cost**  
+   Some pairs of tasks share cached data.  
+   For each given pair `(u, v, w)`, if tasks `u` and `v` are assigned to **different** CPUs, you pay `w`.
+
+3. **Urgency regret cost**  
+   If two tasks `i < j` are assigned to the same CPU, then task `i` is executed before task `j`.  
+   If `a_i < a_j`, then a less urgent task delays a more urgent one, causing regret cost  
+   `a_j - a_i`.
+
+Your goal is to minimize the total cost.
+
+This is an optimization challenge: any feasible assignment is accepted, and better assignments receive higher scores.
+
+---
+
+## Input
+
+The input describes one test instance.
+
+- The first line contains four integers  
+  `n k m R`
+  - `n`: number of tasks
+  - `k`: number of CPUs
+  - `m`: number of data-sharing pairs
+  - `R`: cost of one run
+
+- The second line contains `n` integers  
+  `a_1 a_2 ... a_n`  
+  where `a` is a permutation of `1..n`.
+
+- The next `m` lines each contain three integers  
+  `u v w`  
+  meaning that separating tasks `u` and `v` onto different CPUs costs `w`.
+
+### Guarantees
+
+- `1 <= u < v <= n`
+- `1 <= w`
+- The same pair may appear multiple times; each occurrence is counted separately.
+
+---
+
+## Output
+
+Output one line with `n` integers:
+
+`x_1 x_2 ... x_n`
+
+where `x_i` is the CPU assigned to task `i`.
+
+### Feasibility requirements
+
+- `1 <= x_i <= k` for every `i`
+
+Any output violating these rules is infeasible and receives score `0` on that test.
+
+---
+
+## Objective
+
+For an assignment `x`:
+
+### 1. Run count
+A run starts at position `i` if:
+
+- `i = 1`, or
+- `x_i != x_{i-1}`
+
+Let
+
+`runs = number of such positions`
+
+Then
+
+`cold_start_cost = R * runs`
+
+### 2. Transfer cost
+For each pair `(u, v, w)` from the input:
+
+- if `x_u = x_v`, contribution is `0`
+- otherwise, contribution is `w`
+
+Let the sum over all pairs be `transfer_cost`.
+
+### 3. Urgency regret cost
+For every pair `i < j` with `x_i = x_j`:
+
+- if `a_i < a_j`, contribution is `a_j - a_i`
+- otherwise, contribution is `0`
+
+Let the sum over all such pairs be `regret_cost`.
+
+### Total cost
+Your objective value is
+
+`C = cold_start_cost + transfer_cost + regret_cost`
+
+Lower is better.
+
+All computations use 64-bit signed integers.
+
+---
+
+## Scoring
+
+Each official test file is scored independently.
+
+### Baseline solution
+Define the baseline assignment as follows:
+
+- Let `q = floor(n / k)` and `r = n mod k`.
+- Split the task sequence into `k` contiguous blocks in order.
+- The first `r` blocks have size `q + 1`.
+- The remaining `k - r` blocks have size `q`.
+- Assign block `1` to CPU `1`, block `2` to CPU `2`, ..., block `k` to CPU `k`.
+
+Let the baseline cost be `C_base`.
+
+### Per-test score
+If your output is infeasible, the score for that test is `0`.
+
+Otherwise, let your cost be `C_you`. The score is
+
+`score = round(1,000,000 * clamp(C_base / C_you, 0, 2))`
+
+where
+
+`clamp(t, 0, 2) = min(2, max(0, t))`
+
+and if `C_you = 0`, use `clamp(...) = 2`.
+
+So:
+
+- matching the baseline gives about `1,000,000`
+- improving on the baseline gives more than `1,000,000`
+- doing worse gives less than `1,000,000`
+- per-test score is capped at `2,000,000`
+
+### Total score
+Your submission’s total score is the sum of its per-test scores over all official test files.
+
+---
+
+## Constraints
+
+- `1 <= n <= 80000`
+- `1 <= k <= 30`
+- `0 <= m <= 250000`
+- `1 <= R <= 10^9`
+- `a` is a permutation of `1..n`
+- `1 <= w <= 10^9`
+
+- Time limit: 2 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Sample input
+```text
+6 2 3 4
+3 1 6 2 5 4
+1 3 7
+2 4 5
+5 6 2
+```
+
+### Sample output
+```text
+1 1 1 2 2 2
+```
+
+### Explanation
+The assignment creates two runs:
+
+- tasks `1..3` on CPU `1`
+- tasks `4..6` on CPU `2`
+
+So the cold-start cost is `2 * 4 = 8`.
+
+Transfer costs:
+
+- `(1,3,7)` stays on one CPU: `0`
+- `(2,4,5)` is split: `5`
+- `(5,6,2)` stays on one CPU: `0`
+
+So transfer cost is `5`.
+
+Urgency regret:
+
+- On CPU `1`, priorities are `[3,1,6]`  
+  regret = `(6-3) + (6-1) = 8`
+- On CPU `2`, priorities are `[2,5,4]`  
+  regret = `(5-2) + (4-2) = 5`
+
+So total regret cost is `13`.
+
+Total cost:
+
+`C = 8 + 5 + 13 = 26`
+
+For this instance, the sample output is exactly the baseline assignment, so its per-test score would be `1,000,000`.

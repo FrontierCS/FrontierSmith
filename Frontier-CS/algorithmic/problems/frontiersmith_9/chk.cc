@@ -2,126 +2,169 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-// Count overlapping occurrences of pattern t in text x
-int countOccur(const string &t, const string &x) {
-    if (t.empty()) return 0;
-    int cnt = 0;
-    size_t pos = 0;
-    while ((pos = x.find(t, pos)) != string::npos) {
-        ++cnt;
-        ++pos;
-    }
-    return cnt;
-}
-
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     registerTestlibCmd(argc, argv);
 
-    // Read input
-    int n, q;
-    n = inf.readInt();
-    q = inf.readInt();
+    // ---- Read problem input from inf ----
+    int n = inf.readInt();
+    int m = inf.readInt();
+    int D = inf.readInt();
+    int A = inf.readInt();
+    long long B = inf.readLong();
 
-    vector<string> s(n + 1);
-    for (int i = 1; i <= n; i++) {
-        s[i] = inf.readToken();
+    vector<int> eu(m+1), ev(m+1);
+    vector<long long> ec(m+1), ed(m+1);
+    for (int i = 1; i <= m; i++) {
+        eu[i] = inf.readInt();
+        ev[i] = inf.readInt();
+        ec[i] = inf.readLong();
+        ed[i] = inf.readLong();
     }
 
-    struct Query { int l, r, k; };
-    vector<Query> queries(q);
-    for (int i = 0; i < q; i++) {
-        queries[i].l = inf.readInt();
-        queries[i].r = inf.readInt();
-        queries[i].k = inf.readInt();
+    vector<long long> L(D+1);
+    for (int t = 1; t <= D; t++) {
+        L[t] = inf.readLong();
     }
 
-    // Read participant permutation — do NOT call ouf.readEof() after;
-    // solutions may output a trailing newline which testlib treats as non-EOF.
-    vector<int> p(n + 1);
-    for (int i = 1; i <= n; i++) {
-        p[i] = ouf.readInt(1, n, "permutation element out of range");
+    vector<int> ah(A+1), aa(A+1), ab(A+1);
+    vector<long long> aw(A+1);
+    for (int j = 1; j <= A; j++) {
+        ah[j] = inf.readInt();
+        aa[j] = inf.readInt();
+        ab[j] = inf.readInt();
+        aw[j] = inf.readLong();
     }
 
-    // Validate permutation (check for duplicates)
-    vector<int> seen(n + 1, 0);
-    for (int i = 1; i <= n; i++) {
-        if (seen[p[i]]) {
-            quitf(_wa, "permutation has duplicate value %d at position %d", p[i], i);
+    // ---- Compute baseline damage ----
+    // Baseline: build no roads, stay at house 1 every day.
+    // House 1 is always visited. Attacks at house 1 are cleared.
+    long long baseDamage = 0;
+    for (int j = 1; j <= A; j++) {
+        if (ah[j] != 1) {
+            baseDamage += aw[j];
         }
-        seen[p[i]] = 1;
     }
 
-    // Collect which k-values actually appear in queries to avoid O(n) per pair
-    vector<bool> usedK(n + 1, false);
-    for (int i = 0; i < q; i++) {
-        usedK[queries[i].k] = true;
-    }
-    vector<int> usedKList;
-    for (int k = 1; k <= n; k++) {
-        if (usedK[k]) usedKList.push_back(k);
+    // ---- Read participant output from ouf ----
+
+    // Line 1: built roads
+    int k = ouf.readInt();
+    if (k < 0 || k > m) {
+        quitf(_wa, "Invalid k=%d (must be 0..%d)", k, m);
     }
 
-    // computeCost: given a permutation perm (1-indexed positions 1..n),
-    // compute total candy cost over all queries.
-    // prefix[i][k] = sum of occur(s[k], s[perm[j]]+s[perm[j+1]]) for j=1..i
-    // We only compute for k in usedKList.
-    auto computeCost = [&](const vector<int> &perm) -> long long {
-        // Map each used k to a compact index
-        int nk = (int)usedKList.size();
-        // prefix[i][ki]: cumulative cost for pairs 1..i, ki-th used pattern
-        // i in [0..n-1], ki in [0..nk-1]
-        // We use a flat array for speed: prefix[i * nk + ki]
-        vector<long long> prefix((n) * nk, 0LL);
+    vector<bool> built(m+1, false);
+    long long totalBuildCost = 0;
 
-        for (int i = 1; i <= n - 1; i++) {
-            string merged = s[perm[i]] + s[perm[i + 1]];
-            for (int ki = 0; ki < nk; ki++) {
-                int k = usedKList[ki];
-                long long prev = (i >= 2) ? prefix[(i - 1) * nk + ki] : 0LL;
-                prefix[i * nk + ki] = prev + countOccur(s[k], merged);
+    for (int i = 0; i < k; i++) {
+        int e = ouf.readInt();
+        if (e < 1 || e > m) {
+            quitf(_wa, "Road index %d out of range [1,%d]", e, m);
+        }
+        if (built[e]) {
+            quitf(_wa, "Duplicate road index %d in built list", e);
+        }
+        built[e] = true;
+        totalBuildCost += ec[e];
+    }
+
+    if (totalBuildCost > B) {
+        quitf(_wa, "Total build cost %lld exceeds budget %lld", totalBuildCost, B);
+    }
+
+    // Lines 2..D+1: daily patrols
+    // visitedSet[t] = set of houses visited on day t
+    // House 1 is always visited (start/end)
+    vector<set<int>> visitedSet(D+1);
+    for (int t = 1; t <= D; t++) {
+        visitedSet[t].insert(1);
+    }
+
+    for (int t = 1; t <= D; t++) {
+        int p = ouf.readInt();
+        if (p < 0) {
+            quitf(_wa, "Day %d: negative number of traversals %d", t, p);
+        }
+
+        int curHouse = 1;
+        long long timeUsed = 0;
+
+        for (int s = 0; s < p; s++) {
+            int f = ouf.readInt();
+            if (f < 1 || f > m) {
+                quitf(_wa, "Day %d traversal %d: road index %d out of range [1,%d]", t, s+1, f, m);
+            }
+            if (!built[f]) {
+                quitf(_wa, "Day %d traversal %d: road %d was not built", t, s+1, f);
+            }
+            int nextHouse = -1;
+            if (eu[f] == curHouse) {
+                nextHouse = ev[f];
+            } else if (ev[f] == curHouse) {
+                nextHouse = eu[f];
+            } else {
+                quitf(_wa, "Day %d traversal %d: road %d (connects %d-%d) not incident to current house %d",
+                      t, s+1, f, eu[f], ev[f], curHouse);
+            }
+            timeUsed += ed[f];
+            curHouse = nextHouse;
+            visitedSet[t].insert(curHouse);
+        }
+
+        if (curHouse != 1) {
+            quitf(_wa, "Day %d: patrol does not return to house 1 (ended at house %d)", t, curHouse);
+        }
+        if (timeUsed > L[t]) {
+            quitf(_wa, "Day %d: total travel time %lld exceeds limit %lld", t, timeUsed, L[t]);
+        }
+    }
+
+    // Ensure no trailing data
+    if (!ouf.seekEof()) {
+        quitf(_wa, "Extra data found after the last patrol line");
+    }
+
+    // ---- Compute participant's damage ----
+    long long yourDamage = 0;
+    for (int j = 1; j <= A; j++) {
+        bool cleared = false;
+        for (int t = aa[j]; t <= ab[j] && !cleared; t++) {
+            if (visitedSet[t].count(ah[j])) {
+                cleared = true;
             }
         }
-
-        // Build a map from k to ki index for fast lookup
-        vector<int> kToIdx(n + 1, -1);
-        for (int ki = 0; ki < nk; ki++) {
-            kToIdx[usedKList[ki]] = ki;
+        if (!cleared) {
+            yourDamage += aw[j];
         }
+    }
 
-        long long total = 0;
-        for (auto &qr : queries) {
-            int l = qr.l, r = qr.r, k = qr.k;
-            int ki = kToIdx[k];
-            if (ki == -1) continue; // shouldn't happen
-            // pairs from l to r-1
-            // sum = prefix[(r-1)*nk + ki] - prefix[(l-1)*nk + ki]
-            // but prefix[0..] = 0 for i=0 (no pairs), pair i uses index i in 1..n-1
-            long long hi = (r - 1 >= 1) ? prefix[(r - 1) * nk + ki] : 0LL;
-            long long lo = (l - 1 >= 1) ? prefix[(l - 1) * nk + ki] : 0LL;
-            total += (hi - lo);
-        }
-        return total;
-    };
+    // ---- Compute score ----
+    // Statement formula:
+    //   Score = floor(1,000,000 * min(10, (BaseDamage+1) / (YourDamage+1)))
+    //
+    // For quitp, we need a ratio in [0,1].
+    // ratio_raw = min(10.0, (baseDamage+1) / (yourDamage+1))  [range: 0..10]
+    // ratio     = ratio_raw / 10.0                             [range: 0..1]
+    //
+    // The per-file integer score (for display) is:
+    //   floor(1,000,000 * ratio_raw) = floor(10,000,000 * ratio)
+    //
+    // The "Ratio:" tag in the message must equal the quitp argument (ratio in [0,1]).
 
-    // Baseline: identity permutation
-    vector<int> base(n + 1);
-    for (int i = 1; i <= n; i++) base[i] = i;
+    double ratio_raw = (double)(baseDamage + 1) / (double)(yourDamage + 1);
+    if (ratio_raw > 10.0) ratio_raw = 10.0;
+    if (ratio_raw < 0.0) ratio_raw = 0.0;
 
-    long long Y = computeCost(p);
-    long long B = computeCost(base);
+    double ratio = ratio_raw / 10.0;  // in [0, 1]
 
-    // Score formula from problem:
-    //   score = 1000 * min(2, (B+1)/(Y+1))
-    // We report ratio in [0,1] for quitp:
-    //   ratio = score / 2000 = min(2, (B+1)/(Y+1)) / 2
-    double rawRatio = (double)(B + 1) / (double)(Y + 1);
-    double clamped = min(2.0, rawRatio);
-    double displayScore = 1000.0 * clamped;
-    double scoreRatio = clamped / 2.0;
-    if (scoreRatio < 0.0) scoreRatio = 0.0;
-    if (scoreRatio > 1.0) scoreRatio = 1.0;
+    // Integer score as stated: floor(1,000,000 * min(10, ...))
+    long long integerScore = (long long)floor(1000000.0 * ratio_raw);
 
-    quitp(scoreRatio, "Y=%lld B=%lld score=%.6f Ratio: %.9f", Y, B, displayScore, scoreRatio);
+    // quitp passes ratio (in [0,1]) to the judge.
+    // The message contains "Ratio: <ratio>" which the judge reads.
+    quitp(ratio,
+          "Ratio: %.9f | BaseDamage: %lld | YourDamage: %lld | Score: %lld / 10000000",
+          ratio, baseDamage, yourDamage, integerScore);
 
     return 0;
 }

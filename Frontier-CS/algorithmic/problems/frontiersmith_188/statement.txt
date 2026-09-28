@@ -1,0 +1,175 @@
+```markdown
+# Toroidal Conveyor Upgrade
+
+## Problem
+A factory floor is organized as a **toroidal grid**: it has `H` circular conveyor lanes, each lane has `W` positions, and both dimensions wrap around.
+
+For each cell `(r, c)` you know its current safety level `a[r][c]`.
+
+You may purchase some **upgrade plans**.  
+Each plan increases all cells in a wrapped rectangular region by a fixed amount.
+
+You also have a list of **service contracts**.  
+A contract is fulfilled if, after applying your chosen upgrades, **every** cell in its wrapped rectangular region has safety level at least a required threshold. Each fulfilled contract gives a reward.
+
+Your task is to choose which upgrade plans to buy, under both a total budget limit and a limit on the number of plans, to maximize total reward.
+
+### Toroidal rectangles
+Rows are numbered `0 .. H-1`, columns `0 .. W-1`.
+
+A rectangle `(top, bottom, left, right)` contains:
+- all rows from `top` to `bottom`, wrapping modulo `H` if `top > bottom`;
+- all columns from `left` to `right`, wrapping modulo `W` if `left > right`.
+
+So wrapping may happen independently in rows, columns, both, or neither.
+
+### Upgrade plans
+Plan `j` is described by:
+- a toroidal rectangle,
+- an increase value `v_j > 0`,
+- a cost `c_j > 0`.
+
+If selected, it adds `v_j` to every cell in its rectangle.  
+Each plan may be selected **at most once**.
+
+### Service contracts
+Contract `k` is described by:
+- a toroidal rectangle,
+- a required minimum safety `x_k`,
+- a reward `w_k > 0`.
+
+It is fulfilled if the minimum final value on that rectangle is at least `x_k`.
+
+This is an optimization challenge: exact optimal solutions are not expected.
+
+## Input
+The input contains one test instance.
+
+- First line: two integers `H W`
+- Next `H` lines: `W` integers each, the initial grid `a`
+- Next line: two integers `P Q` — number of upgrade plans and number of contracts
+- Next line: two integers `B K` — total budget and maximum number of selected plans
+- Next `P` lines:  
+  `top bottom left right v c`
+- Next `Q` lines:  
+  `top bottom left right x w`
+
+All indices are `0`-based.
+
+## Output
+Output any feasible set of selected upgrade plans.
+
+- First line: integer `s` — number of selected plans
+- Second line: `s` distinct integers — the selected plan indices in any order
+
+If `s = 0`, the second line may be empty.
+
+A submission is **feasible** iff:
+- `0 <= s <= K`
+- all indices are distinct and in `[0, P-1]`
+- the sum of costs of selected plans is at most `B`
+
+If the output is infeasible, the score for that test is `0`.
+
+## Objective
+Let `S` be your selected set of plans.
+
+The final safety level of cell `(r, c)` is:
+
+`f[r][c] = a[r][c] + sum(v_j over all selected plans j whose rectangle contains (r, c))`
+
+A contract `k` is fulfilled if:
+
+`min(f[r][c] over all cells (r, c) in contract k rectangle) >= x_k`
+
+Your objective value is:
+
+`VALUE(S) = sum(w_k over all fulfilled contracts k)`
+
+You must **maximize** `VALUE(S)`.
+
+## Scoring
+For each test instance:
+
+- `BASE` = objective value of the empty selection (`S = ∅`)
+- `MAXPOSSIBLE` = sum of rewards of all contracts
+
+The normalized score is:
+
+- if `MAXPOSSIBLE = BASE`, then `norm = 1`
+- otherwise  
+  `norm = clamp((VALUE(S) - BASE) / (MAXPOSSIBLE - BASE), 0, 1)`
+
+The test score is:
+
+`score = 1,000,000 * norm`
+
+The final contest score is the average of test scores over all official test instances.
+
+Thus:
+- matching the empty-selection baseline gives score `0`
+- fulfilling every contract gives score `1,000,000`
+- partial improvement earns proportionally partial credit
+
+## Constraints
+- `1 <= H, W`
+- `H * W <= 200000`
+- `0 <= P, Q <= 200000`
+- `0 <= K <= P`
+- `0 <= B <= 10^14`
+- `-10^6 <= a[r][c] <= 10^6`
+- `1 <= v_j <= 10^6`
+- `1 <= c_j <= 10^9`
+- `-10^6 <= x_k <= 10^12`
+- `1 <= w_k <= 10^9`
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+Input
+```text
+3 4
+0 0 0 0
+0 0 0 0
+0 0 0 0
+4 3
+7 2
+0 1 0 1 2 4
+1 2 2 3 1 2
+2 0 3 0 1 3
+0 2 0 3 1 7
+0 1 0 1 2 10
+1 2 2 3 1 4
+0 2 0 3 1 7
+```
+
+Output
+```text
+2
+0 1
+```
+
+Brief explanation:
+- Plan `0` raises the top-left `2 x 2` block by `2`
+- Plan `1` raises the bottom-right `2 x 2` block by `1`
+- Their total cost is `4 + 2 = 6 <= 7`, and `2 <= K`
+
+This fulfills:
+- contract `0` (reward `10`)
+- contract `1` (reward `4`)
+
+Contract `2` requires the entire toroidal grid to be at least `1`, which is not achieved.
+
+So `VALUE = 14`.
+
+The empty selection fulfills no contract, so `BASE = 0`.  
+Total reward is `10 + 4 + 7 = 21`, so:
+
+`norm = 14 / 21 = 2/3`
+
+and the test score would be approximately:
+
+`666666.67`
+```

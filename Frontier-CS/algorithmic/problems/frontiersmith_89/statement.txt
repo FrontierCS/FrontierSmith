@@ -1,0 +1,213 @@
+```markdown
+# Smart Toll Retuning
+
+## Problem
+Farzville is testing a new family of **smart toll controllers**. Each toll road can run under one of several certified plans. Changing a road’s plan costs money, but it may change the cheapest routes used by commuters.
+
+The city has `n` junctions and `e` bidirectional toll roads.  
+Road `i` connects junctions `x_i` and `y_i`.
+
+For each road, there are **3 possible toll plans**:
+
+- **Plan 0**: the default plan, free to keep.
+- **Plan 1**: optional retrofit.
+- **Plan 2**: optional retrofit.
+
+If road `i` uses plan `p`, then:
+
+- traveling from `x_i` to `y_i` costs `r_{i,p}`
+- traveling from `y_i` to `x_i` costs `1000 - r_{i,p}`
+
+It is guaranteed that all `r_{i,p}` satisfy `1 <= r_{i,p} <= 999`, so every directed toll is positive.
+
+You are also given `q` commuter groups.  
+Group `j` has:
+
+- origin `s_j`
+- destination `t_j`
+- weight `w_j`
+- a set of acceptable last digits `D_j ⊆ {0,1,...,9}`
+
+After you choose a plan for each road, each commuter group is considered **satisfied** if:
+
+1. `t_j` is reachable from `s_j`, and
+2. the **minimum possible total toll** from `s_j` to `t_j` ends in a digit belonging to `D_j`
+
+Your task is to choose road plans under a total retrofit budget `B` to maximize the total weight of satisfied commuter groups.
+
+---
+
+## Input
+The first line contains four integers:
+
+`n e q B`
+
+- `n`: number of junctions
+- `e`: number of roads
+- `q`: number of commuter groups
+- `B`: total retrofit budget
+
+The next `e` lines each describe one road:
+
+`x_i y_i r0_i r1_i c1_i r2_i c2_i`
+
+meaning:
+
+- the road connects `x_i` and `y_i`
+- under **plan 0**, the toll from `x_i` to `y_i` is `r0_i`
+- under **plan 1**, the toll from `x_i` to `y_i` is `r1_i` and changing to this plan costs `c1_i`
+- under **plan 2**, the toll from `x_i` to `y_i` is `r2_i` and changing to this plan costs `c2_i`
+
+In every case, the reverse-direction toll is `1000 - r`.
+
+The next `q` lines each describe one commuter group:
+
+`s_j t_j w_j mask_j`
+
+- `s_j`, `t_j`: origin and destination
+- `w_j`: weight of the group
+- `mask_j`: a binary string of length 10
+
+For `mask_j`, character `d` (`0`-indexed from left to right) is:
+
+- `'1'` if digit `d` is acceptable
+- `'0'` otherwise
+
+For example, `0010001000` means digits `2` and `6` are acceptable.
+
+---
+
+## Output
+Print a solution in the following format:
+
+- First line: an integer `k` — the number of roads whose plan is changed from plan `0`
+- Next `k` lines: two integers `i p`
+
+This means road `i` uses plan `p`, where `p` must be `1` or `2`.
+
+All roads not listed use plan `0`.
+
+### Feasibility requirements
+Your output is **feasible** if and only if all of the following hold:
+
+- `0 <= k <= e`
+- every listed road index `i` is distinct and satisfies `1 <= i <= e`
+- every listed plan `p` is either `1` or `2`
+- the total retrofit cost does not exceed `B`
+
+If the output is infeasible, the objective value for that test case is `0`.
+
+---
+
+## Objective
+Let `plan(i)` be the chosen plan for road `i`.
+
+This defines a directed weighted graph where road `i` contributes:
+
+- `x_i -> y_i` with cost `r_{i,plan(i)}`
+- `y_i -> x_i` with cost `1000 - r_{i,plan(i)}`
+
+For each commuter group `j`, let `dist_j` be the minimum total toll from `s_j` to `t_j` in this graph.
+
+Group `j` contributes:
+
+- `w_j` if `dist_j` is finite and `dist_j mod 10` is acceptable according to `mask_j`
+- `0` otherwise
+
+Your objective value is:
+
+`OBJ = sum of weights of all satisfied commuter groups`
+
+You must **maximize** `OBJ`.
+
+---
+
+## Scoring
+For each test case:
+
+- Let `W = sum_j w_j` be the total weight of all commuter groups.
+- Let `BASE` be the objective value of the **baseline solution** that changes no roads (all roads remain on plan `0`).
+- Let `SUB` be your objective value.
+
+The score for the test case is:
+
+- `1,000,000` if `W = BASE`
+- otherwise  
+  `round(1,000,000 * clamp((SUB - BASE) / (W - BASE), 0, 1))`
+
+where `clamp(x, 0, 1) = min(1, max(0, x))`.
+
+The total score is the sum of test-case scores.
+
+### Baseline
+The baseline is the solution:
+
+- `k = 0`
+- no changed roads
+
+This is always feasible and can be implemented by any contestant.
+
+---
+
+## Constraints
+- `1 <= n <= 100000`
+- `1 <= e <= 200000`
+- `1 <= q <= 200000`
+- `1 <= x_i, y_i <= n`
+- `x_i != y_i`
+- `1 <= r0_i, r1_i, r2_i <= 999`
+- `0 <= c1_i, c2_i <= 10^9`
+- `0 <= B <= 10^14`
+- `1 <= s_j, t_j <= n`
+- `s_j != t_j`
+- `1 <= w_j <= 10^9`
+- `mask_j` has length exactly `10` and contains at least one `'1'`
+- the number of **distinct origins** among all commuter groups is at most `100`
+
+Use 64-bit integers for all distance, budget, and score-related computations.
+
+- Time limit: 8 seconds
+- Memory limit: 1024 MB
+
+---
+
+## Example
+### Sample Input
+```text
+3 3 4 2
+1 2 256 251 3 166 5
+2 3 411 406 2 421 4
+1 3 602 607 2 512 5
+1 3 10 0000000100
+2 1 8 0000100000
+3 2 6 0000000001
+1 2 7 0100000000
+```
+
+### Sample Output
+```text
+1
+3 1
+```
+
+### Explanation
+Only road `3` is changed, to plan `1`, costing `2`, which is within budget.
+
+Under the baseline (`k = 0`):
+
+- shortest `1 -> 3` cost is `602`, ending in `2` → not satisfied
+- shortest `2 -> 1` cost is `744`, ending in `4` → satisfied
+- shortest `3 -> 2` cost is `589`, ending in `9` → satisfied
+- shortest `1 -> 2` cost is `256`, ending in `6` → not satisfied
+
+So `BASE = 8 + 6 = 14`.
+
+With the sample output:
+
+- road `3` forward toll becomes `607`, so the shortest `1 -> 3` cost is now `607`, ending in `7` → satisfied
+- the other three groups keep the same satisfaction status
+
+Thus `SUB = 10 + 8 + 6 = 24`.
+
+Total request weight is `W = 10 + 8 + 6 + 7 = 31`, so the test-case score is based on improving from `14` toward `31`.
+```

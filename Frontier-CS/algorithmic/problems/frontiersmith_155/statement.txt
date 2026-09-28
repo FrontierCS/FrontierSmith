@@ -1,0 +1,206 @@
+```markdown
+# Adaptive XOR Decoder Layout
+
+## Problem
+
+You are given a stream of `n` telemetry packets. The raw value of packet `i` is a non-negative integer `a_i`.
+
+Your decoder can maintain up to `k` decoding modes.  
+Each mode `t` is defined by a `B`-bit XOR mask `x_t`, where `0 <= x_t < 2^B`.
+
+For every packet `i`, you choose one mode `c_i` and decode
+
+\[
+b_i = a_i \oplus x_{c_i}.
+\]
+
+The decoded stream should be as ordered as possible, but changing modes frequently is expensive, and complicated masks consume resources.
+
+Your task is to output any feasible set of modes and packet-to-mode assignments.
+
+This is an **optimization problem**: all feasible outputs are accepted, but better outputs receive higher scores.
+
+### Cost components
+
+For a decoded array `b` and mode assignment array `c`:
+
+1. **Disorder cost**  
+   An inversion is a pair `(i, j)` such that `1 <= i < j <= n` and `b_i > b_j`.  
+   Let `inv(b)` be the number of inversions in `b`.
+
+2. **Switch cost**  
+   Let
+
+   \[
+   sw(c) = |\{ i \mid 2 \le i \le n,\ c_i \ne c_{i-1} \}|.
+   \]
+
+3. **Mask complexity cost**  
+   Let
+
+   \[
+   comp(x) = \sum_{t=1}^{q} \operatorname{popcount}(x_t),
+   \]
+
+   where `q` is the number of modes you actually output.
+
+4. **Mode activation cost**  
+   Using `q` modes costs `q`.
+
+The total cost is
+
+\[
+C = inv(b) + \lambda \cdot sw(c) + \mu \cdot comp(x) + \nu \cdot q.
+\]
+
+Your goal is to **minimize** `C`.
+
+## Input
+
+The input contains a single test instance.
+
+- First line: four integers `n`, `k`, `B`
+- Second line: three integers `lambda`, `mu`, `nu`
+- Third line: `n` integers `a_1, a_2, ..., a_n`
+
+### Meaning
+
+- `n` — number of packets
+- `k` — maximum number of modes you may use
+- `B` — masks are `B`-bit integers
+- `lambda`, `mu`, `nu` — non-negative cost coefficients
+
+## Output
+
+Output any feasible solution in the following format:
+
+- First line: one integer `q` (`1 <= q <= k`) — the number of modes you use
+- Second line: `q` integers `x_1, x_2, ..., x_q` — the XOR masks
+- Third line: `n` integers `c_1, c_2, ..., c_n` — the chosen mode for each packet
+
+### Feasibility requirements
+
+Your output is feasible iff:
+
+- `1 <= q <= k`
+- for every `t`, `0 <= x_t < 2^B`
+- for every `i`, `1 <= c_i <= q`
+
+Then the judge computes `b_i = a_i XOR x_{c_i}` and evaluates the total cost `C`.
+
+If your output is infeasible, your score for the test is `0`.
+
+## Objective
+
+Minimize
+
+\[
+C = inv(b) + \lambda \cdot sw(c) + \mu \cdot comp(x) + \nu \cdot q.
+\]
+
+Where:
+
+- `inv(b)` = number of inversions in the decoded array `b`
+- `sw(c)` = number of adjacent mode switches
+- `comp(x)` = total number of set bits across all used masks
+- `q` = number of used modes
+
+All computations use 64-bit signed integers.
+
+## Scoring
+
+For each test, define the **baseline solution** as:
+
+- `q = 1`
+- `x_1 = 0`
+- `c_i = 1` for all `i`
+
+So the baseline keeps the stream unchanged and uses a single zero mask.
+
+Let:
+
+- `C_base` = total cost of the baseline solution
+- `C_sub` = total cost of your submitted solution
+
+Your score for the test is
+
+\[
+\text{score} =
+\left\lfloor
+10^6 \cdot \min\left(2,\ \frac{C_{base}+1}{C_{sub}+1}\right)
+\right\rfloor.
+\]
+
+Properties:
+
+- Baseline gets exactly `1,000,000` points.
+- Better-than-baseline solutions get more than `1,000,000` points.
+- Much worse solutions get fewer points.
+- The per-test score is capped at `2,000,000`.
+
+If there are multiple hidden tests, the final score is the sum of per-test scores.
+
+## Constraints
+
+- `1 <= n <= 300000`
+- `1 <= k <= 30`
+- `1 <= B <= 30`
+- `0 <= a_i < 2^B`
+- `0 <= lambda, mu, nu <= 10^9`
+
+## Example
+
+### Input
+```text
+5 2 3
+1 0 0
+4 6 1 3 0
+```
+
+### Output
+```text
+2
+4 0
+1 1 2 2 2
+```
+
+### Explanation
+
+The two masks are:
+
+- `x_1 = 4`
+- `x_2 = 0`
+
+Assignments:
+
+- packets `1,2` use mode `1`
+- packets `3,4,5` use mode `2`
+
+So the decoded array is
+
+- `b = [4 xor 4, 6 xor 4, 1 xor 0, 3 xor 0, 0 xor 0]`
+- `b = [0, 2, 1, 3, 0]`
+
+Its inversion count is `4`:
+- `(2,3)`, `(2,5)`, `(3,5)`, `(4,5)`
+
+There is `1` mode switch, at position `3`.
+
+Since `mu = 0` and `nu = 0`, the total cost is
+
+\[
+C = 4 + 1 \cdot 1 + 0 + 0 = 5.
+\]
+
+The baseline uses one zero mask, so `b = [4,6,1,3,0]`, which has `8` inversions and total cost `8`.
+
+Therefore the sample output scores
+
+\[
+\left\lfloor 10^6 \cdot \frac{8+1}{5+1} \right\rfloor
+=
+1{,}500{,}000.
+\]
+
+The sample is only one feasible submission; it is not guaranteed to be optimal.
+```

@@ -1,0 +1,153 @@
+```markdown
+# Festival Boulevard Layout
+
+## Problem
+
+A festival has `n` booths that must be placed in a single straight boulevard with positions `1..n`, one booth per position.
+
+For some pairs of booths, the organizers have preferences:
+
+- **Attract** relation: the two booths benefit from being placed **close** to each other.
+- **Repel** relation: the two booths should be placed **far** apart.
+
+Each relation also has a positive integer weight describing how important it is.
+
+Your task is to output a permutation of the booths, i.e. assign every booth a unique position on the boulevard, in order to maximize the total layout satisfaction.
+
+Let `pos[x]` be the position assigned to booth `x`.
+
+For a relation between booths `u` and `v` with weight `w`:
+
+- if it is **Attract**, its contribution is  
+  `w * (n - 1 - |pos[u] - pos[v]|)`
+- if it is **Repel**, its contribution is  
+  `w * |pos[u] - pos[v]|`
+
+So attract relations reward small distances, while repel relations reward large distances.
+
+## Input
+
+The first line contains two integers:
+
+`n m` — the number of booths and the number of relations.
+
+Each of the next `m` lines contains four integers:
+
+`u v t w`
+
+- `1 <= u < v <= n`
+- `t = 0` means **Attract**
+- `t = 1` means **Repel**
+- `w` is the weight of the relation
+
+## Output
+
+Output `n` distinct integers forming a permutation of `1..n`.
+
+The `i`-th printed integer is the booth placed at position `i`.
+
+### Feasibility requirements
+
+Your output is **feasible** iff:
+
+- it contains exactly `n` integers,
+- each integer is in `[1, n]`,
+- every booth appears exactly once.
+
+If the output is infeasible, the score for that test is `0`.
+
+## Objective
+
+For a feasible output, let `pos[x]` be the position of booth `x` in your permutation.
+
+For each relation `j`:
+
+- let `d_j = |pos[u_j] - pos[v_j]|`
+- if `t_j = 0` (Attract), then  
+  `gain_j = w_j * (n - 1 - d_j)`
+- if `t_j = 1` (Repel), then  
+  `gain_j = w_j * d_j`
+
+Your objective value is
+
+`S = sum of gain_j over all relations`.
+
+You must **maximize** `S`.
+
+## Scoring
+
+For each test instance, define:
+
+- `S` = your objective value
+- `B` = the objective value of the **baseline layout** `1 2 3 ... n`
+- `U = (n - 1) * sum(w_j)` = a trivial upper bound on any layout
+
+The score for the test is:
+
+- `0`, if your output is infeasible
+- `1,000,000`, if `U = B` and your output is feasible
+- otherwise
+
+`score = 1,000,000 * clamp((S - B) / (U - B), 0, 1)`
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+Thus:
+
+- matching the baseline gives score `0`
+- improving over the baseline gives a positive score
+- reaching the upper bound gives score `1,000,000`
+
+The final score is the average of test scores over all official test files.
+
+## Constraints
+
+- `2 <= n <= 200000`
+- `1 <= m <= 400000`
+- `1 <= w <= 10^6`
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Input
+```text
+5 4
+1 5 0 10
+2 4 0 8
+1 2 1 6
+4 5 1 6
+```
+
+### Output
+```text
+1 3 5 2 4
+```
+
+### Explanation
+This means:
+
+- position 1: booth 1
+- position 2: booth 3
+- position 3: booth 5
+- position 4: booth 2
+- position 5: booth 4
+
+So:
+
+- booths `1` and `5` are at distance `2`, giving  
+  `10 * (4 - 2) = 20`
+- booths `2` and `4` are at distance `1`, giving  
+  `8 * (4 - 1) = 24`
+- booths `1` and `2` are at distance `3`, giving  
+  `6 * 3 = 18`
+- booths `4` and `5` are at distance `2`, giving  
+  `6 * 2 = 12`
+
+Total objective: `S = 20 + 24 + 18 + 12 = 74`.
+
+The baseline layout `1 2 3 4 5` has value `B = 28`, while  
+`U = 4 * (10 + 8 + 6 + 6) = 120`.
+
+So this output earns a positive score strictly better than the baseline.
+```

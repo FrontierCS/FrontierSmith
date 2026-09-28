@@ -1,0 +1,163 @@
+```markdown
+# Bessie's Scenic Road Collection
+
+## Problem
+
+Bessie now lives at intersection `1` and wants to visit her old friend at intersection `N`. She still dislikes arriving too quickly, but this time she has a more ambitious goal: she wants to **experience as much unique scenery as possible** along the way.
+
+The countryside is an undirected road network. Each road has:
+
+- a **travel length**
+- a **scenic value**
+
+Bessie will choose a **walk** from intersection `1` to intersection `N`. She may revisit intersections and roads, but the scenic value of a road is counted **only once**, the first time that road appears anywhere in her walk.
+
+Your task is to output any feasible walk whose total travel length does not exceed the travel budget, while maximizing the total scenic value of the distinct roads used.
+
+This is an optimization problem: better walks receive higher scores.
+
+## Input
+
+The input describes one test case.
+
+- Line 1: `N R T`
+  - `N` = number of intersections
+  - `R` = number of roads
+  - `T` = maximum allowed total travel length
+
+- Lines `2..R+1`: `A B L C`
+  - undirected road between intersections `A` and `B`
+  - `L` = travel length of the road
+  - `C` = scenic value of the road
+
+### Guarantees
+
+- The graph is connected.
+- `1` and `N` are distinct.
+- There is **at most one** road between any unordered pair of intersections.
+- `T` is at least the length of some shortest path from `1` to `N`.
+
+## Output
+
+Output a walk from `1` to `N`.
+
+- Line 1: an integer `K` — the number of intersections in your walk
+- Line 2: `K` space-separated integers `v1 v2 ... vK`
+
+### Feasibility requirements
+
+Your output is feasible if and only if all of the following hold:
+
+- `2 <= K <= 200000`
+- `v1 = 1`
+- `vK = N`
+- For every `i` from `1` to `K-1`, there is a road between `vi` and `v(i+1)`
+- The sum of the travel lengths of those roads is at most `T`
+
+If the output is infeasible, the objective value for that test case is `0`.
+
+## Objective
+
+Let the walk use some multiset of roads. Its objective value is:
+
+- the sum of scenic values of all **distinct undirected roads** that appear at least once in the walk
+
+A road contributes its scenic value at most once, even if traversed multiple times or in both directions.
+
+Your goal is to **maximize** this objective value.
+
+## Scoring
+
+For each test case:
+
+- Let `O` be your objective value.
+- Let `B` be the baseline objective value, defined below.
+- Your test-case score is:
+
+\[
+\text{score} = \left\lfloor 10^6 \cdot \min\left(5,\ \frac{O}{B}\right) \right\rfloor
+\]
+
+If your output is infeasible, then `O = 0` and the score is `0`.
+
+### Baseline
+
+The baseline walk is the **lexicographically smallest shortest path** from `1` to `N`, considering the sequence of vertex IDs.
+
+- First minimize total travel length.
+- Among all shortest paths, choose the path whose vertex sequence is lexicographically smallest.
+
+Its objective value is `B`, the sum of scenic values of the roads on that path.
+
+Because all scenic values are positive and `1 != N`, we always have `B > 0`.
+
+### Final score
+
+If there are multiple official test cases, your final score is the average of the test-case scores, rounded down to the nearest integer.
+
+## Constraints
+
+- `2 <= N <= 5000`
+- `1 <= R <= 100000`
+- `1 <= L <= 5000`
+- `1 <= C <= 5000`
+- `1 <= T <= 10^9`
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 512 MB
+
+## Example
+
+### Sample input
+```text
+5 6 11
+1 2 2 5
+2 5 3 5
+1 3 2 4
+3 4 2 7
+4 5 2 4
+2 3 1 6
+```
+
+### One valid sample output
+```text
+5
+1 2 3 4 5
+```
+
+### Explanation
+
+The walk is:
+
+- `1 -> 2` (length 2, scenic 5)
+- `2 -> 3` (length 1, scenic 6)
+- `3 -> 4` (length 2, scenic 7)
+- `4 -> 5` (length 2, scenic 4)
+
+Total travel length = `2 + 1 + 2 + 2 = 7 <= 11`, so the walk is feasible.
+
+Distinct roads used: `{(1,2), (2,3), (3,4), (4,5)}`
+
+Objective value:
+
+\[
+O = 5 + 6 + 7 + 4 = 22
+\]
+
+The shortest path from `1` to `5` is `1 -> 2 -> 5` with total length `5`, so the baseline objective is:
+
+\[
+B = 5 + 5 = 10
+\]
+
+Thus the sample output would receive:
+
+\[
+\left\lfloor 10^6 \cdot \min(5, 22/10) \right\rfloor
+=
+2200000
+\]
+
+A simple shortest-path solution is easy to implement, but strong solutions will exploit extra budget to collect high-value roads through profitable detours.
+```

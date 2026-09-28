@@ -1,0 +1,210 @@
+```markdown
+# Lucky Envelope Routing
+
+## Problem
+
+Kile and Pogi found a pile of banknotes and want to turn it into as much **equal final wealth** as possible.
+
+Before going home, they may use some of the banknotes to prepare envelopes for several casino tables.
+
+- Every banknote must be assigned to exactly one destination:
+  - Kile's private reserve,
+  - Pogi's private reserve, or
+  - one casino table.
+- Each casino table receives at most one envelope: the envelope is simply the set of all banknotes assigned to that table.
+- Table `j` has:
+  - an accepted total-value interval `[L_j, R_j]`,
+  - a maximum number of banknotes `K_j`,
+  - a multiplier `P_j`,
+  - a fixed fee `F_j`.
+
+If the envelope sent to table `j` has total value `S_j` and contains `cnt_j` banknotes, then:
+
+- if `L_j <= S_j <= R_j` **and** `cnt_j <= K_j`, the table returns  
+  `T_j = P_j * S_j - F_j`,
+- otherwise, the envelope fails and returns `T_j = 0`.
+
+All successful and failed tables are evaluated independently.
+
+After that:
+
+- Kile keeps the sum of banknotes assigned directly to him,
+- Pogi keeps the sum of banknotes assigned directly to him,
+- all casino returns are merged into one common pool,
+- they may split that common pool between themselves in any integer amounts,
+- they may leave some money from the common pool unused if that helps them end with the same amount.
+
+Your task is to output any assignment of banknotes to destinations. The judge will compute the **maximum equal final amount** they can both achieve from your assignment.
+
+This is an optimization problem: better assignments receive better scores.
+
+## Input
+
+The first line contains two integers `N` and `M`.
+
+The next `N` lines contain one integer each:  
+`c_i` — the value of the `i`-th banknote.
+
+The next `M` lines each contain five integers:  
+`L_j R_j K_j P_j F_j` — the parameters of casino table `j`.
+
+## Output
+
+Output exactly `N` integers `d_1, d_2, ..., d_N`.
+
+Each `d_i` specifies the destination of banknote `i`:
+
+- `0` = Kile's private reserve
+- `1` = Pogi's private reserve
+- `2 ... M+1` = casino table `d_i - 1`
+
+You may print them separated by spaces or newlines.
+
+### Feasibility requirements
+
+Your output is **feasible** iff:
+
+- exactly `N` integers are printed,
+- every `d_i` is in the range `[0, M+1]`.
+
+If the output is infeasible, the objective value for that test is `0`.
+
+## Objective
+
+Let
+
+- `A` = total value of banknotes assigned directly to Kile,
+- `B` = total value of banknotes assigned directly to Pogi,
+- for each table `j`:
+  - `S_j` = sum of banknotes assigned to table `j`,
+  - `cnt_j` = number of banknotes assigned to table `j`,
+  - `T_j = P_j * S_j - F_j` if `L_j <= S_j <= R_j` and `cnt_j <= K_j`,
+  - otherwise `T_j = 0`,
+- `C = sum(T_j)` over all tables.
+
+The objective value of your output is the maximum equal final amount both people can obtain after splitting the common pool:
+
+`E = min( floor((A + B + C) / 2), min(A, B) + C )`
+
+You must **maximize `E`**.
+
+## Scoring
+
+For each test case:
+
+1. Let `S = sum(c_i)`.
+2. Let `Pmax = max(1, P_1, P_2, ..., P_M)`.
+3. Define the upper bound  
+   `U = floor(Pmax * S / 2)`.
+
+### Baseline solution
+
+The baseline assignment is defined as follows:
+
+- ignore all casino tables,
+- sort banknotes by decreasing value (break ties by smaller original index),
+- process them in that order,
+- assign each banknote to the currently poorer reserve,
+- if both reserves are equal, assign the banknote to Kile.
+
+Let the baseline objective value be `B0`.
+
+Since the baseline uses no tables, `B0 = min(A0, B0')`, where `A0` and `B0'` are the two reserve sums produced by that procedure.
+
+### Per-test score
+
+If `U > B0`, then the score for the test is
+
+`score = 100 * clamp( (E - B0) / (U - B0), 0, 1 )`
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+If `U = B0`, then:
+
+- score is `100` if `E = U`,
+- otherwise score is `0`.
+
+### Total score
+
+Your total score is the arithmetic mean of per-test scores over all test cases.
+
+## Constraints
+
+- `1 <= N <= 800`
+- `1 <= M <= 60`
+- `1 <= c_i <= 500000`
+- `1 <= sum(c_i) <= 500000`
+- `1 <= L_j <= R_j <= sum(c_i)`
+- `1 <= K_j <= N`
+- `1 <= P_j <= 6`
+- `0 <= F_j <= 500000`
+
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+## Example
+
+### Sample input
+```text
+5 2
+2
+3
+5
+8
+13
+10 13 2 2 0
+5 5 2 3 1
+```
+
+### Sample output
+```text
+0
+2
+3
+2
+1
+```
+
+### Explanation
+
+This means:
+
+- banknote 1 (`2`) goes to Kile,
+- banknote 2 (`3`) goes to table 1,
+- banknote 3 (`5`) goes to table 2,
+- banknote 4 (`8`) goes to table 1,
+- banknote 5 (`13`) goes to Pogi.
+
+So:
+
+- `A = 2`
+- `B = 13`
+
+For table 1:
+- notes `{3, 8}` give `S_1 = 11`, `cnt_1 = 2`
+- valid because `10 <= 11 <= 13` and `2 <= 2`
+- return `T_1 = 2 * 11 - 0 = 22`
+
+For table 2:
+- note `{5}` gives `S_2 = 5`, `cnt_2 = 1`
+- valid because `5 <= 5 <= 5` and `1 <= 2`
+- return `T_2 = 3 * 5 - 1 = 14`
+
+Thus `C = 22 + 14 = 36`.
+
+The objective value is
+
+`E = min(floor((2 + 13 + 36)/2), min(2,13) + 36)`
+`  = min(25, 38)`
+`  = 25`
+
+The baseline for this input yields `15`.
+
+Also, `S = 31`, `Pmax = 3`, so
+
+`U = floor(31 * 3 / 2) = 46`
+
+Therefore the sample output gets per-test score
+
+`100 * (25 - 15) / (46 - 15) = 32.258064...`
+```

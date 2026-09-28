@@ -1,0 +1,234 @@
+```markdown
+# Sponsored RPS Marathon
+
+## Problem
+Takahashi is entering a long arcade event called **Sponsored RPS Marathon**.
+
+He will play **N** rounds of Rock-Paper-Scissors against a machine.  
+Before the event starts, the machine fixes all of its hands, and Takahashi knows them in advance.
+
+For each round:
+
+- if Takahashi **wins with Rock**, he earns **R** points;
+- if he **wins with Scissors**, he earns **S** points;
+- if he **wins with Paper**, he earns **P** points;
+- a draw or a loss gives **0** points.
+
+The machine's sequence is given by a string `T` of length `N`:
+
+- `r` = Rock
+- `p` = Paper
+- `s` = Scissors
+
+However, the arcade uses an anti-spam device:
+
+- for every `i > K`, Takahashi **may not use the same hand in round `i` as in round `i-K`**.
+
+In addition, there are **M sponsorship contracts**.  
+Each contract gives a bonus if **all** of its listed conditions are satisfied by Takahashi's entire play sequence.
+
+Your task is to output a feasible sequence of hands that maximizes the total score:
+- round-win points, plus
+- bonuses from satisfied contracts.
+
+### Contract condition types
+Each contract consists of several conditions. A condition is one of the following:
+
+1. `1 i x`  
+   In round `i`, Takahashi must play hand `x`.
+
+2. `2 i y`  
+   The outcome of round `i` must be:
+   - `W` = win
+   - `D` = draw
+   - `L` = loss
+
+3. `3 i j`  
+   The hands played in rounds `i` and `j` must be the same.
+
+4. `4 i j`  
+   The hands played in rounds `i` and `j` must be different.
+
+A contract is satisfied if **every one of its conditions** is satisfied.
+
+Rock-Paper-Scissors uses the standard rules:
+- Rock beats Scissors
+- Scissors beats Paper
+- Paper beats Rock
+
+## Input
+Input is given in the following format:
+
+```text
+N K M
+R S P
+T
+W_1 C_1
+cond_1,1
+cond_1,2
+...
+cond_1,C_1
+W_2 C_2
+cond_2,1
+...
+W_M C_M
+...
+cond_M,C_M
+```
+
+- `N`, `K`, `M` are integers.
+- `R`, `S`, `P` are integers.
+- `T` is a string of length `N` over `r`, `p`, `s`.
+- Contract `j` has bonus `W_j` and `C_j` conditions.
+- Each condition is one of the four formats listed above.
+
+All round indices are 1-based.
+
+## Output
+Output one line containing a string `U` of length `N`, where `U_i` is Takahashi's hand in round `i`:
+
+- `r` = Rock
+- `p` = Paper
+- `s` = Scissors
+
+A submission is **feasible** if:
+
+- `|U| = N`
+- every character of `U` is one of `r`, `p`, `s`
+- for every `i > K`, `U_i != U_{i-K}`
+
+If the output is infeasible, its objective value is treated as `0`.
+
+## Objective
+For a feasible output `U`, define:
+
+### 1. Round score
+For each round `i`:
+
+- if `U_i` beats `T_i`, add:
+  - `R` if `U_i = r`
+  - `S` if `U_i = s`
+  - `P` if `U_i = p`
+- otherwise add `0`
+
+Let this total be `base(U)`.
+
+### 2. Contract bonus
+For each contract `j`, if all its conditions are satisfied by `U`, add `W_j`.
+
+Let this total be `bonus(U)`.
+
+### Total objective
+```text
+obj(U) = base(U) + bonus(U)
+```
+
+Your goal is to **maximize** `obj(U)`.
+
+## Scoring
+The contest uses multiple hidden test files.
+
+For each test file, let:
+
+- `O` = your objective value
+- `B` = the objective value of the **baseline solution** described below
+
+The per-test score is:
+
+```text
+score = floor(1,000,000 × clamp(O / (2B), 0, 1))
+```
+
+where
+
+```text
+clamp(x, 0, 1) = max(0, min(x, 1))
+```
+
+Thus:
+
+- infeasible output gets `0`
+- matching the baseline gets `500000`
+- reaching at least `2 × baseline` gets `1000000`
+
+The final score is the sum of per-test scores over all official test files.
+
+### Baseline solution
+The baseline constructs a sequence `U^0` greedily, ignoring all contracts:
+
+For `i = 1..N`:
+
+1. Let `w_i` be the hand that would beat `T_i`.
+2. If `i <= K` or `w_i != U^0_{i-K}`, play `w_i`.
+3. Otherwise, among the two hands different from `U^0_{i-K}`, choose the lexicographically smallest one (`r < p < s`).
+
+`B` is `obj(U^0)`, including any contract bonuses that this sequence happens to satisfy.
+
+## Constraints
+- `2 <= N <= 200000`
+- `1 <= K <= N-1`
+- `1 <= M <= 200000`
+- `1 <= R, S, P <= 10000`
+- `|T| = N`
+- `T` consists only of `r`, `p`, `s`
+- `1 <= W_j <= 10^9`
+- `1 <= C_j <= 5`
+- The sum of all `C_j` over all contracts is at most `600000`
+- For condition type `1`: `1 <= i <= N`, `x` is one of `r, p, s`
+- For condition type `2`: `1 <= i <= N`, `y` is one of `W, D, L`
+- For condition types `3` and `4`: `1 <= i < j <= N`
+
+## Constraints
+- Time limit: 4 seconds
+- Memory limit: 1024 MB
+
+## Example
+```text
+5 2 3
+8 7 6
+rsrpr
+10 1
+1 4 s
+9 1
+4 1 3
+12 2
+2 2 D
+1 5 p
+```
+
+One valid output is:
+
+```text
+prssp
+```
+
+Brief explanation:
+
+- Machine: `r s r p r`
+- Takahashi: `p r s s p`
+
+This is feasible because:
+- round 3 differs from round 1
+- round 4 differs from round 2
+- round 5 differs from round 3
+
+Round points:
+- round 1: `p` beats `r` => `+6`
+- round 2: `r` beats `s` => `+8`
+- round 3: `s` loses to `r` => `+0`
+- round 4: `s` beats `p` => `+7`
+- round 5: `p` beats `r` => `+6`
+
+So `base = 27`.
+
+Satisfied contracts:
+- `1 4 s` is satisfied => `+10`
+- `4 1 3` means rounds 1 and 3 must differ; `p != s` => `+9`
+- the third contract is not satisfied because round 2 is not a draw
+
+So `bonus = 19`, and the total objective is:
+
+```text
+27 + 19 = 46
+```
+```

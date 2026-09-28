@@ -1,0 +1,217 @@
+```markdown
+# Citywide Barricade Interdiction
+
+## Problem
+A city is modeled as an `H × W` grid. Cell `(i, j)` is adjacent to the four orthogonal neighbors.
+
+There are three types of cells:
+
+- `#` : permanently blocked rubble. Nobody can enter this cell.
+- `.` : an ordinary street. It is traversable, and you may build a barricade on it.
+- `O` : a protected street. It is traversable, but you may **not** build a barricade on it.
+
+Before the day begins, you may choose some ordinary street cells and barricade them. After that, `K` independent courier routes are evaluated.
+
+For each route `t`:
+
+- the courier starts at cell `S_t = (r^s_t, c^s_t)`,
+- wants to reach cell `G_t = (r^g_t, c^g_t)`,
+- and has importance weight `w_t`.
+
+A courier may move up, down, left, or right, staying inside the grid and never entering rubble or a barricaded cell.
+
+Each traversable cell `(i, j)` also has a **travel time** `T_{i,j}`.  
+If a courier moves from a cell into `(i, j)`, that move costs `T_{i,j}`.  
+The starting cell does **not** contribute cost initially.
+
+Thus, for a route, its travel time is the minimum possible total entry cost from start to goal after your barricades are placed.
+
+If the goal becomes unreachable, that route is assigned a fixed penalty value:
+
+- `P = 9 × H × W + 1`
+
+This is strictly larger than any possible reachable travel time.
+
+Each barricadable street cell `(i, j)` also has a **barricade cost** `C_{i,j}`.  
+Your total barricade cost must not exceed the budget `B`.
+
+Additionally:
+
+- You may barricade only cells marked `.`.
+- You may **not** barricade any cell that appears as a start or goal of any route.
+
+Your task is to choose barricades to maximize total disruption.
+
+---
+
+## Input
+The input format is:
+
+```text
+H W K B
+G_1
+G_2
+…
+G_H
+T_1,1 T_1,2 … T_1,W
+T_2,1 T_2,2 … T_2,W
+…
+T_H,1 T_H,2 … T_H,W
+C_1,1 C_1,2 … C_1,W
+C_2,1 C_2,2 … C_2,W
+…
+C_H,1 C_H,2 … C_H,W
+r^s_1 c^s_1 r^g_1 c^g_1 w_1
+r^s_2 c^s_2 r^g_2 c^g_2 w_2
+…
+r^s_K c^s_K r^g_K c^g_K w_K
+```
+
+### Grid
+`G_i` is a string of length `W` consisting of `#`, `.`, and `O`.
+
+### Travel times
+- If `G_{i,j}` is `#`, then `T_{i,j} = 0`.
+- Otherwise `1 ≤ T_{i,j} ≤ 9`.
+
+### Barricade costs
+- If `G_{i,j}` is `.`, then `1 ≤ C_{i,j} ≤ 10^6`.
+- Otherwise `C_{i,j} = 0`.
+
+### Route endpoints
+For every route:
+- both start and goal are traversable cells (`.` or `O`),
+- start and goal are different.
+
+Coordinates are 1-indexed.
+
+---
+
+## Output
+Output your chosen barricades in the following format:
+
+```text
+M
+r_1 c_1
+r_2 c_2
+…
+r_M c_M
+```
+
+where:
+
+- `M` is the number of barricaded cells,
+- each `(r_x, c_x)` must be distinct.
+
+A submission is **feasible** iff all of the following hold:
+
+1. Every listed cell is inside the grid.
+2. Every listed cell is a `.` cell.
+3. No listed cell is used as any route's start or goal.
+4. The sum of barricade costs of all listed cells is at most `B`.
+5. No cell is listed more than once.
+
+If the output is infeasible, the test case score is `0`.
+
+---
+
+## Objective
+For a feasible output, let `dist_t` be the shortest travel time for route `t` after applying your barricades.
+
+- If the goal is reachable, `dist_t` is that minimum travel time.
+- Otherwise, `dist_t = P = 9 × H × W + 1`.
+
+Your objective value is:
+
+```text
+OBJ = Σ_{t=1..K} w_t × dist_t
+```
+
+You must **maximize** `OBJ`.
+
+---
+
+## Scoring
+For each test case, define the **baseline** solution as placing no barricades at all.
+
+Let:
+
+- `BASE` = objective value of the baseline,
+- `OBJ` = objective value of your feasible output.
+
+The per-test score is:
+
+```text
+score = min(10^9, floor(10^6 × max(0, OBJ - BASE) / BASE))
+```
+
+If your output is infeasible, then:
+
+```text
+score = 0
+```
+
+The total score is the sum of per-test scores over all test cases.
+
+### Notes
+- Because barricades can only remove options, a feasible solution always satisfies `OBJ ≥ BASE`.
+- A solution identical to the baseline gets score `0`.
+- Better disruption yields a larger score, with a smooth gradient.
+
+---
+
+## Constraints
+- `2 ≤ H ≤ 200`
+- `2 ≤ W ≤ 200`
+- `1 ≤ K ≤ 500`
+- `0 ≤ B ≤ 10^9`
+- `1 ≤ w_t ≤ 10^6`
+- Total number of cells is at most `40,000`
+
+The official test set is designed so that exhaustive optimization is computationally infeasible.
+
+- Time limit: 5 seconds
+- Memory limit: 1024 MB
+
+---
+
+## Example
+### Sample Input
+```text
+3 3 1 2
+...
+...
+...
+1 1 1
+1 1 1
+1 1 1
+1 1 1
+1 1 1
+1 1 1
+1 1 3 3 5
+```
+
+### Sample Output
+```text
+2
+1 2
+2 1
+```
+
+### Explanation
+The single route goes from `(1,1)` to `(3,3)` with weight `5`.
+
+- With no barricades, the shortest travel time is `4`, so:
+  - `BASE = 5 × 4 = 20`
+- Barricading `(1,2)` and `(2,1)` disconnects the start from the rest of the grid.
+- Here `P = 9 × 3 × 3 + 1 = 82`, so:
+  - `OBJ = 5 × 82 = 410`
+
+Therefore:
+
+```text
+score = floor(10^6 × (410 - 20) / 20) = 19,500,000
+```
+
+This is only one feasible solution; the challenge is to find much better barricade sets on larger instances.
+```

@@ -1,0 +1,175 @@
+```markdown
+# Budgeted Falling Convoys
+
+## Problem
+A mining company is lowering `K` autonomous drills through a square shaft with `N` depth levels and `N` vertical lanes.
+
+At each depth level, every drill must occupy exactly one lane. If a drill is in lane `c` at level `r`, then at level `r+1` it may move to lane `c-1`, `c`, or `c+1` (staying within `1..N`).
+
+Each cell `(r, c)` has:
+
+- a **reward** `V[r][c]`: ore gained by each drill that passes through that cell,
+- a **setup cost** `C[r][c]`: paid **once** if at least one drill uses that cell,
+- a **capacity** `U[r][c]`: the maximum number of drills allowed to use that cell.
+
+Your task is to route all `K` drills from level `1` to level `N`.
+
+A solution consists of `K` falling paths, one per drill. Paths may share cells only if capacities allow. The total setup cost of all **distinct used cells** must not exceed the budget `B`.
+
+The goal is to **maximize total collected reward**.
+
+This is an optimization challenge: any feasible solution is accepted, and better solutions receive higher scores.
+
+## Input
+The input describes one instance.
+
+- First line: three integers `N K B`
+- Next `N` lines: the reward matrix `V`
+- Next `N` lines: the setup-cost matrix `C`
+- Next `N` lines: the capacity matrix `U`
+
+More precisely:
+
+- Line `1`: `N K B`
+- Lines `2..N+1`: `V[1][1] ... V[1][N]`, ..., `V[N][1] ... V[N][N]`
+- Lines `N+2..2N+1`: `C[1][1] ... C[1][N]`, ..., `C[N][1] ... C[N][N]`
+- Lines `2N+2..3N+1`: `U[1][1] ... U[1][N]`, ..., `U[N][1] ... U[N][N]`
+
+### Guarantees
+- The **safe corridor** in column `1` is always feasible:
+  - `U[r][1] >= K` for every `r`
+  - `sum_{r=1..N} C[r][1] <= B`
+  - `sum_{r=1..N} V[r][1] >= 1`
+
+So routing all drills straight down column `1` is always a valid baseline solution.
+
+## Output
+Output exactly `K` lines.
+
+The `i`-th line must contain `N` integers:
+`p_i[1] p_i[2] ... p_i[N]`
+
+where `p_i[r]` is the lane chosen by drill `i` at level `r`.
+
+### Feasibility requirements
+A submission is **feasible** if all of the following hold:
+
+1. `1 <= p_i[r] <= N` for every drill `i` and level `r`.
+2. `|p_i[r+1] - p_i[r]| <= 1` for every drill `i` and every `r` in `1..N-1`.
+3. For every cell `(r, c)`, the number of drills using that cell is at most `U[r][c]`.
+4. Let `S` be the set of distinct cells used by at least one drill. Then  
+   `sum_{(r,c) in S} C[r][c] <= B`.
+
+If any requirement is violated, the submission is invalid.
+
+## Objective
+For a feasible solution, the objective value is the total reward:
+
+\[
+\text{Reward} = \sum_{i=1}^{K} \sum_{r=1}^{N} V[r][p_i[r]]
+\]
+
+Each drill collects the reward of every cell it visits.  
+If multiple drills use the same cell, its reward is counted once **per drill**, but its setup cost is paid only **once**.
+
+For an invalid solution, the objective value is defined as `0`.
+
+## Scoring
+Let:
+
+- `R_sub` = reward of your submission,
+- `R_base` = reward of the safe-corridor baseline, where all `K` drills use column `1` at every level:
+
+\[
+R_{base} = K \times \sum_{r=1}^{N} V[r][1]
+\]
+
+The score for one test case is:
+
+\[
+\text{Score}_{test} = 10^6 \times \operatorname{clamp}\left(\frac{R_{sub}}{R_{base}},\, 0,\, 10\right)
+\]
+
+where:
+
+\[
+\operatorname{clamp}(x, a, b) = \min(\max(x, a), b)
+\]
+
+The total score is the arithmetic mean of `Score_test` over all test cases.
+
+Notes:
+- Any feasible solution gets a nonnegative score.
+- Matching the baseline gives `1,000,000` points on that test.
+- Invalid outputs receive `0`.
+
+## Constraints
+- `1 <= N <= 80`
+- `1 <= K <= 40`
+- `1 <= B <= 10^9`
+- `0 <= V[r][c] <= 10^6`
+- `1 <= C[r][c] <= 10^6`
+- `0 <= U[r][c] <= K`
+
+Use 64-bit integers for all computations.
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample input
+```text
+3 2 10
+1 4 2
+3 5 1
+2 6 2
+2 3 4
+2 2 3
+2 1 4
+2 1 1
+2 1 1
+2 2 1
+```
+
+### Sample output
+```text
+1 1 2
+1 2 2
+```
+
+### Explanation
+The two drill paths are:
+
+- Drill 1: `(1,1) -> (2,1) -> (3,2)`
+- Drill 2: `(1,1) -> (2,2) -> (3,2)`
+
+Both are valid falling paths.
+
+Used cells are:
+- `(1,1)`, `(2,1)`, `(2,2)`, `(3,2)`
+
+Total setup cost:
+- `2 + 2 + 2 + 1 = 7 <= 10`
+
+Capacities used:
+- `(1,1)` is used by 2 drills, capacity 2
+- `(3,2)` is used by 2 drills, capacity 2
+- all other used cells are within capacity
+
+Total reward:
+- Drill 1: `1 + 3 + 6 = 10`
+- Drill 2: `1 + 5 + 6 = 12`
+- `R_sub = 22`
+
+Baseline reward:
+- both drills stay in column 1
+- `R_base = 2 * (1 + 3 + 2) = 12`
+
+So the sample score would be:
+
+\[
+10^6 \times \frac{22}{12} \approx 1{,}833{,}333.33
+\]
+
+before clamping.
+```

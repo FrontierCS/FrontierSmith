@@ -1,150 +1,155 @@
-```markdown
-# Farmwide Teleport Pad Deployment
+# Low-Toggle Tour of Fibonacci IDs
 
 ## Problem
 
-Farmer John is upgrading his manure logistics again.
+A controller must display each authorized beacon ID exactly once during a maintenance round.
 
-This time, instead of building a single teleporter, he may install a **network of teleport pads** at selected road intersections across the farm. The farm road system is modeled as a connected, undirected, weighted graph.
+Each beacon ID is a **binary string** that:
 
-There are `N` manure shipments. Shipment `i` must be moved from intersection `s_i` to intersection `t_i`. Each shipment is transported independently.
+- has no leading zeros,
+- contains no consecutive `1` characters.
 
-If Farmer John installs a set of teleport pads, then for any shipment he may choose either:
+These are sometimes called **Fibonacci IDs**.
 
-1. **Drive directly** from `s_i` to `t_i`, or
-2. **Use the teleport network once**:
-   - drive from `s_i` to any installed pad,
-   - teleport instantly and for free to any other installed pad,
-   - drive from that pad to `t_i`.
+The controller uses a fixed-width LED panel of width `L`.  
+If an ID has length smaller than `L`, it is **left-padded with zeros** before being shown.
 
-Teleportation between installed pads has zero cost and unlimited capacity.
+For example, with `L = 6`:
 
-However, each candidate pad location has a construction cost, and the total construction cost must not exceed the budget.
+- `1` becomes `000001`
+- `101` becomes `000101`
+- `10010` becomes `010010`
 
-Your task is to choose which candidate pad locations to build in order to minimize the total driving distance over all shipments.
+The panel starts blank as the all-zero string of length `L`, and must return to blank after the last ID.
 
-This is an **optimization challenge**: better solutions receive higher scores.
+Changing bit `j` on the panel costs `c_j` units of energy.  
+So the energy needed to switch from displayed string `A` to displayed string `B` is the sum of `c_j` over all positions where `A` and `B` differ.
+
+Your task is to output an order in which to display all given IDs so that the total energy is minimized.
 
 ---
 
 ## Input
 
-The input describes one test file.
+```text
+N L
+c_1 c_2 ... c_L
+s_1
+s_2
+...
+s_N
+```
 
-- The first line contains five integers  
-  `V E M N C`
-  - `V`: number of intersections (`1..V`)
-  - `E`: number of roads
-  - `M`: number of candidate teleport-pad sites
-  - `N`: number of shipments
-  - `C`: total construction budget
+- `N` — number of IDs.
+- `L` — panel width.
+- `c_j` — cost of toggling bit position `j` (`1` = leftmost, `L` = rightmost).
+- `s_i` — the `i`-th authorized ID.
 
-- The next `E` lines each contain three integers  
-  `u v w`  
-  meaning there is an undirected road between intersections `u` and `v` with length `w`.
+All `s_i` are guaranteed to be:
 
-- The next `M` lines each contain two integers  
-  `p_j cost_j`  
-  meaning candidate site `j` is located at intersection `p_j` and costs `cost_j` to build.
-
-- The next `N` lines each contain two integers  
-  `s_i t_i`  
-  describing a shipment from `s_i` to `t_i`.
-
-All road lengths and construction costs are positive integers.
-
-The graph is connected.
+- distinct,
+- binary strings,
+- of length between `1` and `L`,
+- without leading zeros,
+- without consecutive ones.
 
 ---
 
 ## Output
 
-Output a feasible set of candidate sites to build.
+Output a permutation of the integers `1..N`:
 
-- The first line must contain a single integer `K` — the number of chosen sites.
-- The next `K` lines must each contain one integer: the index of a chosen candidate site (an integer from `1` to `M`).
+```text
+p_1 p_2 ... p_N
+```
+
+meaning the controller displays:
+
+1. `s_{p_1}`
+2. `s_{p_2}`
+3. ...
+4. `s_{p_N}`
 
 ### Feasibility requirements
 
-Your output is **feasible** iff all of the following hold:
+A submission is **feasible** iff:
 
-- `0 <= K <= M`
-- all chosen indices are distinct
-- each chosen index is between `1` and `M`
-- the sum of construction costs of the chosen sites is at most `C`
+- exactly `N` integers are printed,
+- each integer is in `[1, N]`,
+- each index appears exactly once.
 
-If your output is infeasible, your score for that test file is `0`.
+Otherwise the submission is infeasible and receives score `0` for that test.
 
 ---
 
 ## Objective
 
-Let `dist(a,b)` be the shortest-path distance between intersections `a` and `b` in the road graph.
+Let `pad(x)` be string `x` left-padded with zeros to length `L`.
 
-Let `S` be the set of chosen candidate sites, and let `P(S)` be their intersections.
+Let `0^L` denote the all-zero string of length `L`.
 
-For shipment `i`, define:
+For two length-`L` strings `A` and `B`, define transition cost:
 
-- Direct cost:
-  `direct_i = dist(s_i, t_i)`
+```text
+cost(A, B) = sum of c_j over all positions j where A_j != B_j
+```
 
-- Teleport-assisted cost:
-  - if `S` is empty, this cost is treated as `+infinity`
-  - otherwise  
-    `tele_i = min_{x in P(S)} dist(s_i, x) + min_{y in P(S)} dist(t_i, y)`
+For an output permutation `p_1, p_2, ..., p_N`, the total energy is
 
-The shipment cost is
+```text
+E =
+cost(0^L, pad(s_{p_1}))
++ sum_{i=1 to N-1} cost(pad(s_{p_i}), pad(s_{p_{i+1}}))
++ cost(pad(s_{p_N}), 0^L)
+```
 
-`d_i = min(direct_i, tele_i)`
-
-The objective value of your output is
-
-`O = sum_{i=1..N} d_i`
-
-Your goal is to **minimize** `O`.
+Your objective is to **minimize `E`**.
 
 ---
 
 ## Scoring
 
-For each test file, define the **baseline** solution as building no pads at all.
+For each test case, define the **baseline order** as sorting the IDs by their numeric value in increasing order (that is, by interpreting each `s_i` as a binary integer).
 
-Its objective value is therefore
+Let:
 
-`B = sum_{i=1..N} dist(s_i, t_i)`
+- `B` = total energy of the baseline order,
+- `E` = total energy of your feasible output.
 
-For a feasible submission with objective value `O`, the score for that test file is
+Then the test score is:
 
-`score = round(1,000,000 * max(0, min(1, (B - O) / B )))`
+```text
+score = 1,000,000 * clamp(B / E, 0, 2)
+```
 
-Since direct transport is always allowed, any feasible solution satisfies `O <= B`, so this is simply the relative improvement over the baseline, scaled to `1,000,000`.
+where
 
-- Baseline solution: score `0`
-- Better solutions: higher scores
-- Perfectly eliminating all driving distance: score `1,000,000`
+```text
+clamp(x, 0, 2) = max(0, min(x, 2))
+```
 
-If your output is infeasible, the score is `0`.
+So:
 
-The total score of a submission is the sum of its scores over all test files.
+- matching the baseline gives `1,000,000`,
+- doing better than the baseline gives more than `1,000,000`,
+- doing worse gives less than `1,000,000`,
+- improvement beyond a factor of `2` is capped.
+
+If the output is infeasible, the score for that test is `0`.
+
+The final score is the arithmetic mean of scores over all test files.
 
 ---
 
 ## Constraints
 
-- `2 <= V <= 8000`
-- `V-1 <= E <= 40000`
-- `1 <= M <= 3000`
-- `1 <= N <= 100000`
-- `1 <= C <= 10^12`
-- `1 <= w <= 10^9`
-- `1 <= cost_j <= 10^9`
-- `1 <= u, v, p_j, s_i, t_i <= V`
-- `s_i != t_i`
-- candidate site intersections `p_j` are distinct
+- `1 <= N <= 30000`
+- `1 <= L <= 90`
+- `1 <= c_j <= 10^6`
+- All input IDs are distinct and valid Fibonacci IDs.
 
-The exact optimum is intended to be computationally difficult in general; heuristic and approximation methods are expected.
-
-- Time limit: 4 seconds
+## Constraints
+- Time limit: 5 seconds
 - Memory limit: 1024 MB
 
 ---
@@ -153,53 +158,62 @@ The exact optimum is intended to be computationally difficult in general; heuris
 
 ### Sample input
 ```text
-5 6 3 3 7
-1 2 4
-2 3 4
-3 4 4
-4 5 4
-1 5 20
-2 5 7
-2 3
 4 4
-5 5
-1 4
-1 5
-3 5
+1 1 1 1
+1
+10
+100
+101
 ```
 
 ### Sample output
 ```text
-2
-1
-2
+1 4 3 2
 ```
 
 ### Explanation
 
-There are 3 candidate pad sites:
+The padded strings are:
 
-- site 1 at intersection 2, cost 3
-- site 2 at intersection 4, cost 4
-- site 3 at intersection 5, cost 5
+- `1   -> 0001`
+- `10  -> 0010`
+- `100 -> 0100`
+- `101 -> 0101`
 
-The sample output builds sites 1 and 2, with total cost `3 + 4 = 7`, which fits the budget.
+The sample order is:
 
-Shortest direct shipment costs are:
-
-- `1 -> 4`: `12`
-- `1 -> 5`: `11`
-- `3 -> 5`: `8`
-
-So the baseline is `B = 31`.
-
-With pads at intersections 2 and 4:
-
-- `1 -> 4`: drive `1 -> 2` (4), teleport `2 -> 4` (0), drive `4 -> 4` (0), total `4`
-- `1 -> 5`: drive `1 -> 2` (4), teleport `2 -> 4` (0), drive `4 -> 5` (4), total `8`
-- `3 -> 5`: best remains `8`
-
-Thus `O = 4 + 8 + 8 = 20`.
-
-Relative improvement is `(31 - 20) / 31 = 11/31`, so the score for this file is approximately `354,839`.
+```text
+0000 -> 0001 -> 0101 -> 0100 -> 0010 -> 0000
 ```
+
+Its total energy is:
+
+- `0000 -> 0001` : 1
+- `0001 -> 0101` : 1
+- `0101 -> 0100` : 1
+- `0100 -> 0010` : 2
+- `0010 -> 0000` : 1
+
+Total `E = 6`.
+
+The baseline numeric order is:
+
+```text
+1, 10, 100, 101
+```
+
+which gives:
+
+```text
+0000 -> 0001 -> 0010 -> 0100 -> 0101 -> 0000
+```
+
+with total `B = 8`.
+
+So the sample score would be:
+
+```text
+1,000,000 * (8 / 6) = 1,333,333.333...
+```
+
+before any contest-specific rounding.

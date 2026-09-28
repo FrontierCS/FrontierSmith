@@ -1,0 +1,140 @@
+```markdown
+# Anti-Interference Key Selection
+
+## Problem
+A company has access to integer-labeled encryption keys `1..N`.
+
+You must activate exactly `K` distinct keys. Some pairs of keys are **incompatible** and cannot be activated together.
+
+For any activated set `S`, its **diversity value** is
+
+\[
+F(S)=\sum_{\{x,y\}\subseteq S,\ x<y}(x \oplus y),
+\]
+
+where `⊕` is bitwise XOR.
+
+Your task is to output any feasible set of exactly `K` distinct keys that maximizes this diversity value as much as possible.
+
+Each test case also contains a **baseline feasible set**. You may always output that set unchanged, but better sets receive higher scores.
+
+## Input
+The first line contains an integer `T`, the number of test cases.
+
+Each test case has the following format:
+
+- One line with three integers `N`, `K`, `M`
+- One line with `K` distinct integers `b1, b2, ..., bK` — the baseline feasible set
+- `M` lines follow, each containing two integers `u`, `v` describing an incompatible pair
+
+### Guarantees
+For every test case:
+
+- `1 <= u < v <= N`
+- all incompatible pairs are distinct
+- the baseline set is feasible:
+  - all `bi` are distinct
+  - each `bi` lies in `[1, N]`
+  - no incompatible pair has both endpoints in the baseline set
+
+## Output
+For each test case, output exactly one line containing `K` distinct integers.
+
+Your output for a test case is **feasible** if:
+
+1. all printed integers are distinct,
+2. each printed integer is in `[1, N]`,
+3. for every incompatible pair `(u, v)`, you do **not** output both `u` and `v`.
+
+Any order is allowed; the objective depends only on the set.
+
+If the output is infeasible, that test case receives objective value `0`.
+
+## Objective
+For a feasible output set `S` of size `K`, its objective value is
+
+\[
+F(S)=\sum_{\{x,y\}\subseteq S,\ x<y}(x \oplus y).
+\]
+
+You should **maximize** `F(S)`.
+
+## Scoring
+For each test case `t`:
+
+- let `B_t` be the objective value of the baseline set given in the input,
+- let `A_t` be the objective value of your output (or `0` if infeasible).
+
+The score for test case `t` is
+
+\[
+\text{score}_t = \min\left(2000,\ 1000 \cdot \frac{A_t}{B_t}\right).
+\]
+
+Since `K >= 2` and the baseline set is feasible with distinct elements, `B_t > 0`.
+
+Interpretation:
+
+- outputting exactly the baseline set gives score `1000`,
+- improving on the baseline gives a score above `1000`,
+- worse feasible sets still get partial credit,
+- infeasible output gets `0`.
+
+The final score is the arithmetic mean of `score_t` over all test cases.
+
+## Constraints
+- `1 <= T <= 50`
+- `2 <= K <= N <= 200000`
+- `0 <= M <= 50000`
+- Sum of `N` over all test cases: at most `1000000`
+- Sum of `K` over all test cases: at most `15000`
+- Sum of `M` over all test cases: at most `250000`
+
+These limits are intentionally large enough that exact optimization is not expected.
+
+- Time limit: 5 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample Input
+```text
+1
+8 4 3
+1 2 3 4
+1 8
+2 7
+5 6
+```
+
+### Sample Output
+```text
+8 6 3 2
+```
+
+### Explanation
+The output set `{8, 6, 3, 2}` is feasible:
+
+- all values are distinct,
+- all lie in `[1, 8]`,
+- it contains none of the incompatible pairs `(1,8)`, `(2,7)`, `(5,6)`.
+
+Its objective value is
+
+\[
+(8\oplus6)+(8\oplus3)+(8\oplus2)+(6\oplus3)+(6\oplus2)+(3\oplus2)
+=14+11+10+5+4+1=45.
+\]
+
+The baseline set is `{1,2,3,4}`, with value
+
+\[
+(1\oplus2)+(1\oplus3)+(1\oplus4)+(2\oplus3)+(2\oplus4)+(3\oplus4)
+=3+2+5+1+6+7=24.
+\]
+
+So the sample output would receive
+
+\[
+\min(2000,\ 1000 \cdot 45/24)=1875.
+\]
+```

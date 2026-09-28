@@ -1,0 +1,145 @@
+```markdown
+# Weighted Balanced Windows
+
+## Problem
+You are given a template string `T` of length `n` consisting of the characters `(`, `)` and `?`.
+
+Each `?` must be replaced by either `(` or `)`, producing a final bracket string `S`.
+
+You are also given `m` weighted windows.  
+Window `j` is an interval `[l_j, r_j]` with a positive weight `w_j`.
+
+A window is **satisfied** if the substring `S[l_j..r_j]` is a balanced bracket sequence.
+
+A bracket sequence is balanced if:
+
+- its total number of `(` equals its total number of `)`, and
+- in every prefix of the sequence, the number of `(` is at least the number of `)`.
+
+Your task is to choose replacements for all `?` to maximize the total weight of satisfied windows.
+
+This is an optimization challenge: there may be many valid outputs, and better outputs receive higher scores.
+
+## Input
+The input contains a single test instance.
+
+- The first line contains two integers `n` and `m`.
+- The second line contains the template string `T` of length `n`.
+- The next `m` lines each contain three integers `l_j`, `r_j`, and `w_j`.
+
+### Constraints on the instance
+- `1 <= n <= 50000`
+- `1 <= m <= 200000`
+- `T[i]` is one of `(`, `)`, `?`
+- `1 <= l_j <= r_j <= n`
+- `1 <= w_j <= 10^6`
+
+Intervals are 1-indexed and inclusive.
+
+## Output
+Output one line containing a string `S` of length `n` consisting only of `(` and `)`.
+
+### Feasibility requirements
+Your output is feasible if and only if:
+
+- `|S| = n`
+- for every position `i`:
+  - if `T[i] = '('`, then `S[i] = '('`
+  - if `T[i] = ')'`, then `S[i] = ')'`
+  - if `T[i] = '?'`, then `S[i]` may be either `(` or `)`
+
+If the output is infeasible, the score for this test is `0`.
+
+## Objective
+Let
+
+- `reward(S) = sum of w_j over all windows j such that S[l_j..r_j] is balanced`.
+
+Your objective is to **maximize** `reward(S)`.
+
+## Scoring
+For each test instance, define the deterministic baseline string `B` as follows:
+
+- scan `T` from left to right,
+- replace the 1st `?` by `(`,
+- replace the 2nd `?` by `)`,
+- replace the 3rd `?` by `(`,
+- replace the 4th `?` by `)`,
+- and so on, alternating globally across all `?`.
+
+Let:
+
+- `R = reward(your output)`
+- `R0 = reward(B)` (baseline reward)
+- `U = sum of all window weights`
+
+The per-test score is:
+
+- if `U = R0`:
+  - `1,000,000` if `R = U`
+  - `0` otherwise
+- else:
+
+\[
+\text{score} = \left\lfloor 1{,}000{,}000 \cdot \frac{\max(0, R - R0)}{U - R0} \right\rfloor
+\]
+
+So:
+- matching the baseline gets score `0`,
+- improving on the baseline gives a proportionally higher score,
+- satisfying every window gets score `1,000,000`.
+
+If multiple hidden test instances are used, the final score is the arithmetic mean of per-test scores, rounded down to the nearest integer.
+
+## Constraints
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample input
+```text
+6 5
+??))??
+1 4 5
+1 6 8
+5 6 2
+2 5 4
+3 6 3
+```
+
+### Sample output
+```text
+(())()
+```
+
+### Explanation
+For `S = "(())()"`:
+
+- `S[1..4] = "(())"` is balanced, gain `5`
+- `S[1..6] = "(())()"` is balanced, gain `8`
+- `S[5..6] = "()"` is balanced, gain `2`
+- the other two windows are not balanced
+
+So `reward(S) = 15`.
+
+The baseline fills `??))??` as `()))()`? No: alternating replacements give  
+1st `? -> (`, 2nd `? -> )`, 3rd `? -> (`, 4th `? -> )`, so the baseline is:
+
+`()))()`?  
+Carefully by position: `1:?`, `2:?`, `3:)`, `4:)`, `5:?`, `6:?`  
+therefore `B = "()))()"`.
+
+Only window `[5,6]` is balanced in `B`, so `R0 = 2`.
+
+Also, `U = 5 + 8 + 2 + 4 + 3 = 22`.
+
+Thus the sample score is
+
+\[
+\left\lfloor 1{,}000{,}000 \cdot \frac{15 - 2}{22 - 2} \right\rfloor
+=
+650000
+\]
+
+at a high level.
+```

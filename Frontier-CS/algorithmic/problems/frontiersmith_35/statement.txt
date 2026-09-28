@@ -1,0 +1,153 @@
+# Rune Banner Auction
+
+## Problem
+You are preparing a long banner from a multiset of rune tiles.
+
+There are `M` rune types, numbered `1` to `M`.  
+For each type `i`, you have exactly `C_i` copies of that rune.
+
+Your task is to arrange all tiles into one sequence `S` of length
+
+`N = C_1 + C_2 + ... + C_M`.
+
+There are also `P` sponsors. Sponsor `k` pays `W_k` coins for **each occurrence** of a given motif `T_k` as a **contiguous substring** of your banner.
+
+- Occurrences may overlap.
+- If two sponsors specify the same motif, both payments are counted.
+- Every rune tile must be used exactly once.
+
+Your goal is to output any feasible banner with as large a total payment as possible.
+
+This is an optimization problem: better banners receive higher scores.
+
+## Input
+The input consists of one test case in the following format:
+
+```text
+M P
+C_1 C_2 ... C_M
+L_1 W_1 t_{1,1} t_{1,2} ... t_{1,L_1}
+L_2 W_2 t_{2,1} t_{2,2} ... t_{2,L_2}
+...
+L_P W_P t_{P,1} t_{P,2} ... t_{P,L_P}
+```
+
+- `M`: number of rune types
+- `P`: number of sponsored motifs
+- `C_i`: number of copies of rune type `i`
+- For each sponsor `k`:
+  - `L_k`: motif length
+  - `W_k`: payment per occurrence
+  - `t_{k,1} ... t_{k,L_k}`: the motif itself
+
+## Output
+Output a single line containing `N` integers:
+
+```text
+s_1 s_2 ... s_N
+```
+
+where `s_j` is the rune type placed at position `j`.
+
+A submission is **feasible** if and only if:
+
+- each `s_j` is an integer between `1` and `M`,
+- each rune type `i` appears **exactly** `C_i` times.
+
+If the output is infeasible, the score for that test case is `0`.
+
+## Objective
+For a feasible banner `S = (s_1, s_2, ..., s_N)`, define:
+
+- `occ(S, T_k)` = the number of positions `x` such that  
+  `s_x, s_{x+1}, ..., s_{x+L_k-1}` is exactly `T_k`.
+
+Then the total payment is
+
+```text
+Revenue(S) = Σ_{k=1..P} W_k × occ(S, T_k)
+```
+
+Your objective is to **maximize** `Revenue(S)`.
+
+## Scoring
+For each test case:
+
+1. Let `R` be the revenue of your output.
+2. Let `B` be the revenue of the following deterministic baseline banner:
+
+```text
+1 repeated C_1 times,
+then 2 repeated C_2 times,
+then 3 repeated C_3 times,
+...
+then M repeated C_M times.
+```
+
+The per-test score is
+
+```text
+floor( 2,000,000 × R / (R + B + 1) )
+```
+
+clamped to the range `[0, 2,000,000]`.
+
+- If your output is infeasible, the per-test score is `0`.
+- The final score is the average of per-test scores over all official test cases, rounded down to an integer.
+
+This scoring is continuous: improving the revenue usually improves the score, and beating the baseline yields a score above roughly `1,000,000`.
+
+## Constraints
+- `1 ≤ M ≤ 200`
+- `1 ≤ P ≤ 5000`
+- `1 ≤ C_i`
+- `2 ≤ L_k ≤ 10`
+- `1 ≤ W_k ≤ 10^9`
+- `1 ≤ t_{k,j} ≤ M`
+- `N = Σ C_i ≤ 5000`
+- `Σ L_k ≤ 30000`
+
+- Time limit: 3 seconds
+- Memory limit: 1024 MB
+
+## Example
+### Sample Input
+```text
+3 5
+2 1 1
+2 3 1 2
+2 1 2 1
+2 4 1 3
+2 2 3 1
+3 5 1 2 1
+```
+
+### Sample Output
+```text
+1 3 1 2
+```
+
+### Explanation
+The banner is `1 3 1 2`.
+
+Its sponsored occurrences are:
+
+- motif `1 3`: `1` occurrence, payment `4`
+- motif `3 1`: `1` occurrence, payment `2`
+- motif `1 2`: `1` occurrence, payment `3`
+
+No other sponsored motif occurs.
+
+So the revenue is:
+
+```text
+R = 4 + 2 + 3 = 9
+```
+
+The baseline banner is `1 1 2 3`, whose revenue is `B = 3`.
+
+Therefore the sample score would be:
+
+```text
+floor(2,000,000 × 9 / (9 + 3 + 1)) = 1,384,615
+```

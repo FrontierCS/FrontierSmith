@@ -1,0 +1,205 @@
+```markdown
+# Frozen-Front Cluster Layout
+
+## Problem
+
+A warehouse has `n` distinct products, labeled `1..n`, that must be arranged in a single left-to-right shelf order.
+
+Because of existing contracts, the first `k` shelf positions are already fixed.  
+You must place all remaining products in the remaining positions, forming a full permutation `p` of `1..n` such that:
+
+- `p1, p2, ..., pk` are exactly the given fixed products,
+- every product appears exactly once.
+
+The warehouse also provides `m` **affinity groups**. Each group represents products that should be kept close together on the shelf.
+
+For group `j`:
+
+- it has weight `w_j`,
+- it contains `t_j` distinct product labels.
+
+Let the positions of the products of this group in your permutation be:
+
+`pos(x)` for each product `x` in the group.
+
+Define the group's **disruption** as:
+
+`D_j = (max pos(x) - min pos(x) + 1) - t_j`
+
+In other words, `D_j` is the number of products **not in the group** that lie strictly inside the smallest shelf interval covering the whole group.
+
+- `D_j = 0` means the group forms one contiguous block.
+- larger `D_j` means the group is more scattered.
+
+Your goal is to find a feasible permutation minimizing the total weighted disruption.
+
+This is an optimization challenge: exact optimum is not expected.
+
+---
+
+## Input
+
+The first line contains three integers:
+
+`n k m`
+
+- `n` — number of products
+- `k` — number of fixed front positions
+- `m` — number of affinity groups
+
+The second line contains `k` distinct integers:
+
+`p1 p2 ... pk`
+
+If `k = 0`, this line is empty.
+
+Then follow `m` lines.  
+The `j`-th of them describes one group:
+
+`w_j t_j x_{j,1} x_{j,2} ... x_{j,t_j}`
+
+where:
+
+- `w_j` is the weight of the group,
+- `t_j` is its size,
+- `x_{j,1}, ..., x_{j,t_j}` are distinct product labels in this group.
+
+---
+
+## Output
+
+Output one line containing `n` integers: a permutation `p_1, p_2, ..., p_n`.
+
+A submission is **feasible** if and only if:
+
+1. it is a permutation of `1..n`,
+2. `p_i` equals the fixed input value for every `1 <= i <= k`.
+
+If the output is infeasible, the submission receives score `0` on that test.
+
+---
+
+## Objective
+
+For a feasible permutation `p`, let `pos(x)` be the position of product `x` in `p`.
+
+For each group `j`, define:
+
+- `L_j = min(pos(x))` over products `x` in group `j`,
+- `R_j = max(pos(x))` over products `x` in group `j`,
+- `D_j = (R_j - L_j + 1) - t_j`.
+
+The total cost is:
+
+`C = sum over all groups j of (w_j * D_j)`
+
+Your objective is to **minimize** `C`.
+
+---
+
+## Scoring
+
+For each test case, the judge also computes the cost of the following deterministic baseline permutation:
+
+- keep the fixed prefix `p1..pk`,
+- append all remaining unused product labels in increasing numeric order.
+
+Let the baseline cost be `B`, and your submission's cost be `C`.
+
+The per-test score is:
+
+- if the output is infeasible: `0`
+- else if `B = 0`: `100`
+- else:
+
+`score = 100 * clamp((B - C) / B, 0, 1)`
+
+where `clamp(x, 0, 1) = max(0, min(1, x))`.
+
+So:
+
+- matching the baseline gives score `0`,
+- improving on the baseline gives a proportional score between `0` and `100`,
+- any solution with `C = 0` gets `100`,
+- doing worse than the baseline still gives `0`.
+
+The final contest score is the **sum of per-test scores** over all test files.
+
+---
+
+## Constraints
+
+- `1 <= n <= 200000`
+- `0 <= k <= n`
+- `1 <= m <= 200000`
+- `1 <= w_j <= 10^9`
+- `1 <= t_j <= n`
+- products inside each group are distinct
+- the fixed prefix products are distinct
+- the sum of all group sizes satisfies:
+
+`sum(t_j) <= 400000`
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+6 2 4
+4 1
+10 3 1 4 6
+7 2 2 3
+5 3 2 5 6
+8 2 3 5
+```
+
+### Output
+```text
+4 1 6 2 3 5
+```
+
+### Explanation
+
+This output is feasible because:
+
+- it is a permutation of `1..6`,
+- the first two positions are fixed as `4, 1`.
+
+Positions are:
+
+- `pos(1)=2`, `pos(2)=4`, `pos(3)=5`, `pos(4)=1`, `pos(5)=6`, `pos(6)=3`.
+
+Group costs:
+
+1. `{1,4,6}`, weight `10`  
+   positions `{2,1,3}` span `[1,3]`, span length `3`, size `3`  
+   disruption `0`, contribution `0`
+
+2. `{2,3}`, weight `7`  
+   positions `{4,5}` span length `2`, size `2`  
+   disruption `0`, contribution `0`
+
+3. `{2,5,6}`, weight `5`  
+   positions `{4,6,3}` span `[3,6]`, span length `4`, size `3`  
+   disruption `1`, contribution `5`
+
+4. `{3,5}`, weight `8`  
+   positions `{5,6}` span length `2`, size `2`  
+   disruption `0`, contribution `0`
+
+So the total cost is `C = 5`.
+
+The baseline permutation is:
+
+`4 1 2 3 5 6`
+
+Its cost is `B = 35`.
+
+Therefore the score on this test is:
+
+`100 * (35 - 5) / 35 = 85.7142857...`
+```

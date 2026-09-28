@@ -1,0 +1,220 @@
+```markdown
+# Fading Card Recovery
+
+## Problem
+
+A collector has found several vertical stacks of ancient cards. Every card has:
+
+- a **base value** `v`
+- a **daily fading rate** `d`
+- a **relocation cost** `h`
+
+Cards are stored in `n` stacks. Within each stack, cards are listed from **top to bottom**.
+
+You have at most `Q` operations. On operation `t` (`1`-indexed), you may do exactly one of the following:
+
+1. **Collect** the top card of a non-empty stack.  
+   If the collected card has parameters `(v, d, h)`, you gain
+
+   `max(0, v - d * (t - 1))`.
+
+2. **Move** the top card of a non-empty stack to the top of another stack that is not full.  
+   If the moved card has parameters `(v, d, h)`, you pay cost `h`.
+
+You may stop after any number of operations `m` with `0 <= m <= Q`.  
+Cards left in stacks at the end are lost and give no value.
+
+Your task is to output a feasible sequence of operations that **maximizes total profit**:
+
+- total collected value
+- minus total relocation costs
+
+The challenge is open-ended: exact optimization is infeasible on the full input range, so good heuristics matter.
+
+---
+
+## Input
+
+The first line contains two integers:
+
+- `n` — number of stacks
+- `Q` — maximum number of operations
+
+Then follow `n` lines, one per stack.
+
+For stack `i`, the line contains:
+
+- `cap_i` — capacity of the stack
+- `s_i` — initial number of cards in the stack
+- then `3 * s_i` integers describing the cards from top to bottom
+
+Each card is given by a triple:
+
+- `v`
+- `d`
+- `h`
+
+So the line format is:
+
+`cap_i s_i v_1 d_1 h_1 v_2 d_2 h_2 ... v_{s_i} d_{s_i} h_{s_i}`
+
+where card `1` is initially on top.
+
+---
+
+## Output
+
+On the first line, print a single integer `m` — the number of operations you perform.
+
+Then print `m` lines, each in one of the following formats:
+
+- `C i`  
+  Collect the top card of stack `i`.
+
+- `M a b`  
+  Move the top card of stack `a` to the top of stack `b`.
+
+### Feasibility requirements
+
+Your output is **feasible** if all of the following hold:
+
+- `0 <= m <= Q`
+- every printed operation has valid syntax
+- for each `C i`, stack `i` is non-empty at that moment
+- for each `M a b`:
+  - `a != b`
+  - stack `a` is non-empty at that moment
+  - stack `b` is not full at that moment
+
+If the output is infeasible, the objective value is undefined and the score for that test case is `0`.
+
+---
+
+## Objective
+
+Let the operations be processed in order, with turns numbered `1..m`.
+
+- If turn `t` is `C i` and the removed card has parameters `(v, d, h)`, add
+
+  `max(0, v - d * (t - 1))`
+
+  to the profit.
+
+- If turn `t` is `M a b` and the moved card has parameters `(v, d, h)`, subtract
+
+  `h`
+
+  from the profit.
+
+The objective is to **maximize total profit**.
+
+---
+
+## Scoring
+
+For each test case:
+
+- Let `P` be your profit.
+- Let `U = sum of v over all cards in the input`.
+
+Define a deterministic baseline profit `B` as follows:
+
+### Baseline algorithm
+Start from the initial stacks. For turns `t = 1..Q`:
+
+1. For every non-empty stack `i`, compute the immediate collect gain of its top card:
+
+   `g_i = max(0, v_top(i) - d_top(i) * (t - 1))`
+
+2. If all `g_i = 0`, stop.
+3. Choose a stack with maximum `g_i`; break ties by smaller stack index.
+4. Collect that top card.
+
+The resulting profit is `B`.
+
+### Case score
+If your output is infeasible, the case score is `0`.
+
+Otherwise:
+
+- if `P <= B`:
+
+  `score = 50 * max(0, P) / max(1, B)`
+
+- if `P > B`:
+
+  `score = 50 + 50 * (P - B) / max(1, U - B)`
+
+After computing, clamp the score to `[0, 100]`.
+
+### Total score
+Your final score is the arithmetic mean of case scores over all test cases.
+
+This scoring gives:
+- around `50` points for matching the baseline,
+- less than `50` for worse solutions,
+- more than `50` for improving on the baseline,
+- up to `100` for reaching the theoretical upper bound `U`.
+
+---
+
+## Constraints
+
+- `1 <= n <= 80`
+- `1 <= Q <= 10000`
+- `1 <= cap_i <= 100`
+- `0 <= s_i <= cap_i`
+- `1 <= v <= 10000`
+- `0 <= d <= 1000`
+- `0 <= h <= 1000`
+- Total number of cards over all stacks does not exceed `5000`
+
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+---
+
+## Example
+
+### Input
+```text
+3 4
+3 2 1 1 0 10 3 0
+3 2 1 0 0 10 3 0
+3 0
+```
+
+### Output
+```text
+4
+M 1 3
+C 1
+M 2 3
+C 2
+```
+
+### Explanation
+Initial stacks:
+
+- Stack 1: top `(1,1,0)`, then `(10,3,0)`
+- Stack 2: top `(1,0,0)`, then `(10,3,0)`
+- Stack 3: empty
+
+Turn by turn:
+
+1. `M 1 3`  
+   Move the top card `(1,1,0)` from stack 1 to stack 3. Profit `-0`.
+
+2. `C 1`  
+   Collect `(10,3,0)` from stack 1. Gain `10 - 3 * 1 = 7`.
+
+3. `M 2 3`  
+   Move the top card `(1,0,0)` from stack 2 to stack 3. Profit `-0`.
+
+4. `C 2`  
+   Collect `(10,3,0)` from stack 2. Gain `10 - 3 * 3 = 1`.
+
+Total profit: `7 + 1 = 8`.
+
+The baseline never moves cards. It would collect the visible best card each turn and gets profit `7`, so this output beats the baseline.
+```

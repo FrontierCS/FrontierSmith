@@ -1,0 +1,160 @@
+```markdown
+# Connected Influence Order
+
+## Problem
+You are given several weighted directed graphs on the same theme: each vertex is a labeled item, and each directed edge `u -> v` represents the benefit of placing `u` earlier than `v`.
+
+For each test case, you must output a permutation of the vertices.  
+This permutation defines an **implicit DAG**:
+
+- for every input edge `u -> v` with weight `w`,
+- if `u` appears earlier than `v` in your permutation,
+- then that edge becomes **active** and contributes `w` to the total benefit,
+- otherwise it contributes nothing.
+
+Because all active edges point forward in the permutation, the active graph is always a directed acyclic graph.
+
+However, a fragmented DAG is less useful. Let `C` be the number of connected components of the **underlying undirected graph** formed by the active edges, counting isolated vertices as components.
+
+Your goal is to choose the permutation that maximizes:
+- high total active edge weight, and
+- good weak connectivity of the resulting DAG.
+
+## Input
+The first line contains a single integer `T`, the number of test cases.
+
+Each test case has the following format:
+
+- one line with two integers `n m`
+- `m` following lines, each containing three integers `u v w`
+
+Meaning:
+
+- `n` = number of vertices, labeled `1..n`
+- `m` = number of candidate directed edges
+- `u -> v` is a directed edge with positive integer weight `w`
+
+There are no self-loops and no duplicate directed edges within a test case.
+
+## Output
+Print exactly `T` lines.
+
+For the `i`-th test case, output one line containing a permutation of `1..n_i`:
+`p_1 p_2 ... p_n`
+
+This means vertex `p_1` is placed first, `p_2` second, and so on.
+
+### Feasibility
+A line is feasible if and only if it contains each integer from `1` to `n` exactly once.
+
+If a line is infeasible for a test case, that test case receives objective value `0`.
+
+## Objective
+For a test case and a feasible permutation:
+
+1. Let `pos[x]` be the position of vertex `x` in the permutation.
+2. An input edge `(u, v, w)` is **active** iff `pos[u] < pos[v]`.
+3. Let
+
+\[
+W = \sum_{\text{active edges }(u,v,w)} w
+\]
+
+4. Build an undirected graph on the same `n` vertices using all active edges, ignoring orientation.
+5. Let `C` be the number of connected components of that undirected graph.
+
+The objective value is:
+
+\[
+F = W \cdot (n - C + 1)
+\]
+
+You must **maximize** `F`.
+
+### Notes
+- `1 \le C \le n`
+- If the active graph is weakly connected, then `C = 1` and the multiplier is `n`
+- If every vertex is isolated, then `C = n` and the multiplier is `1`
+
+## Scoring
+For each test case, the judge also computes a **baseline permutation**:
+
+1. For each vertex `x`, define its balance:
+\[
+b(x) = \sum_{(x,y,w)} w - \sum_{(y,x,w)} w
+\]
+2. Sort vertices by decreasing `b(x)`
+3. Break ties by smaller vertex label
+
+Let `B` be the objective value of this baseline permutation, computed using the same formula as above.
+
+For your output with objective value `F`, the per-test score is:
+
+\[
+S = 10^6 \cdot \mathrm{clamp}\!\left(0,\ \frac{F+1}{B+1},\ 2\right)
+\]
+
+where
+
+\[
+\mathrm{clamp}(l,x,r)=\max(l,\min(x,r))
+\]
+
+The final score is the arithmetic mean of `S` over all test cases.
+
+### Remarks
+- Matching the baseline gives a score of exactly `1,000,000` on that test.
+- Doing worse gives a proportionally smaller score.
+- Doing better gives a proportionally larger score, capped at `2,000,000` per test.
+
+## Constraints
+- `1 <= T <= 20`
+- `2 <= n <= 3000`
+- `1 <= m <= 200000`
+- `1 <= w <= 10^6`
+- Sum of `n` over all test cases `<= 20000`
+- Sum of `m` over all test cases `<= 1000000`
+
+Judge computations use 64-bit signed integers.
+
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample input
+```text
+1
+4 5
+1 2 8
+1 3 4
+3 2 10
+2 4 7
+4 1 6
+```
+
+### Sample output
+```text
+1 3 2 4
+```
+
+### Explanation
+With order `1 3 2 4`, the active edges are:
+
+- `1 -> 2` (8)
+- `1 -> 3` (4)
+- `3 -> 2` (10)
+- `2 -> 4` (7)
+
+The edge `4 -> 1` is inactive because `4` is after `1`.
+
+So:
+
+- `W = 8 + 4 + 10 + 7 = 29`
+- The underlying undirected graph is connected, so `C = 1`
+- Therefore:
+\[
+F = 29 \cdot (4 - 1 + 1) = 29 \cdot 4 = 116
+\]
+
+The baseline order for this instance is `1 3 4 2`, whose objective is smaller, so this sample output scores above the baseline on this test.
+```

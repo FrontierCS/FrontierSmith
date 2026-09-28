@@ -1,0 +1,143 @@
+```markdown
+# Runic Mirror Grid
+
+## Problem
+An ancient hall contains a rectangular grid of slots. Some slots are broken and cannot hold a rune; the remaining slots must be filled with the letters of a given string.
+
+Whenever several non-broken slots are consecutive in the same row, they form a **horizontal lane**. Similarly, consecutive non-broken slots in the same column form a **vertical lane**. Lanes are **maximal**: they cannot be extended through a broken slot or outside the grid.
+
+After you place all letters, each lane spells a string. Any contiguous substring of a lane that is a palindrome generates magical energy.
+
+Your task is to arrange the given letters in the non-broken cells to maximize the total generated energy.
+
+### Definitions
+- A **palindrome** is a non-empty string that reads the same forward and backward.
+- A **substring** is a contiguous segment of a string.
+- If a palindromic substring has length `L`, it contributes `L^2` energy.
+
+The same text appearing in different positions is counted multiple times. Different occurrences of the same palindrome also count separately.
+
+## Input
+The input describes one test case.
+
+- The first line contains two integers `H` and `W` — the grid height and width.
+- The next `H` lines contain a mask of the grid:
+  - `.` means the cell is usable,
+  - `#` means the cell is broken.
+- The last line contains a string `s` of lowercase Latin letters.
+
+### Guaranteed conditions
+- `|s|` is exactly the number of `.` cells in the mask.
+
+## Output
+Print `H` lines, each of length `W`, describing your filled grid.
+
+Feasibility requirements:
+- Every `#` cell from the input must remain `#`.
+- Every `.` cell must be replaced by a lowercase Latin letter.
+- The multiset of letters written in all non-`#` cells must be exactly the multiset of characters of `s`.
+
+If your output is infeasible, your score for the test case is `0`.
+
+## Objective
+Let `G` be your output grid.
+
+For every maximal horizontal lane and every maximal vertical lane in `G`:
+- consider all of its contiguous substrings,
+- among them, keep only the palindromic ones,
+- add `L^2` for each palindromic substring of length `L`.
+
+Your objective value is the total energy:
+
+\[
+E(G)=\sum_{\text{horizontal lanes } r}\ \sum_{\substack{\text{palindromic}\\ \text{substring } x \text{ of } r}} |x|^2
+\;+\;
+\sum_{\text{vertical lanes } c}\ \sum_{\substack{\text{palindromic}\\ \text{substring } y \text{ of } c}} |y|^2
+\]
+
+You must **maximize** `E(G)`.
+
+## Scoring
+For each test case:
+
+1. Construct the **baseline grid** `B` as follows:
+   - sort the characters of `s` in nondecreasing order,
+   - scan the grid in row-major order,
+   - place the sorted letters into the `.` cells in that order,
+   - keep `#` cells unchanged.
+2. Let:
+   - `E_you` be the energy of your grid,
+   - `E_base` be the energy of the baseline grid.
+
+The score for the test case is:
+
+\[
+\text{score} = 1000 \cdot \min\left(2,\ \frac{E_{\text{you}}}{E_{\text{base}}}\right)
+\]
+
+If your output is infeasible, the score is `0`.
+
+The final score over a test set is the sum of scores over all test cases.
+
+### Notes
+- The baseline always has positive energy, because every single-cell substring is a palindrome.
+- A solution equal to the baseline gets exactly `1000` points for that test.
+- Better solutions receive proportionally higher scores, up to `2000` per test.
+
+## Constraints
+- `1 <= H, W <= 200`
+- Number of usable cells `N` satisfies `1 <= N <= 40000`
+- `s` consists only of lowercase Latin letters
+- Time limit: 2 seconds
+- Memory limit: 256 MB
+
+## Example
+### Input
+```text
+3 3
+...
+.#.
+...
+aabcbcaa
+```
+
+### Output
+```text
+aba
+c#c
+aba
+```
+
+### Explanation
+The horizontal lanes are:
+- `aba`
+- `c`
+- `c`
+- `aba`
+
+The vertical lanes are:
+- `aca`
+- `b`
+- `b`
+- `aca`
+
+Each `aba` or `aca` contributes:
+- three length-1 palindromes, and
+- one length-3 palindrome,
+
+so its energy is `1 + 1 + 1 + 9 = 12`.
+
+Each single-letter lane contributes `1`.
+
+Therefore the total energy of the shown output is:
+
+`12 + 1 + 1 + 12 + 12 + 1 + 1 + 12 = 52`.
+
+For this input, the baseline fills the open cells in row-major order with the sorted string `aaaabbcc`, giving energy `41`. So the sample output would receive
+
+\[
+1000 \cdot \frac{52}{41} \approx 1268.29
+\]
+
+points for this test case.
+```

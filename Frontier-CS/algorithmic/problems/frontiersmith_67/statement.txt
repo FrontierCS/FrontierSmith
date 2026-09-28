@@ -1,0 +1,224 @@
+```markdown
+# Rectangle Fingerprinting under Sensor Budget
+
+## Problem
+
+A surveillance system will later observe an **unknown axis-aligned rectangle** on an integer grid.
+
+The grid consists of all lattice points  
+\[
+( x, y ),\quad 1 \le x,y \le N.
+\]
+
+A rectangle is specified by four integers \((x_1,y_1,x_2,y_2)\) with
+\[
+1 \le x_1 < x_2 \le N,\qquad 1 \le y_1 < y_2 \le N,
+\]
+and it contains every lattice point \((x,y)\) satisfying
+\[
+x_1 \le x \le x_2,\qquad y_1 \le y \le y_2.
+\]
+
+You are given a weighted list of possible hidden rectangles.  
+Later, for each of your chosen queries, the system will only reveal:
+
+- the number of selected lattice points that lie inside or on the boundary of the hidden rectangle.
+
+Your task is to design up to \(K\) non-adaptive queries, under a total budget \(C\), so that the hidden rectangle can be inferred as reliably as possible.
+
+### Query model
+
+A query is any subset of grid points.  
+If the hidden rectangle is \(R\), the answer to query \(S\) is
+\[
+|S \cap R|.
+\]
+
+You must output exactly \(K\) query subsets \(S_1,\dots,S_K\), where the total number of listed points over all queries is at most \(C\).
+
+For a candidate rectangle \(R_j\), define its **response vector**
+\[
+v_j = \bigl(|S_1\cap R_j|,\ |S_2\cap R_j|,\ \dots,\ |S_K\cap R_j|\bigr).
+\]
+
+Rectangles with the same response vector are indistinguishable by your queries.
+
+Each candidate rectangle \(j\) has a positive weight \(w_j\), representing how important it is to identify correctly.
+
+After seeing a response vector, the best possible deterministic strategy is to guess, among all rectangles with that vector, the one with maximum weight.
+
+Your goal is to maximize the total weight of rectangles that would then be guessed correctly.
+
+---
+
+## Input
+
+The input describes one instance.
+
+The first line contains four integers:
+\[
+N\ K\ C\ M
+\]
+
+- \(N\): grid size
+- \(K\): number of queries you must output
+- \(C\): total point budget
+- \(M\): number of candidate rectangles
+
+The next \(M\) lines each contain five integers:
+\[
+x_1\ y_1\ x_2\ y_2\ w
+\]
+describing one candidate rectangle and its weight.
+
+All candidate rectangles are distinct.
+
+---
+
+## Output
+
+Output exactly \(K\) lines.
+
+For the \(i\)-th query, output:
+\[
+t_i\ x_{i,1}\ y_{i,1}\ x_{i,2}\ y_{i,2}\ \dots\ x_{i,t_i}\ y_{i,t_i}
+\]
+where:
+
+- \(t_i \ge 0\) is the number of points in query \(i\),
+- each listed point must satisfy \(1 \le x,y \le N\),
+- within a single query, all listed points must be distinct.
+
+The same point may appear in different queries; each appearance counts separately toward the budget.
+
+A submission is **feasible** iff:
+
+- exactly \(K\) query lines are printed,
+- all coordinates are valid,
+- no query contains duplicate points,
+- \(\sum_{i=1}^{K} t_i \le C\).
+
+Infeasible outputs receive objective value \(0\).
+
+---
+
+## Objective
+
+For each candidate rectangle \(j\), compute its response vector \(v_j\).
+
+Group candidate rectangles by equal response vector.  
+For each group \(G\), let
+\[
+b(G)=\max_{j\in G} w_j.
+\]
+
+Your objective value is
+\[
+T = \sum_{\text{groups } G} b(G).
+\]
+
+Equivalently, if the hidden rectangle is drawn proportionally to its weight and you always guess the heaviest rectangle consistent with the answers, then \(T / \sum_j w_j\) is the success probability.
+
+Higher is better.
+
+---
+
+## Scoring
+
+Let:
+
+- \(T_{\text{you}}\) be your objective value,
+- \(W=\sum_{j=1}^{M} w_j\).
+
+A deterministic baseline solution is defined as follows.
+
+### Baseline queries
+
+Let the grid points be ordered lexicographically:
+\[
+(1,1),(1,2),\dots,(1,N),(2,1),\dots,(N,N).
+\]
+Call this list \(p_1,p_2,\dots,p_{N^2}\).
+
+Let
+\[
+c_i=\left\lfloor \frac{C}{K}\right\rfloor + [\,i \le C\bmod K\,]
+\]
+for \(i=1,\dots,K\), where \([P]\) is \(1\) if \(P\) is true and \(0\) otherwise.
+
+Baseline query \(i\) contains the first \(c_i\) points of the sequence
+\[
+p_i,\ p_{i+K},\ p_{i+2K},\dots
+\]
+that exist.
+
+Let \(T_{\text{base}}\) be the objective value of this baseline.
+
+### Per-test score
+
+If \(T_{\text{base}} = W\), then the score for the test is \(1{,}000{,}000\).
+
+Otherwise:
+- if \(T_{\text{you}} \le T_{\text{base}}\),
+  \[
+  \text{score} = 500000 \cdot \frac{T_{\text{you}}}{T_{\text{base}}};
+  \]
+- if \(T_{\text{you}} > T_{\text{base}}\),
+  \[
+  \text{score} = 500000 + 500000 \cdot \frac{T_{\text{you}}-T_{\text{base}}}{W-T_{\text{base}}}.
+  \]
+
+The value is computed in real numbers and then floored to an integer.
+
+The final contest score is the average of per-test scores over all official test files, rounded down.
+
+---
+
+## Constraints
+
+- \(2 \le N \le 200\)
+- \(1 \le K \le 6\)
+- \(1 \le C \le \min(1200, N^2)\)
+- \(1 \le M \le 100000\)
+- \(1 \le w \le 10^9\)
+- Time limit: 3 seconds
+- Memory limit: 512 MB
+
+---
+
+## Example
+
+### Input
+```text
+5 2 4 3
+1 1 3 3 5
+2 2 5 4 4
+1 3 4 5 3
+```
+
+### Output
+```text
+2 1 1 5 5
+2 3 3 4 2
+```
+
+### Explanation
+The two queries are:
+
+- \(S_1=\{(1,1),(5,5)\}\)
+- \(S_2=\{(3,3),(4,2)\}\)
+
+The three candidate rectangles get response vectors:
+
+- \((1,1,3,3)\): \((1,1)\)
+- \((2,2,5,4)\): \((0,2)\)
+- \((1,3,4,5)\): \((0,1)\)
+
+All three response vectors are distinct, so each candidate forms its own group. Therefore
+\[
+T = 5+4+3 = 12,
+\]
+which is the maximum possible value \(W\).
+
+A perfect solution receives the maximum score on this test.
+```

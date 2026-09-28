@@ -1,0 +1,207 @@
+```markdown
+# Synchronized Treasure Walks
+
+## Problem
+Elsie is designing a multi-world scavenger hunt.
+
+There are \(K\) undirected connected graphs \(G_1, G_2, \dots, G_K\).  
+Graph \(G_i\) has vertices \(1 \ldots N_i\), and each vertex \(v\) has a positive treasure value \(a_{i,v}\).
+
+A **global state** is a \(K\)-tuple
+\[
+(x_1, x_2, \dots, x_K)
+\]
+with \(1 \le x_i \le N_i\).
+
+A **global move** changes every coordinate simultaneously: from
+\[
+(x_1,\dots,x_K) \to (y_1,\dots,y_K)
+\]
+such that for every \(i\), \((x_i,y_i)\) is an edge of \(G_i\).  
+A self-loop \((v,v)\) means you may stay at \(v\) in that graph during a move.
+
+You start at the global state
+\[
+(1,1,\dots,1).
+\]
+
+You must output one walk of exactly \(T\) moves in **each** graph. These \(K\) walks together define a global walk of length \(T\).
+
+The treasure collected from a global state
+\[
+(x_1,\dots,x_K)
+\]
+is
+\[
+\prod_{i=1}^K a_{i,x_i}.
+\]
+
+If the same global state is visited multiple times, its treasure is collected **only once**: on the first visit.
+
+Your goal is to maximize the total collected treasure.
+
+---
+
+## Input
+The first line contains two integers:
+\[
+K \quad T
+\]
+
+Then for each \(i = 1 \ldots K\):
+
+- one line with two integers:
+  \[
+  N_i \quad M_i
+  \]
+- one line with \(N_i\) integers:
+  \[
+  a_{i,1}\ a_{i,2}\ \dots\ a_{i,N_i}
+  \]
+- \(M_i\) following lines, each containing two integers \(u, v\), meaning an undirected edge between \(u\) and \(v\)
+
+### Notes
+- Self-loops may appear (\(u=v\)).
+- There are no multiple edges with the same unordered endpoints.
+- Each graph is connected.
+
+---
+
+## Output
+Output exactly \(K\) lines.
+
+For each \(i = 1 \ldots K\), output a sequence of \(T+1\) integers
+\[
+x_{i,0}\ x_{i,1}\ \dots\ x_{i,T}
+\]
+describing your walk in graph \(G_i\), subject to:
+
+- \(x_{i,0} = 1\)
+- \(1 \le x_{i,t} \le N_i\) for all \(t\)
+- for every \(t = 0 \ldots T-1\), the edge \((x_{i,t}, x_{i,t+1})\) must exist in \(G_i\)
+
+If any line violates these rules, the submission is infeasible and receives score \(0\) on that test.
+
+The global state at time \(t\) is
+\[
+(x_{1,t}, x_{2,t}, \dots, x_{K,t}).
+\]
+
+---
+
+## Objective
+Let \(S\) be the set of distinct global states visited at times \(0,1,\dots,T\).
+
+Your objective value is
+\[
+\text{OBJ} = \sum_{(x_1,\dots,x_K)\in S} \prod_{i=1}^K a_{i,x_i}.
+\]
+
+Higher is better.
+
+---
+
+## Scoring
+For each test instance, let your objective value be \(\text{OBJ}\).
+
+Let \(\text{BASE}\) be the objective value of the following deterministic baseline solution:
+
+### Baseline construction
+For each graph \(G_i\):
+
+1. Build the lexicographically smallest BFS tree rooted at vertex \(1\):
+   - Use a standard BFS queue.
+   - When scanning neighbors of a vertex, consider neighbors in increasing order.
+   - Self-loops do not help discover new vertices and are ignored by BFS.
+
+2. From this rooted tree, generate the DFS-style Euler tour walk:
+   - Start at vertex \(1\)
+   - For each child of a vertex, in increasing order:
+     - move to the child
+     - recursively process that child
+     - move back to the parent
+
+   This produces a closed walk
+   \[
+   e_0, e_1, \dots, e_L
+   \]
+   with \(e_0 = e_L = 1\).
+
+3. Extend it to length \(T\) by repeating the tour, but omitting the duplicated start/end vertex between copies.  
+   Equivalently, after reaching \(e_L=1\), continue with \(e_1,e_2,\dots\).
+
+The \(K\) baseline walks together define the baseline global walk, whose objective is \(\text{BASE}\).
+
+### Per-test score
+\[
+\text{score} = \left\lfloor 10^6 \cdot \operatorname{clamp}\!\left(\frac{\text{OBJ}-\text{BASE}}{4\cdot \text{BASE}},\ 0,\ 1\right) \right\rfloor
+\]
+where
+\[
+\operatorname{clamp}(x,0,1)=\max(0,\min(1,x)).
+\]
+
+So:
+- matching the baseline gives score \(0\)
+- achieving \(5 \times \text{BASE}\) or better gives full score \(10^6\) on that test
+- intermediate performance earns proportionally intermediate score
+
+### Total score
+Your total score is the sum of per-test scores over all test files.
+
+---
+
+## Constraints
+- \(2 \le K \le 10\)
+- \(1 \le T \le 5 \times 10^4\)
+- \(2 \le N_i\)
+- \(N_i - 1 \le M_i\)
+- \(1 \le a_{i,v} \le 9\)
+- \(\sum N_i \le 2 \times 10^4\)
+- \(\sum M_i \le 8 \times 10^4\)
+
+## Constraints
+- Time limit: 6 seconds
+- Memory limit: 512 MB
+
+## Example
+### Sample input
+```text
+2 3
+3 2
+2 3 5
+1 2
+2 3
+3 3
+7 11 13
+1 2
+2 3
+3 1
+```
+
+### Sample output
+```text
+1 2 3 2
+1 2 3 1
+```
+
+### Explanation
+The visited global states are:
+\[
+(1,1),\ (2,2),\ (3,3),\ (2,1)
+\]
+all distinct.
+
+Their treasures are:
+- \((1,1)\): \(2 \cdot 7 = 14\)
+- \((2,2)\): \(3 \cdot 11 = 33\)
+- \((3,3)\): \(5 \cdot 13 = 65\)
+- \((2,1)\): \(3 \cdot 7 = 21\)
+
+So the objective value is
+\[
+14 + 33 + 65 + 21 = 133.
+\]
+
+The official score is computed by comparing this value against the baseline value for the same input.
+```
