@@ -65,6 +65,26 @@ The complete 200-problem training set is in
 input/answer pairs**. The problem IDs and training row order are recorded in
 [`frontiersmith_train_200.json`](data/sample_lists/frontiersmith_train_200.json).
 
+### Repaired training tasks (2026-10-12, this fork)
+
+Tasks **18, 52, 58, 100, 106, 108, 125, and 183** have revised checkers,
+statements, and ten regenerated test cases each. Their training Parquet rows
+have been synchronized; the other 192 tasks retain their released contents.
+
+These tasks now reward improvement over the stated feasible baseline, using
+the paper's baseline-normalized objective improvement with positive shifts
+where needed. Matching the baseline scores zero; better solutions receive
+continuous partial credit on the judge's 0–100 scale. Empty output is invalid.
+The checkers compute baselines directly, so their empty `.ans` files are
+intentional. Task 58 also corrects transfer direction, task 100 validates
+triangle coverage in linear grid time, and task 106 includes remainder-strip
+sales in its uniform baseline.
+
+Use the revised statements, test data, checkers, and Parquet together for new
+runs. Scores on these eight tasks are not directly comparable with the original
+release. Only final problem assets are included; generation intermediates,
+solution candidates, and experiment traces are not distributed.
+
 ### Parity subset (10 of the 200 problems)
 
 All 10 previously released examples are included in the training set with

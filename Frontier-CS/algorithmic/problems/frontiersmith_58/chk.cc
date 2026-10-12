@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
     if (K < 0) {
         quitf(_wa, "K=%d is negative", K);
     }
-    if (K > 10000000) {
+    if (K > 1000000) {
         quitf(_wa, "K=%d is too large", K);
     }
 
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
     // net flow for each person from online transfers
     vector<long long> online_net(M, 0);
 
-    long long C = 0;
+    __int128 C = 0;
 
     // Add meetup costs
     for (int l = 0; l < L; l++) {
@@ -157,12 +157,12 @@ int main(int argc, char* argv[]) {
         if (u < 0 || u >= M) quitf(_wa, "Transfer %d: u=%d out of range", k, u);
         if (v < 0 || v >= M) quitf(_wa, "Transfer %d: v=%d out of range", k, v);
         if (u == v) quitf(_wa, "Transfer %d: u==v==%d", k, u);
-        if (x < 1) quitf(_wa, "Transfer %d: x=%lld < 1", k, (long long)x);
+        if (x < 1 || x > 50000000LL) quitf(_wa, "Transfer %d: x=%lld outside [1,50000000]", k, (long long)x);
 
         online_net[v] += x;
         online_net[u] -= x;
 
-        C += S[u][v] + R[u][v] * x;
+        C += (__int128)S[u][v] + (__int128)R[u][v] * x;
 
         transfers[k] = {u, v, x};
     }
@@ -182,29 +182,22 @@ int main(int argc, char* argv[]) {
                 group_online += online_net[i];
             }
         }
-        if (group_bal + group_online != 0) {
-            quitf(_wa, "Meetup group %d not balanced: bal=%lld, online_net=%lld, sum=%lld",
-                  l, (long long)group_bal, (long long)group_online, (long long)(group_bal + group_online));
+        if (group_bal - group_online != 0) {
+            quitf(_wa, "Meetup group %d not balanced: bal=%lld, online_net=%lld, residual=%lld",
+                  l, (long long)group_bal, (long long)group_online, (long long)(group_bal - group_online));
         }
     }
 
     // For each solo person
     for (int i = 0; i < M; i++) {
         if (A[i] == -1) {
-            if (bal[i] + online_net[i] != 0) {
-                quitf(_wa, "Person %d (solo) not balanced: bal=%lld, online_net=%lld, sum=%lld",
-                      i, (long long)bal[i], (long long)online_net[i], (long long)(bal[i] + online_net[i]));
+            if (bal[i] - online_net[i] != 0) {
+                quitf(_wa, "Person %d (solo) not balanced: bal=%lld, online_net=%lld, residual=%lld",
+                      i, (long long)bal[i], (long long)online_net[i], (long long)(bal[i] - online_net[i]));
             }
         }
     }
 
-    // ---- Compute score ----
-    // ratio = min(1.0, (B+1)/(C+1))
-    double ratio = (double)(B + 1) / (double)(C + 1);
-    if (ratio > 1.0) ratio = 1.0;
-    if (ratio < 0.0) ratio = 0.0;
-
-    quitp(ratio, "Feasible. C=%lld, B=%lld, Ratio: %.9f", (long long)C, (long long)B, ratio);
-
-    return 0;
+    double ratio = max(0.0L, ((long double)B - C) / ((long double)B + 1.0L));
+    quitp(ratio, "C=%.0Lf B=%lld Ratio: %.12f", (long double)C, B, ratio);
 }

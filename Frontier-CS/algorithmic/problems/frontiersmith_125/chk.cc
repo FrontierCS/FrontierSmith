@@ -108,61 +108,7 @@ int main(int argc, char* argv[]) {
 
     long long OBJ = C_ops + C_rem;
 
-    // ---- Score calculation ----
-    // Per statement:
-    //   if BASE == 0:
-    //     OBJ == 0  => score = 1,000,000   => ratio = 1.0
-    //     OBJ  > 0  => score = 0            => ratio = 0.0
-    //   else:
-    //     score = floor(10^6 * min(5, BASE/OBJ))
-    //     max score = 5,000,000 (when OBJ <= BASE/5)
-    //     baseline score = 1,000,000 (when OBJ == BASE)
-    //
-    // Mapping to quitp ratio in [0, 1]:
-    //   ratio = min(1.0, (5 * 10^6) * (BASE/OBJ) / (5 * 10^6))
-    //         = min(1.0, BASE / OBJ)
-    //
-    // This makes:
-    //   baseline (OBJ == BASE)  => ratio = 1.0  => full score from platform
-    //   better than baseline    => ratio = 1.0  (clamped; the 5x cap is in platform config)
-    //   worse than baseline     => ratio = BASE/OBJ in (0, 1)
-    //
-    // Note: the platform awards floor(10^6 * ratio) per test up to 10^6,
-    // giving baseline = 1,000,000 as stated.
-
-    if (BASE == 0) {
-        if (OBJ == 0) {
-            quitp(1.0, "BASE=0 OBJ=0 per_test_score=1000000 Ratio: 1.000000");
-        } else {
-            quitp(0.0, "BASE=0 OBJ=%lld>0 per_test_score=0 Ratio: 0.000000", OBJ);
-        }
-    } else {
-        double ratio;
-        if (OBJ <= 0) {
-            // Shouldn't happen since all costs are positive; treat as perfect
-            ratio = 1.0;
-        } else {
-            // ratio = min(5, BASE/OBJ) / 5 ... but mapped so baseline=1.0:
-            // score = floor(10^6 * min(5, BASE/OBJ))
-            // To make baseline=1.0 in [0,1]: ratio = min(5, BASE/OBJ) / 5
-            // BUT this makes baseline = 0.2, not 1.0.
-            //
-            // Fix: ratio = min(1.0, BASE/OBJ) so that:
-            //   baseline (OBJ=BASE):  ratio = 1.0
-            //   5x bonus (OBJ=BASE/5): ratio = 1.0 (clamped)
-            //   worse:                ratio = BASE/OBJ < 1.0
-            double raw = (double)BASE / (double)OBJ;
-            if (raw > 1.0) raw = 1.0;
-            if (raw < 0.0) raw = 0.0;
-            ratio = raw;
-        }
-
-        long long perTestScore = (long long)floor(1000000.0 * ratio);
-
-        quitp(ratio,
-              "OBJ=%lld BASE=%lld C_ops=%lld C_rem=%lld per_test_score=%lld Ratio: %f",
-              OBJ, BASE, C_ops, C_rem, perTestScore, ratio);
-    }
-
-    return 0;
+    double ratio = max(0.0L, ((long double)BASE - OBJ) /
+                                  ((long double)BASE + 1.0L));
+    quitp(ratio, "OBJ=%lld BASE=%lld Ratio: %.12f", OBJ, BASE, ratio);
 }

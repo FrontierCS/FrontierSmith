@@ -58,15 +58,14 @@ int main(int argc, char* argv[]) {
     vector<ll> xs(kx), ys(ky);
     for (int i = 0; i < (int)kx; i++) {
         xs[i] = ouf.readLong();
-        if (xs[i] < 1) quitf(_wa, "x[%d]=%lld must be positive", i, xs[i]);
+        if (xs[i] < 1 || xs[i] > W) quitf(_wa, "x[%d]=%lld must be positive", i, xs[i]);
     }
     for (int j = 0; j < (int)ky; j++) {
         ys[j] = ouf.readLong();
-        if (ys[j] < 1) quitf(_wa, "y[%d]=%lld must be positive", j, ys[j]);
+        if (ys[j] < 1 || ys[j] > H) quitf(_wa, "y[%d]=%lld must be positive", j, ys[j]);
     }
 
-    // NOTE: Do NOT call ouf.readEof() here.
-    // Candidate solutions often print trailing spaces/newlines which are harmless.
+    if (!ouf.seekEof()) quitf(_wa, "extra output after strip lengths");
 
     // Feasibility: sums must equal W and H
     ll sumX = 0, sumY = 0;
@@ -105,71 +104,34 @@ int main(int argc, char* argv[]) {
     // ---- Compute L ----
     lll L = (lll)S * W * H + (lll)CV * Vmax + (lll)CH * Hmax;
 
-    // ---- Compute BASE (baseline) ----
-    // OBJ_0: do nothing (kx=1, ky=1, no sales)
-    lll OBJ_0 = -(lll)S * W * H;
-    lll BASE  = OBJ_0;
-
-    for (int i = 0; i < n; i++) {
-        if (wi[i] > W || hi[i] > H) continue;
-
-        ll ax = W / wi[i];
-        ll rx = W - ax * wi[i];
-        ll sx = ax + (rx > 0 ? 1 : 0);  // number of x-strips
-
-        ll ay = H / hi[i];
-        ll ry = H - ay * hi[i];
-        ll sy = ay + (ry > 0 ? 1 : 0);  // number of y-strips
-
-        if ((sx - 1) > Vmax || (sy - 1) > Hmax) continue;
-
-        lll sold_i = (lll)di[i] < (lll)ax * ay ? (lll)di[i] : (lll)ax * ay;
-        lll OBJ_i  = sold_i * (lll)ri[i]
-                     - (lll)S * ((lll)W * H - sold_i * (lll)wi[i] * (lll)hi[i])
-                     - (lll)(sx - 1) * CV
-                     - (lll)(sy - 1) * CH;
-
-        if (OBJ_i > BASE) BASE = OBJ_i;
-    }
-
-    // ---- Compute score ratio ----
-    // score = floor(1,000,000 * min(2, (OBJ + L + 1) / (BASE + L + 1)))
-    // We map this to quitp ratio in [0,1]:
-    //   ratio = clamp(OBJ+L+1, 0, BASE+L+1) / (BASE+L+1)
-    // so that:
-    //   OBJ == BASE  => ratio = 1.0 (full score = 1,000,000)
-    //   OBJ > BASE   => ratio = 1.0 (capped; above-baseline bonus handled separately if desired)
-    //   OBJ < BASE   => ratio in [0,1) proportional to how close we are
-    //   OBJ == -L-1  => ratio = 0.0 (infeasible penalty)
-    //
-    // NOTE: OBJ >= -L for any feasible solution, so numerator >= 1 when OBJ >= -L.
-
-    lll numerator   = OBJ  + L + (lll)1;
-    lll denominator = BASE + L + (lll)1;
-
-    double ratio = 0.0;
-    if (denominator <= 0) {
-        // Degenerate: shouldn't happen since BASE >= OBJ_0 = -S*W*H >= -L
-        ratio = 1.0;
-    } else {
-        // ratio = numerator / denominator, capped to [0, 1]
-        // We use long double for precision
-        long double num_ld = (long double)numerator;
-        long double den_ld = (long double)denominator;
-        long double r = num_ld / den_ld;
-        // Allow up to 2x baseline to map to ratio up to 1.0
-        // (so above-baseline solutions also get ratio=1.0 max)
-        if (r < 0.0L) r = 0.0L;
-        if (r > 1.0L) r = 1.0L;
-        ratio = (double)r;
-    }
-
-    if (ratio < 0.0) ratio = 0.0;
-    if (ratio > 1.0) ratio = 1.0;
-
-    quitp(ratio, "OBJ=%s BASE=%s L=%s Ratio: %f",
-          lll_to_string(OBJ).c_str(),
-          lll_to_string(BASE).c_str(),
-          lll_to_string(L).c_str(),
-          ratio);
+    // Evaluate each uniform pattern against ALL order types it produces,
+    // including rectangles involving the remainder strips.
+    map<pair<ll,ll>, int> order;
+    for (int i = 0; i < n; ++i) order[{wi[i], hi[i]}] = i;
+    auto patternObjective = [&](ll w, ll h) -> lll {
+        ll ax = W/w, rx = W%w, ay = H/h, ry = H%h;
+        ll sx = ax + (rx != 0), sy = ay + (ry != 0);
+        if (sx-1 > Vmax || sy-1 > Hmax) return -L-1;
+        vector<pair<ll,ll>> vx={{w,ax}}, vy={{h,ay}};
+        if(rx) vx.push_back({rx,1});
+        if(ry) vy.push_back({ry,1});
+        lll profit = -(lll)S*W*H - (lll)(sx-1)*CV - (lll)(sy-1)*CH;
+        for(auto [ww,cw]:vx) for(auto [hh,ch]:vy) {
+            auto it=order.find({ww,hh});
+            if(it==order.end()) continue;
+            int i=it->second;
+            lll sold=min((lll)di[i],(lll)cw*ch);
+            profit+=sold*((lll)ri[i]+(lll)S*wi[i]*hi[i]);
+        }
+        return profit;
+    };
+    lll BASE = patternObjective(W,H);
+    for(int i=0;i<n;++i) BASE=max(BASE,patternObjective(wi[i],hi[i]));
+    // Subtract in 128-bit integer arithmetic BEFORE conversion to avoid
+    // catastrophic cancellation with very large scrap penalties.
+    lll gain = OBJ - BASE;
+    long double ratio = gain > 0 ? (long double)gain / (long double)(OBJ+L+1) : 0.0L;
+    quitp((double)ratio, "OBJ=%s BASE=%s L=%s Ratio: %.12f",
+          lll_to_string(OBJ).c_str(), lll_to_string(BASE).c_str(),
+          lll_to_string(L).c_str(), (double)ratio);
 }

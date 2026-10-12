@@ -1,4 +1,3 @@
-```markdown
 # Circular Backbone Leasing
 
 ## Problem
@@ -80,29 +79,23 @@ Your objective value is:
 Note that the empty solution (`e = 0`) is always feasible and has objective `0`.
 
 ## Scoring
-For each test case `x`:
+The baseline is the better of these two feasible solutions:
+1. Build nothing, giving objective 0.
+2. If **all** polygon sides are allowed, build all sides on channel 1.
+   Its objective is the sum of all client profits minus all polygon-side costs.
+   If any side is forbidden, this second option is unavailable.
 
-- Let `O_x` be your objective value
-- Let `B_x` be the objective of the **baseline solution**
-- Let `R_x` be the objective of the organizer's reference solution
+Let `B` be this baseline objective, `O` your objective, and `P` the sum of all
+client profits. A valid solution scores 0 if `O <= B`. Otherwise its test score is
+`100 * (O - B) / (O + P + 1)`.
+The shift `P+1` keeps the normalization positive in the scored region and avoids
+saturation when the empty baseline has value 0.
 
-The baseline solution is:
-
-- build every allowed polygon side `(1,2), (2,3), ..., (n-1,n), (n,1)` on channel `1`
-- or build nothing  
-- `B_x` is the better objective of these two choices
-
-Your score on test case `x` is:
-
-- `0`, if your output is infeasible
-- `100`, if `R_x = B_x` and `O_x >= B_x`
-- `100 * clamp((O_x - B_x) / (R_x - B_x), 0, 1)`, otherwise
-
-where `clamp(z, 0, 1) = max(0, min(1, z))`.
-
-The final score is the average of test-case scores.
-
-Beating the reference solution does not give more than `100` points on a test.
+A malformed or infeasible output receives 0. The final score is the arithmetic
+mean of the per-test scores. Matching or worsening the baseline receives 0;
+strict improvements receive a continuous score below 100. The additive 1
+keeps the formula defined even when an objective is zero. No reference-answer
+file is needed: the checker computes the baseline from the input.
 
 ## Constraints
 - `3 <= n <= 250`
@@ -152,4 +145,3 @@ Objective:
 - objective = `11`
 
 This may or may not be optimal.
-```

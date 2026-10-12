@@ -72,19 +72,6 @@ int main(int argc, char* argv[]) {
 
     // ---- Read participant output from ouf ----
     // First token: number of segments e
-    if (ouf.seekEof()) {
-        // Empty output => 0 segments => objective 0
-        long long O = 0;
-        double ratio;
-        if (B <= 0) {
-            ratio = 1.0;
-        } else {
-            ratio = 0.0;
-        }
-        ratio = max(0.0, min(1.0, ratio));
-        quitp(ratio, "Empty output (e=0). Objective=0, Baseline=%lld, Ratio: %.6f", B, ratio);
-    }
-
     int e = ouf.readInt(0, n * (n - 1) / 2, "e");
 
     struct Seg { int u, v, ch; };
@@ -184,38 +171,11 @@ int main(int argc, char* argv[]) {
 
     long long O = totalProfit - totalCost;
 
-    // ---- Compute score ratio ----
-    // Score = clamp((O - B) / (R - B), 0, 1)
-    // R is not available; we approximate:
-    //   if O >= B  => ratio = 1.0  (matches or beats baseline)
-    //   if O < B   => partial credit proportional to how close O is to B
-    //                 ratio = max(0, O / B)  when B > 0
-    //                 ratio = 0              when B <= 0 and O < 0
-    double ratio;
-    if (O >= B) {
-        ratio = 1.0;
-    } else {
-        // O < B
-        if (B > 0) {
-            // Linear partial credit: 0 at O=0 (empty solution) up to 1 at O=B
-            // Use (O - 0) / (B - 0) if O >= 0, else 0
-            if (O >= 0) {
-                ratio = (double)O / (double)B;
-            } else {
-                // O < 0 < B: worse than empty solution => 0
-                ratio = 0.0;
-            }
-        } else {
-            // B <= 0 and O < B => worse than baseline
-            // Give ratio = 0
-            ratio = 0.0;
-        }
-    }
-    ratio = max(0.0, min(1.0, ratio));
-
-    quitp(ratio,
-        "Feasible. e=%d, Cost=%lld, Profit=%lld, Objective=%lld, Baseline=%lld, Ratio: %.6f",
-        e, totalCost, totalProfit, O, B, ratio);
-
-    return 0;
+    long long P = 0;
+    for (const auto& client : clients) P += client.profit;
+    // Positive shifted objectives: O + P + 1 and B + P + 1.
+    // When O <= B the score is exactly zero; otherwise both are positive.
+    double ratio = O <= B ? 0.0 : (double)((long double)(O - B) /
+                                          ((long double)O + P + 1.0L));
+    quitp(ratio, "Objective=%lld Baseline=%lld Shift=%lld Ratio: %.12f", O, B, P+1, ratio);
 }
