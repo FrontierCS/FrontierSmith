@@ -67,26 +67,32 @@ input/answer pairs**. The problem IDs and training row order are recorded in
 
 ### Repaired training tasks (2026-10-12, this fork)
 
-Tasks **18, 52, 58, 100, 106, 108, 125, and 183** have revised checkers,
-statements, and ten regenerated test cases each. Their training Parquet rows
-have been synchronized; the other 192 tasks retain their released contents.
+Tasks **18, 52, 58, 100, 106, 108, 125, and 183** have revised checkers
+and scoring descriptions. **79 of 80 test inputs are byte-for-byte identical to
+the upstream release**. The sole input change is task 183's first micro-case:
+two candidates replace one, with one capability and budget 100 retained. This
+is the smallest candidate count that permits a strict greedy counterexample.
+All original large instances are preserved.
+The corresponding eight training prompt rows are synchronized; the other 192
+rows retain their released contents.
 
-These tasks now reward improvement over the stated feasible baseline. Seven
-use the paper's baseline-normalized objective improvement with positive shifts
-where needed; task 183 retains its reference-calibrated score. Matching the baseline scores zero; better solutions receive
-continuous partial credit on the judge's 0–100 scale. Empty output is invalid.
-Tasks 18, 52, 58, 100, 106, 108, and 125 compute baselines directly and do
-not use reference answers. Task 183 preserves its original reference-based
-normalization: each `.ans` contains the objective of a fixed feasible reference
-team, which must strictly improve on the greedy baseline. Missing or degenerate
-reference values are judge errors. Task 58 also corrects transfer direction,
-task 100 validates triangle coverage in linear grid time, and task 106 includes
-remainder-strip sales in its uniform baseline.
+Seven tasks reward improvement over their documented baseline. Task 183 retains
+baseline-to-reference normalization and supplies the ten missing scalar `.ans`
+values, computed from feasible reference teams on the matching inputs. If its
+reference and baseline coincide to numerical tolerance, it uses the candidate's
+objective/reference ratio instead of giving every valid team full credit.
+Missing or invalid reference values are judge errors. Empty contestant output
+is invalid, and an empty team in task 183 scores zero.
 
-Use the revised statements, test data, checkers, and Parquet together for new
-runs. Scores on these eight tasks are not directly comparable with the original
-release. Only final problem assets are included; generation intermediates,
-solution candidates, and experiment traces are not distributed.
+Task 58 corrects transfer direction, task 100 computes triangle coverage in
+linear grid time with one documented baseline for all sizes, and task 106
+includes remainder-strip sales in the uniform baseline.
+
+Use the updated checkers, scoring statements, task 183 answers, and training
+Parquet together. Reward definitions change, so scores on these eight tasks are
+not directly comparable with the original checker release. Only final problem
+assets are included; generators, reference-team selections, candidate source
+programs, and raw experiment traces are not distributed.
 
 ### Parity subset (10 of the 200 problems)
 

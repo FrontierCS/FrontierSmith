@@ -108,8 +108,8 @@ int main(int argc, char* argv[]) {
     if (!ans.seekEof()) quitf(_fail, "extra data after reference objective");
     if (!isfinite(R)) quitf(_fail, "reference objective must be finite");
     double tolerance = 1e-9 * max({1.0, fabs(R), fabs(G)});
-    if (R <= G + tolerance)
-        quitf(_fail, "reference objective must strictly improve on greedy baseline");
+    if (R < 0.0 || R + tolerance < G)
+        quitf(_fail, "reference objective must be nonnegative and no worse than baseline");
     double upperBound = accumulate(W.begin() + 1, W.end(), 0.0);
     if (R > upperBound + tolerance)
         quitf(_fail, "reference objective exceeds total capability value");
@@ -174,6 +174,10 @@ int main(int argc, char* argv[]) {
     double O = computeObj(X);
 
     // expm1 avoids cancellation for very small contributions.
-    double ratio = max(0.0, min(1.0, (O - G) / (R - G)));
+    // Some original inputs already have an optimal greedy baseline (R == G).
+    // Normalize actual quality there, instead of giving all valid teams full credit.
+    double raw = R - G > tolerance ? (O - G) / (R - G)
+                                  : (R > 0.0 ? O / R : 0.0);
+    double ratio = max(0.0, min(1.0, raw));
     quitp(ratio, "O=%.12f G=%.12f R=%.12f Ratio: %.12f", O, G, R, ratio);
 }
