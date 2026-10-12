@@ -71,14 +71,17 @@ Tasks **18, 52, 58, 100, 106, 108, 125, and 183** have revised checkers,
 statements, and ten regenerated test cases each. Their training Parquet rows
 have been synchronized; the other 192 tasks retain their released contents.
 
-These tasks now reward improvement over the stated feasible baseline, using
-the paper's baseline-normalized objective improvement with positive shifts
-where needed. Matching the baseline scores zero; better solutions receive
+These tasks now reward improvement over the stated feasible baseline. Seven
+use the paper's baseline-normalized objective improvement with positive shifts
+where needed; task 183 retains its reference-calibrated score. Matching the baseline scores zero; better solutions receive
 continuous partial credit on the judge's 0–100 scale. Empty output is invalid.
-The checkers compute baselines directly, so their empty `.ans` files are
-intentional. Task 58 also corrects transfer direction, task 100 validates
-triangle coverage in linear grid time, and task 106 includes remainder-strip
-sales in its uniform baseline.
+Tasks 18, 52, 58, 100, 106, 108, and 125 compute baselines directly and do
+not use reference answers. Task 183 preserves its original reference-based
+normalization: each `.ans` contains the objective of a fixed feasible reference
+team, which must strictly improve on the greedy baseline. Missing or degenerate
+reference values are judge errors. Task 58 also corrects transfer direction,
+task 100 validates triangle coverage in linear grid time, and task 106 includes
+remainder-strip sales in its uniform baseline.
 
 Use the revised statements, test data, checkers, and Parquet together for new
 runs. Scores on these eight tasks are not directly comparable with the original

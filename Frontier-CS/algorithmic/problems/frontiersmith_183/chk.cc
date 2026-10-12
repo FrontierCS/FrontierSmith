@@ -101,6 +101,19 @@ int main(int argc, char* argv[]) {
 
     double G = runGreedy();
 
+    // The answer file stores the objective of a fixed feasible reference team.
+    // Missing or degenerate reference data is a judge error, never full credit.
+    if (ans.seekEof()) quitf(_fail, "missing reference objective in answer file");
+    double R = ans.readDouble();
+    if (!ans.seekEof()) quitf(_fail, "extra data after reference objective");
+    if (!isfinite(R)) quitf(_fail, "reference objective must be finite");
+    double tolerance = 1e-9 * max({1.0, fabs(R), fabs(G)});
+    if (R <= G + tolerance)
+        quitf(_fail, "reference objective must strictly improve on greedy baseline");
+    double upperBound = accumulate(W.begin() + 1, W.end(), 0.0);
+    if (R > upperBound + tolerance)
+        quitf(_fail, "reference objective exceeds total capability value");
+
     // ---- read participant output ----
     int q = ouf.readInt();
     if (q < 0 || q > n) {
@@ -161,6 +174,6 @@ int main(int argc, char* argv[]) {
     double O = computeObj(X);
 
     // expm1 avoids cancellation for very small contributions.
-    double ratio = O <= G ? 0.0 : (O - G) / (O + 1.0);
-    quitp(ratio, "O=%.12f G=%.12f Ratio: %.12f", O, G, ratio);
+    double ratio = max(0.0, min(1.0, (O - G) / (R - G)));
+    quitp(ratio, "O=%.12f G=%.12f R=%.12f Ratio: %.12f", O, G, R, ratio);
 }
