@@ -195,6 +195,8 @@ int main(int argc, char* argv[]) {
     for (int k = 0; k < R; k++) {
         chosenIds[k] = ouf.readInt(1, P, "tube id must be in [1,P]");
     }
+    // Allow trailing whitespace, but reject any extra output tokens.
+    ouf.skipBlanks();
     ouf.readEof();
 
     // Check for duplicate IDs

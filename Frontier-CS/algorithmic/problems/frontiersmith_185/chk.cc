@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
     string S = ouf.readToken();
 
     // Assert no trailing non-whitespace content
+    ouf.skipBlanks();
     ouf.readEof();
 
     // Feasibility check: length
