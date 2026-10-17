@@ -90,34 +90,7 @@ int main(int argc, char* argv[]) {
     // C_base = M * (64 + 4*L)
     long long C_base = (long long)M * (64LL + 4LL * L);
 
-    // Problem score formula: min(10^9, floor(10^6 * C_base / total_cost))
-    // Used only for the message; ratio computation is done separately.
-    long long problem_score = 0;
-    {
-        __int128 num = (__int128)1000000LL * C_base;
-        __int128 sc = num / total_cost;
-        if (sc > 1000000000LL) sc = 1000000000LL;
-        problem_score = (long long)sc;
-    }
-
-    // Normalize ratio to [0, 1]:
-    //   ratio = min(1.0, C_base / total_cost)
-    //
-    // This maps:
-    //   - Baseline quality (C == C_base):   ratio = 1.0  (full credit)
-    //   - Better than baseline (C < C_base): ratio > 1.0 → clamped to 1.0
-    //   - Worse than baseline (C > C_base):  ratio = C_base/C < 1.0
-    //   - Total garbage (C >> C_base):       ratio → 0.0
-    //
-    // This gives continuous spread across all quality levels, avoiding
-    // the earlier clustering around 0.001.
-    double ratio = (double)C_base / (double)total_cost;
-    if (ratio > 1.0) ratio = 1.0;
-    if (ratio < 0.0) ratio = 0.0;
-
-    quitp(ratio,
-          "Ratio: %.9f (solution_cost=%lld, baseline_cost=%lld, problem_score=%lld)",
-          ratio, total_cost, C_base, problem_score);
-
-    return 0;
+    double ratio = max(0.0L, (long double)(C_base - total_cost) /
+                                  ((long double)C_base + 1.0L));
+    quitp(ratio, "C=%lld B=%lld Ratio: %.12f", total_cost, C_base, ratio);
 }

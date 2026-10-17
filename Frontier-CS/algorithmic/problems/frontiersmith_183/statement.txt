@@ -1,4 +1,3 @@
-```markdown
 # Referral Web Forge
 
 ## Problem
@@ -122,23 +121,33 @@ Your goal is to **maximize** `Obj(S)`.
 All computations used by the judge are performed in double precision.
 
 ## Scoring
-Let:
-
-- `O` be your objective value on a test case,
-- `G` be the objective value of the **baseline greedy algorithm** defined below,
-- `R` be the objective value of the organizer's fixed reference solution for that test case.
-
-Your score on that test case is:
+Let `O` be your feasible team's objective, `G` the objective of the deterministic
+greedy baseline below, and `R` the objective of a fixed feasible reference team.
+Set `eps = 1e-9 * max(1,abs(R),abs(G))`. The test score is
 
 \[
-100 \cdot \operatorname{clamp}\!\left(\frac{O - G}{R - G},\ 0,\ 1\right)
+100\cdot\begin{cases}
+\operatorname{clamp}\left((O-G)/(R-G),0,1\right), & R-G>\varepsilon,\\
+\operatorname{clamp}\left(O/R,0,1\right), & R-G\le\varepsilon\text{ and }R>0,\\
+0, & R=0.
+\end{cases}
 \]
 
-where `clamp(x, 0, 1) = max(0, min(1, x))`.
+Here `clamp(x,0,1) = max(0,min(1,x))`. The first branch preserves the original
+baseline-to-reference normalization. The second handles inputs on which the
+reference and baseline coincide to numerical tolerance, including inputs whose
+baseline is already optimal. It rewards actual objective quality rather than
+awarding every feasible team full credit. The empty team always scores 0.
+A reference team is not asserted to be globally optimal. The final score is the
+arithmetic mean over all test cases. Malformed or infeasible contestant output
+receives 0.
 
-If `R = G`, then every valid submission receives `100` points on that test case.
-
-The final score is the arithmetic mean of the per-test-case scores over all hidden test cases.
+Each organizer answer file contains exactly one finite nonnegative number `R`,
+computed from a feasible reference team for its matching input. Missing,
+malformed, or nonfinite references are judge errors. References below `G-eps`
+or above `sum(W_j)+eps` are also rejected. Reference-team member IDs are not
+part of the answer-file format. The checker uses double precision and evaluates
+`1-exp(-z)` as `-expm1(-z)` to reduce cancellation.
 
 ### Baseline greedy algorithm
 The baseline solution is deterministic and must be interpreted exactly as follows:
@@ -163,7 +172,8 @@ The baseline solution is deterministic and must be interpreted exactly as follow
 5. If no currently addable candidate exists, stop.
 6. If the chosen candidate has `Δ_i <= 0`, stop. Otherwise add them to `S` and repeat from step 2.
 
-The objective value of the resulting set is `G`.
+The objective value of the resulting set is `G`. Ratios and marginal gains
+within absolute tolerance `1e-15` are tied for the tie-breaking rules above.
 
 ## Constraints
 - Time limit: 10 seconds
@@ -212,4 +222,3 @@ Objective:
 \]
 
 So this output achieves objective value approximately `153.634`.
-```

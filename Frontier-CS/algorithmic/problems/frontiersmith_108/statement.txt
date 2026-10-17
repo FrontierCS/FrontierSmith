@@ -1,4 +1,3 @@
-```markdown
 # Correlated Binary Addressing
 
 ## Problem
@@ -80,31 +79,16 @@ Your goal is to **minimize** `C`.
 All computations are done exactly with integer arithmetic.
 
 ## Scoring
-For each test case, let:
+Let `L = ceil(log2 M)`. The baseline assigns item `i` the `L`-bit binary
+representation of `i-1`; for `M=1` its sole address is `.`. This is feasible
+because `2^N >= M`. Let its cost be `B` and your cost be `C`. The test score is
+`100 * max(0, (B - C) / (B + 1))`.
 
-- `C_you` = your cost,
-- `C_base` = the baseline cost defined below.
-
-The per-test score is
-
-```text
-score = floor(10^9 * C_base / C_you)
-```
-
-If your output is infeasible, the score is `0`.
-
-### Baseline
-The baseline assignment is defined deterministically:
-- Let `L = ceil(log2 M)`.
-- If `M = 1`, the only baseline address is `.`.
-- Otherwise, item `i` gets the `L`-bit binary representation of `i-1`.
-
-This is feasible because the test data satisfies `2^N >= M`, hence `L <= N`.
-
-### Total score
-The final score is the **sum** of per-test scores over all test cases.
-
-A lower cost always gives a higher score.
+A malformed or infeasible output receives 0. The final score is the arithmetic
+mean of the per-test scores. Matching or worsening the baseline receives 0;
+strict improvements receive a continuous score below 100. The additive 1
+keeps the formula defined even when an objective is zero. No reference-answer
+file is needed: the checker computes the baseline from the input.
 
 ## Constraints
 - `1 <= M <= 400`
@@ -164,11 +148,5 @@ So the total cost is:
 The baseline uses fixed-length 2-bit addresses:
 `00, 01, 10`, whose cost is `72`.
 
-Therefore this output would receive
-
-```text
-floor(10^9 * 72 / 54) = 1333333333
-```
-
-for this test case.
-```
+Therefore this output receives `100 * (72 - 54) / 73`,
+approximately `24.657534` points on this test.

@@ -122,29 +122,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // --- Compute score ratio ---
-    // Per-test score = floor(10^9 * C_base / C_you), clamped so ratio in [0,1].
-    // If C_you == 0 and C_base == 0, perfect (ratio = 1).
-    // If C_you == 0 but C_base > 0, that is impossible in practice but give 1.
-    double ratio;
-    if (C_you <= 0) {
-        // C_you should be >= 0; if 0, participant is perfect
-        if (C_base == 0) {
-            ratio = 1.0;
-        } else {
-            // Cost 0 is at least as good as baseline
-            ratio = 1.0;
-        }
-    } else if (C_base <= 0) {
-        // baseline is 0 (e.g. M=1 with only one item, all weights 0 -- degenerate)
-        ratio = 1.0;
-    } else {
-        ratio = (double)C_base / (double)C_you;
-        // Clamp to [0, 1]: participant cannot score above 1.0 by the formula
-        // (doing better than baseline still gets 1.0 in [0,1] range)
-        if (ratio > 1.0) ratio = 1.0;
-        if (ratio < 0.0) ratio = 0.0;
-    }
-
-    quitp(ratio, "Ratio: %.9f | C_you=%lld C_base=%lld", ratio, C_you, C_base);
+    double ratio = max(0.0L, ((long double)C_base - C_you) /
+                                  ((long double)C_base + 1.0L));
+    quitp(ratio, "C=%lld B=%lld Ratio: %.12f", C_you, C_base, ratio);
 }

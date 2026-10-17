@@ -1,4 +1,3 @@
-```markdown
 # Profitable Grid Cutting
 
 ## Problem
@@ -102,53 +101,28 @@ For an infeasible output, define:
 ---
 
 ## Scoring
-Let
-
-`L = S*W*H + CV*Vmax + CH*Hmax`
-
-so every feasible solution satisfies `OBJ >= -L`.
+Let `L = S*W*H + CV*Vmax + CH*Hmax`, so every feasible objective is at least `-L`.
 
 ### Baseline
-For each order type `i` with `wi <= W` and `hi <= H`, consider the following simple pattern:
-
-- use as many full strips of width `wi` as possible:
-  - `ax = floor(W / wi)`
-  - `rx = W - ax * wi`
-  - number of width strips is `sx = ax + (rx > 0 ? 1 : 0)`
-- use as many full strips of height `hi` as possible:
-  - `ay = floor(H / hi)`
-  - `ry = H - ay * hi`
-  - number of height strips is `sy = ay + (ry > 0 ? 1 : 0)`
-
-If `sx - 1 <= Vmax` and `sy - 1 <= Hmax`, this pattern is feasible and has:
-
-- `sold = min(di, ax * ay)`
-- `OBJ_i = sold * ri - S * (W*H - sold*wi*hi) - (sx - 1) * CV - (sy - 1) * CH`
-
-Also consider the “do nothing useful” pattern:
-- `kx = 1`, `ky = 1`
-- no sales
-- `OBJ_0 = -S * W * H`
-
-Let
-
-`BASE = max(OBJ_0, all feasible OBJ_i)`.
+Consider the no-cut pattern with widths `[W]` and heights `[H]`. Also, for
+each order size `(wi,hi)`, consider the uniform pattern consisting of
+`floor(W/wi)` strips of width `wi`, followed by a remainder strip if nonzero,
+and similarly `floor(H/hi)` strips of height `hi` plus a nonzero remainder.
+Discard patterns exceeding either cut limit. Evaluate every remaining pattern
+using the **full objective**, selling all produced order types, including types
+involving remainder strips. Let `BASE` be the largest objective of these patterns.
 
 ### Test score
-For each test file, your score is:
+For a feasible plan the test score is
+`100 * max(0, (OBJ - BASE) / (OBJ + L + 1))`.
+The denominator is strictly positive. Integer objectives and their difference
+are computed exactly before converting the ratio to floating point.
 
-`score = floor(1,000,000 * min(2, (OBJ + L + 1) / (BASE + L + 1)))`
-
-Thus:
-- matching the baseline gives about `1,000,000` points,
-- doing better than baseline gives more,
-- doing worse gives less,
-- infeasible output gets `0`.
-
-### Final score
-Your final score is the sum of `score` over all test files.
-
----
+A malformed or infeasible output receives 0. The final score is the arithmetic
+mean of the per-test scores. Matching or worsening the baseline receives 0;
+strict improvements receive a continuous score below 100. The additive 1
+keeps the formula defined even when an objective is zero. No reference-answer
+file is needed: the checker computes the baseline from the input.
 
 ## Constraints
 - `1 <= n <= 2 * 10^5`
@@ -201,5 +175,6 @@ So:
 
 Hence `OBJ = 74 - 0 - 2 = 72`.
 
-The baseline here is lower, so this solution scores above `1,000,000` on this test.
-```
+The baseline is `BASE=72`, achieved by widths `[6,3]` and heights `[3,3]`.
+The shown plan has objective 72 and therefore scores 0; it illustrates feasibility,
+not an improvement over the baseline.

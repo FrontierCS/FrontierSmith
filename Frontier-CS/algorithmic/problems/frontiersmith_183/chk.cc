@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
     auto computeObj = [&](const vector<double>& X) -> double {
         double obj = 0.0;
         for (int j = 1; j <= m; j++) {
-            obj += W[j] * (1.0 - exp(-X[j] / T[j]));
+            obj += W[j] * (-expm1(-X[j] / T[j]));
         }
         return obj;
     };
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
                 // compute delta
                 double delta = 0.0;
                 for (auto& [cj, aj] : contrib[i]) {
-                    delta += W[cj] * (exp(-X[cj] / T[cj]) - exp(-(X[cj] + aj) / T[cj]));
+                    delta += W[cj] * (exp(-X[cj] / T[cj]) * -expm1(-aj / T[cj]));
                 }
 
                 if (best == -1) {
@@ -101,16 +101,18 @@ int main(int argc, char* argv[]) {
 
     double G = runGreedy();
 
-    // ---- read R from ans file ----
-    // R is the organizer's reference solution objective value, stored in ans.
-    // If ans is absent/empty, we fall back to R = G (which gives everyone 100 per spec).
-    double R = G; // default: R = G
-    {
-        // Try to read R from ans; if it fails (e.g. empty), keep R = G
-        if (!ans.seekEof()) {
-            R = ans.readDouble();
-        }
-    }
+    // The answer file stores the objective of a fixed feasible reference team.
+    // Missing or degenerate reference data is a judge error, never full credit.
+    if (ans.seekEof()) quitf(_fail, "missing reference objective in answer file");
+    double R = ans.readDouble();
+    if (!ans.seekEof()) quitf(_fail, "extra data after reference objective");
+    if (!isfinite(R)) quitf(_fail, "reference objective must be finite");
+    double tolerance = 1e-9 * max({1.0, fabs(R), fabs(G)});
+    if (R < 0.0 || R + tolerance < G)
+        quitf(_fail, "reference objective must be nonnegative and no worse than baseline");
+    double upperBound = accumulate(W.begin() + 1, W.end(), 0.0);
+    if (R > upperBound + tolerance)
+        quitf(_fail, "reference objective exceeds total capability value");
 
     // ---- read participant output ----
     int q = ouf.readInt();
@@ -171,22 +173,11 @@ int main(int argc, char* argv[]) {
     }
     double O = computeObj(X);
 
-    // ---- compute score using stated formula ----
-    // score = 100 * clamp((O - G) / (R - G), 0, 1)
-    // Special case: if R = G (or R <= G + epsilon), every valid submission gets 100.
-    double ratio;
-    if (R <= G + 1e-9) {
-        // R = G case: every valid submission receives 100 points
-        ratio = 1.0;
-    } else {
-        ratio = (O - G) / (R - G);
-        if (ratio > 1.0) ratio = 1.0;
-        if (ratio < 0.0) ratio = 0.0;
-    }
-
-    quitp(ratio,
-          "OK q=%d cost=%lld O=%.6f G=%.6f R=%.6f Ratio: %.6f",
-          q, totalSal, O, G, R, ratio);
-
-    return 0;
+    // expm1 avoids cancellation for very small contributions.
+    // Some original inputs already have an optimal greedy baseline (R == G).
+    // Normalize actual quality there, instead of giving all valid teams full credit.
+    double raw = R - G > tolerance ? (O - G) / (R - G)
+                                  : (R > 0.0 ? O / R : 0.0);
+    double ratio = max(0.0, min(1.0, raw));
+    quitp(ratio, "O=%.12f G=%.12f R=%.12f Ratio: %.12f", O, G, R, ratio);
 }
